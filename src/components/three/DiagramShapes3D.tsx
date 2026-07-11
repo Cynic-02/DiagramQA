@@ -37,8 +37,8 @@ const CONNECT_DISTANCE = 3.2
 const MAX_CONNECTIONS_PER_NODE = 3
 const SPINE_COUNT = 4
 
-const LIGHT_COLORS = ['#2b59d1', '#ff9473', '#a7fccd', '#ecda98']
-const DARK_COLORS = ['#8052ff', '#ffb829', '#15846e', '#bdbdbd']
+const LIGHT_COLORS = ['#1a6b8a', '#d4634a', '#5ba88c', '#e9a23b']
+const DARK_COLORS = ['#3ba4c7', '#e8876f', '#5bb896', '#f0b84a']
 
 function rand(seed: number) {
   const x = Math.sin(seed) * 43758.5453

@@ -65,9 +65,9 @@ const SAMPLE_SVG = `<svg xmlns='http://www.w3.org/2000/svg' width='640' height='
   <text x='535' y='165' text-anchor='middle' fill='#1a1a1a' font-family='sans-serif' font-size='14' font-weight='700'>Database</text>
   <line x1='170' y1='160' x2='250' y2='160' stroke='#2dd4bf' stroke-width='3' marker-end='url(#arrow)'/>
   <line x1='385' y1='160' x2='465' y2='160' stroke='#2dd4bf' stroke-width='3' marker-end='url(#arrow)'/>
-  <line x1='320' y1='130' x2='320' y2='70' stroke='#f43f7e' stroke-width='3' stroke-dasharray='4 4'/>
-  <rect x='255' y='30' width='130' height='40' fill='#fdf6e9' stroke='#f43f7e' stroke-width='3'/>
-  <text x='320' y='55' text-anchor='middle' fill='#f43f7e' font-family='sans-serif' font-size='13' font-weight='700'>Cache</text>
+  <line x1='320' y1='130' x2='320' y2='70' stroke='#e8876f' stroke-width='3' stroke-dasharray='4 4'/>
+  <rect x='255' y='30' width='130' height='40' fill='#f5f4f0' stroke='#e8876f' stroke-width='3'/>
+  <text x='320' y='55' text-anchor='middle' fill='#e8876f' font-family='sans-serif' font-size='13' font-weight='700'>Cache</text>
   <text x='320' y='290' text-anchor='middle' fill='#525252' font-family='monospace' font-size='11'>AR2-DDCQG · sample architecture</text>
 </svg>`
 

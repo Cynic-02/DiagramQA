@@ -69,7 +69,7 @@ export function ResultsStage() {
   // Folder needs a literal hex (it computes darker shades internally),
   // so pick the active theme's real accent color rather than an
   // unrelated leftover amber from an earlier design pass.
-  const folderColor = resolvedTheme === 'light' ? '#2b59d1' : '#8052ff'
+  const folderColor = resolvedTheme === 'light' ? '#1a6b8a' : '#3ba4c7'
   const status = usePipelineStore((s) => s.stages.results.status)
   const running = usePipelineStore((s) => s.running)
   const bloomLevel = usePipelineStore((s) => s.bloomLevel)

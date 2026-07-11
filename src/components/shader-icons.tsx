@@ -73,7 +73,7 @@ export function ShaderIcon({
   size = 24,
   className,
   colorBack = 'transparent',
-  colorTint = '#f5b942',
+  colorTint = '#e9a23b',
   speed = 0.6,
 }: ShaderIconProps) {
   const Icon = icon

@@ -12,17 +12,14 @@ import { ArrowRight, CheckCircle2 } from 'lucide-react'
    through a few example conversions automatically.
 
    Colors: this card is deliberately always-dark ("dark terminal"),
-   regardless of the site's active Monad/Dala theme — same pattern
-   as AgentThinkingConsole. Its two accents use Dala's own Electric
-   Iris / Saffron colors (not the earlier Handwrite red/teal, which
-   is stale now that theme has been replaced), since a dark terminal
-   card naturally reads as "the same brand's dark register."
+   regardless of the site's active Monad/Dala theme. Its accents use the
+   Cognitive Atlas dark-register teal + amber pair.
    ============================================================ */
 
-const PRIMARY_RGB = '128,82,255' // Electric Iris
-const ACCENT_RGB = '255,184,41' // Saffron Spark
-const PRIMARY_HEX = '#8052ff'
-const ACCENT_HEX = '#ffb829'
+const PRIMARY_RGB = '59,164,199'
+const ACCENT_RGB = '240,184,74'
+const PRIMARY_HEX = '#3ba4c7'
+const ACCENT_HEX = '#f0b84a'
 
 interface DemoItem {
   label: string

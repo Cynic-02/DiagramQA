@@ -24,7 +24,7 @@ export function ScrollProgress() {
       style={{
         scaleX,
         background:
-          'linear-gradient(90deg, transparent 0%, var(--primary) 30%, color-mix(in oklch, var(--primary) 60%, #fb7c5c) 70%, transparent 100%)',
+          'linear-gradient(90deg, transparent 0%, var(--primary) 30%, color-mix(in oklch, var(--primary) 55%, var(--secondary)) 70%, transparent 100%)',
         boxShadow: '0 0 12px color-mix(in oklch, var(--primary) 60%, transparent)',
       }}
     />

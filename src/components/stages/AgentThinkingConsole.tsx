@@ -114,10 +114,10 @@ const CONFIG: Record<StageId, AgentConfig> = {
 }
 
 const ACCENT_HEX: Record<Accent, string> = {
-  emerald: '#34d399',
-  amber: '#fbbf24',
-  teal: '#2dd4bf',
-  coral: '#fb7185',
+  emerald: '#5bb896',
+  amber: '#f0b84a',
+  teal: '#3ba4c7',
+  coral: '#e8876f',
 }
 
 /* ------------------------------------------------------------------ */

@@ -59,7 +59,7 @@ function makeDots(seedBase: number, count: number, sizeRange: [number, number], 
   return dots
 }
 
-const PALETTE = ['#fbbf24', '#f97362', '#f59e0b', '#fef3c7']
+const PALETTE = ['#3ba4c7', '#e8876f', '#f0b84a', '#e6eaf2']
 
 const FAR = makeDots(11, 40, [2, 4], PALETTE)
 const MID = makeDots(97, 20, [4, 8], PALETTE)

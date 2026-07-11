@@ -30,29 +30,29 @@ interface Palette {
 }
 
 const DARK_PALETTE: Palette = {
-  domeColor: '#0c0a08',
-  fogColor: '#181210',
+  domeColor: '#0e1219',
+  fogColor: '#151a24',
   fogNear: 10,
   fogFar: 38,
   ambientIntensity: 0.25,
-  hemiSky: '#fbbf24',
-  hemiGround: '#1a1410',
+  hemiSky: '#3ba4c7',
+  hemiGround: '#151a24',
   hemiIntensity: 0.3,
-  layerColors: ['#fef3c7', '#fbbf24', '#f97362', '#f59e0b'],
+  layerColors: ['#e6eaf2', '#3ba4c7', '#e8876f', '#f0b84a'],
   particleOpacity: 0.65,
   glowOpacity: 0.5,
 }
 
 const LIGHT_PALETTE: Palette = {
-  domeColor: '#f6f1e6',
-  fogColor: '#ede6d6',
+  domeColor: '#f5f4f0',
+  fogColor: '#ebe8e1',
   fogNear: 12,
   fogFar: 42,
   ambientIntensity: 0.75,
-  hemiSky: '#fff7ec',
-  hemiGround: '#ddd0b5',
+  hemiSky: '#f5f4f0',
+  hemiGround: '#d8dce4',
   hemiIntensity: 0.5,
-  layerColors: ['#92400e', '#b45309', '#c2410c', '#9a3412'],
+  layerColors: ['#1a6b8a', '#d4634a', '#5ba88c', '#e9a23b'],
   particleOpacity: 0.38,
   glowOpacity: 0.3,
 }

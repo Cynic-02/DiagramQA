@@ -30,14 +30,14 @@ export function GraphBackground3D({
         style={{ width: '100%', height: '100%' }}
       >
         <ambientLight intensity={0.25} />
-        <hemisphereLight args={['#fbbf24', '#1a1410', 0.3]} />
+        <hemisphereLight args={['#3ba4c7', '#151a24', 0.3]} />
         <AmbientParticles multiplier={multiplier} />
       </Canvas>
     </div>
   )
 }
 
-const COLORS = ['#fbbf24', '#f43f5e', '#fb923c', '#f59e0b', '#fef3c7']
+const COLORS = ['#3ba4c7', '#e8876f', '#f0b84a', '#5bb896', '#e6eaf2']
 
 function rand(seed: number) {
   const x = Math.sin(seed) * 43758.5453

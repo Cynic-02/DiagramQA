@@ -85,8 +85,8 @@ export default function BorderGlow({
   const resolvedColors =
     colors ??
     (resolvedTheme === 'light'
-      ? ['#2b59d1', '#ff9473', '#a7fccd'] // Monad: Lake Blue / Coral / Mint
-      : ['#8052ff', '#ffb829', '#15846e']) // Dala: Electric Iris / Saffron / Deep Verdant
+      ? ['#1a6b8a', '#d4634a', '#5ba88c']
+      : ['#3ba4c7', '#f0b84a', '#5bb896'])
 
   const getCenterOfElement = useCallback((el: HTMLElement): [number, number] => {
     const { width, height } = el.getBoundingClientRect()

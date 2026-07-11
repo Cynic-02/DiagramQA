@@ -33,7 +33,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <section
       id="console"
-      className="relative flex min-h-screen flex-col bg-background"
+      className="relative flex min-h-screen flex-col bg-background bg-gradient-to-b from-primary/[0.04] to-background"
     >
       {/* Top hairline accent — solid flat border, not a gradient thread */}
       <div

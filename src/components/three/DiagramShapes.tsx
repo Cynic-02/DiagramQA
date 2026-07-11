@@ -41,8 +41,8 @@ interface DiagramShapesProps {
   theme: 'light' | 'dark'
 }
 
-const LIGHT_COLORS = ['#2b59d1', '#ff9473', '#a7fccd', '#ecda98']
-const DARK_COLORS = ['#8052ff', '#ffb829', '#15846e', '#bdbdbd']
+const LIGHT_COLORS = ['#1a6b8a', '#d4634a', '#5ba88c', '#e9a23b']
+const DARK_COLORS = ['#3ba4c7', '#e8876f', '#5bb896', '#f0b84a']
 
 const NODE_COUNT = 46
 const CONNECT_DISTANCE = 0.22 // normalized distance threshold for drawing a line

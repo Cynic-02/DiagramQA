@@ -14,10 +14,10 @@ import * as THREE from 'three'
    Rendered against Monad's warm parchment canvas, not a dark void.
    ============================================================ */
 
-const LAKE_BLUE = '#2b59d1'
-const CORAL = '#ff9473'
-const MINT = '#a7fccd'
-const PARCHMENT_WHITE = '#fffaf3'
+const LAKE_BLUE = '#1a6b8a'
+const CORAL = '#d4634a'
+const MINT = '#5ba88c'
+const PARCHMENT_WHITE = '#faf9f6'
 
 const SHIMMER_PERIOD = 6.65
 

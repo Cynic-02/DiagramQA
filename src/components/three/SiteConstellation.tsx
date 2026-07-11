@@ -52,19 +52,19 @@ const hexToRgb = (hex: string): [number, number, number] => {
 /** Reads the site's OWN color tokens live from computed CSS — never a
  *  hardcoded copy, so it can't drift from whatever the theme defines. */
 function readPalette(): string[] {
-  if (typeof document === 'undefined') return ['#8052ff']
+  if (typeof document === 'undefined') return ['#3ba4c7']
   const style = getComputedStyle(document.documentElement)
   const read = (name: string, fallback: string) => {
     const v = style.getPropertyValue(name).trim()
     return v || fallback
   }
   return [
-    read('--primary', '#8052ff'),
-    read('--accent', '#ffb829'),
-    read('--diagram-sky', '#52d1ff'),
-    read('--diagram-mint', '#15846e'),
-    read('--diagram-coral', '#ff6e9e'),
-    read('--diagram-gold', '#ffb829'),
+    read('--primary', '#3ba4c7'),
+    read('--accent', '#f0b84a'),
+    read('--diagram-sky', '#5bbde0'),
+    read('--diagram-mint', '#5bb896'),
+    read('--diagram-coral', '#e8876f'),
+    read('--diagram-gold', '#f0b84a'),
   ]
 }
 
