@@ -58,12 +58,17 @@ model Run {
   verification String?
   finalQA      String?
   errorMessage String?
+  startedAt    DateTime?
+  completedAt  DateTime?
+  durationMs   Int?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   @@index([diagramId])
   @@index([createdAt])
   @@index([userId])
+  @@index([userId, createdAt])
+  @@index([userId, status])
 }
 
 model ChatMessage {
@@ -77,6 +82,7 @@ model ChatMessage {
 
   @@index([runId])
   @@index([userId])
+  @@index([runId, userId, createdAt])
 }
 
 model PasswordReset {
@@ -137,9 +143,11 @@ model UserApiKey {
   /// Default model id to use with this key.
   model      String?
   isCustom   Boolean  @default(false)
+  lastUsedAt DateTime?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
   @@unique([userId, providerId])
   @@index([userId])
+  @@index([userId, isCustom])
 }

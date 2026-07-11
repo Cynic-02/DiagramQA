@@ -8,14 +8,29 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
    fades + scales in, instead of the default hard cut. Keyed on
    pathname so AnimatePresence treats each route as a distinct
    element and animates the swap.
+
+   IMPORTANT: routes under /app are intentionally excluded from the
+   AnimatePresence unmount/remount cycle. mode="wait" fully unmounts
+   the previous route's component tree before mounting the next one
+   — fine for stateless marketing/auth pages, but /app holds a
+   Zustand pipeline store, a live SSE stream connection
+   (usePipelineStream), and Three.js canvases that are not designed
+   to be torn down and recreated on every navigation. Doing so
+   produced an intermittent bug where navigating back to /app showed
+   a nearly-blank page (one stray element rendered, the rest of the
+   tree silently failed to remount in a consistent state). Console
+   routes render directly, no transition wrapper, no unmount risk.
    ============================================================ */
 
 export function PageTransition({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const reduce = useReducedMotion()
 
-  if (reduce) {
-    // Respect prefers-reduced-motion — no animation, just render.
+  const isConsoleRoute = pathname?.startsWith('/app')
+
+  if (reduce || isConsoleRoute) {
+    // Respect prefers-reduced-motion, and never wrap /app in a
+    // remount-on-navigate transition — see note above.
     return <>{children}</>
   }
 

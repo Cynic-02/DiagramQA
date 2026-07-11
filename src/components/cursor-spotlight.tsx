@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useTheme } from 'next-themes'
 
 /**
  * CursorSpotlight — a soft radial glow that follows the pointer across the
@@ -11,6 +12,7 @@ import { useEffect, useState } from 'react'
  * updated via CSS variables on every pointermove (throttled with rAF).
  */
 export function CursorSpotlight() {
+  const { theme } = useTheme()
   // Detect capability once on first client render (lazy initializer avoids
   // the setState-in-effect lint and any SSR mismatch — default false on server).
   const [enabled] = useState(() => {
@@ -21,7 +23,7 @@ export function CursorSpotlight() {
   })
 
   useEffect(() => {
-    if (!enabled) return
+    if (!enabled || theme?.startsWith('minimal')) return
 
     let raf = 0
     let mx = window.innerWidth / 2
@@ -49,9 +51,9 @@ export function CursorSpotlight() {
       el.style.removeProperty('--spot-x')
       el.style.removeProperty('--spot-y')
     }
-  }, [enabled])
+  }, [enabled, theme])
 
-  if (!enabled) return null
+  if (!enabled || theme?.startsWith('minimal')) return null
 
   return (
     <div

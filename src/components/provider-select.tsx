@@ -23,6 +23,7 @@ export interface ProviderOption {
   hasPlatformKey: boolean
   hasOwnKey: boolean
   usable: boolean
+  supportsVision?: boolean
   defaultModel?: string
 }
 
@@ -31,6 +32,8 @@ interface ProviderSelectProps {
   onChange: (v: string | null) => void
   /** Show the "Automatic (recommended)" option that lets the pipeline pick. */
   allowAuto?: boolean
+  /** Disable text-only built-in providers for diagram extraction workflows. */
+  requireVision?: boolean
   className?: string
 }
 
@@ -52,7 +55,13 @@ export function useProviderOptions() {
   return { providers, loading, reload }
 }
 
-export function ProviderSelect({ value, onChange, allowAuto = true, className }: ProviderSelectProps) {
+export function ProviderSelect({
+  value,
+  onChange,
+  allowAuto = true,
+  requireVision = false,
+  className,
+}: ProviderSelectProps) {
   const { providers, loading } = useProviderOptions()
   const builtIn = providers.filter((p) => !p.isCustom)
   const custom = providers.filter((p) => p.isCustom)
@@ -77,13 +86,20 @@ export function ProviderSelect({ value, onChange, allowAuto = true, className }:
         <SelectGroup>
           <SelectLabel>Built-in providers</SelectLabel>
           {builtIn.map((p) => (
-            <SelectItem key={p.id} value={p.id} disabled={!p.usable}>
+            <SelectItem
+              key={p.id}
+              value={p.id}
+              disabled={!p.usable || (requireVision && !p.supportsVision)}
+            >
               <span className="flex items-center gap-1.5">
                 {p.label}
                 {p.hasOwnKey && (
                   <KeyRound className="size-3 text-accent" aria-label="Using your own key" />
                 )}
                 {!p.usable && <span className="text-muted-foreground">(no key yet)</span>}
+                {requireVision && !p.supportsVision && (
+                  <span className="text-muted-foreground">(text only)</span>
+                )}
               </span>
             </SelectItem>
           ))}

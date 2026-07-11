@@ -21,6 +21,7 @@
  */
 
 import * as React from 'react'
+import Link from 'next/link'
 import { motion, useReducedMotion, AnimatePresence } from 'framer-motion'
 import {
   Upload,
@@ -42,7 +43,7 @@ import { Slider } from '@/components/ui/slider'
 import { StageFrame, DataChip } from './shared'
 import { BloomWheel } from './BloomWheel'
 import TiltedCard from '@/components/TiltedCard'
-import { ProviderSelect } from '@/components/provider-select'
+import { ProviderSelect, useProviderOptions } from '@/components/provider-select'
 
 /* ------------------------------------------------------------------ */
 /* A small inline SVG flowchart used as the sample diagram.           */
@@ -119,7 +120,7 @@ function rasteriseIfNeeded(dataUrl: string, filename: string): Promise<{ dataUrl
   })
 }
 
-const ACCEPTED = '.png,.jpg,.jpeg,.webp,.svg,.pdf'
+const ACCEPTED = '.png,.jpg,.jpeg,.webp,.svg'
 const MAX_BYTES = 5 * 1024 * 1024 // 5 MB
 
 /* ------------------------------------------------------------------ */
@@ -154,6 +155,15 @@ export function UploadStage() {
   const [dragOver, setDragOver] = React.useState(false)
   const [submitting, setSubmitting] = React.useState(false)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
+  const { providers, loading: loadingProviders } = useProviderOptions()
+  const hasUsableProvider = React.useMemo(() => {
+    if (loadingProviders) return true
+    if (selectedProvider) {
+      const selected = providers.find((p) => p.id === selectedProvider)
+      return !!selected && selected.usable && (selected.isCustom || selected.supportsVision)
+    }
+    return providers.some((p) => !p.isCustom && p.usable && p.supportsVision)
+  }, [providers, loadingProviders, selectedProvider])
 
   const hasRunDiagram = !!diagramDataUrl
   const previewName = hasRunDiagram ? diagramFilename : uploadedFile?.name
@@ -371,7 +381,7 @@ export function UploadStage() {
                       {dragOver ? 'Drop to upload' : 'Drag a diagram here, or click to browse'}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      PNG · JPG · WebP · SVG · PDF — under 5&nbsp;MB
+                      PNG · JPG · WebP · SVG — under 5&nbsp;MB
                     </p>
                   </div>
                 </button>
@@ -396,6 +406,8 @@ export function UploadStage() {
               </motion.div>
             )}
           </AnimatePresence>
+
+          {!hasRunDiagram && <DashboardStats />}
         </div>
 
         {/* ---------------- Right Column: Configurations & Action ---------------- */}
@@ -436,6 +448,7 @@ export function UploadStage() {
                 <ProviderSelect
                   value={selectedProvider}
                   onChange={setSelectedProvider}
+                  requireVision
                   className="h-10 w-full"
                 />
               </div>
@@ -535,16 +548,31 @@ export function UploadStage() {
 
               {/* Action Button Card */}
               <Card className="p-4 bg-muted/20 border-border/40 space-y-3">
-                <p className="text-[11px] leading-relaxed text-muted-foreground">
-                  {uploadedFile
-                    ? 'Ready to run. The vision agent will initiate the process on click.'
-                    : 'Please select a diagram file to enable the agent pipeline.'}
-                </p>
+                {!hasUsableProvider ? (
+                  <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-[11px] text-amber-500 space-y-1.5">
+                    <p className="font-bold flex items-center gap-1.5">
+                      ⚠️ No Usable API Keys
+                    </p>
+                    <p className="leading-relaxed">
+                      All AI providers are currently missing keys. Please add an API key in{' '}
+                      <Link href="/app/settings/api-keys" className="underline font-bold hover:text-amber-400">
+                        Settings
+                      </Link>{' '}
+                      to start the pipeline.
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-[11px] leading-relaxed text-muted-foreground">
+                    {uploadedFile
+                      ? 'Ready to run. The vision agent will initiate the process on click.'
+                      : 'Please select a diagram file to enable the agent pipeline.'}
+                  </p>
+                )}
                 <Button
                   type="button"
                   size="lg"
                   onClick={runPipeline}
-                  disabled={!uploadedFile || submitting || running}
+                  disabled={!uploadedFile || submitting || running || !hasUsableProvider}
                   className="w-full spring-transition hover:scale-[1.02] active:scale-[0.98]"
                 >
                   {submitting ? (
@@ -565,5 +593,87 @@ export function UploadStage() {
         </div>
       </div>
     </StageFrame>
+  )
+}
+
+interface StatsData {
+  runs: {
+    total: number
+    completed: number
+    failed: number
+    running: number
+    successRate: number
+    averageDurationMs: number | null
+    byBloomLevel: Record<string, number>
+  }
+  agents: number
+  providers: number
+}
+
+function DashboardStats() {
+  const [stats, setStats] = React.useState<StatsData | null>(null)
+  const [loading, setLoading] = React.useState(true)
+
+  React.useEffect(() => {
+    fetch('/api/stats')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => setStats(data))
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="flex h-32 items-center justify-center rounded-lg border border-border/30 bg-muted/5 animate-pulse">
+        <Loader2 className="size-4 animate-spin text-muted-foreground/60" />
+      </div>
+    )
+  }
+
+  if (!stats) return null
+
+  const formatDuration = (ms: number | null) => {
+    if (ms === null) return 'N/A'
+    const sec = Math.round(ms / 1000)
+    return `${sec}s`
+  }
+
+  return (
+    <div className="space-y-3 pt-2">
+      <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+        Workspace Dashboard Metrics
+      </div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {/* Total Runs Card */}
+        <Card className="p-3 bg-muted/10 border-border/30 space-y-1 rounded-xl">
+          <div className="text-[9px] font-mono text-muted-foreground uppercase tracking-wide">Total Runs</div>
+          <div className="text-base font-black leading-none">{stats.runs.total}</div>
+        </Card>
+
+        {/* Success Rate Card */}
+        <Card className="p-3 bg-muted/10 border-border/30 space-y-1 rounded-xl">
+          <div className="text-[9px] font-mono text-muted-foreground uppercase tracking-wide">Success Rate</div>
+          <div className="text-base font-black leading-none text-emerald-500">
+            {Math.round(stats.runs.successRate * 100)}%
+          </div>
+        </Card>
+
+        {/* Avg Duration Card */}
+        <Card className="p-3 bg-muted/10 border-border/30 space-y-1 rounded-xl">
+          <div className="text-[9px] font-mono text-muted-foreground uppercase tracking-wide">Avg Duration</div>
+          <div className="text-base font-black leading-none">
+            {formatDuration(stats.runs.averageDurationMs)}
+          </div>
+        </Card>
+
+        {/* Custom Agents Card */}
+        <Card className="p-3 bg-muted/10 border-border/30 space-y-1 rounded-xl">
+          <div className="text-[9px] font-mono text-muted-foreground uppercase tracking-wide">Saved Agents</div>
+          <div className="text-base font-black leading-none text-primary">
+            {stats.agents}
+          </div>
+        </Card>
+      </div>
+    </div>
   )
 }

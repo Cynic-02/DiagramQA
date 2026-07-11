@@ -26,7 +26,11 @@ export const db =
   cached && hasPasswordReset
     ? cached
     : new PrismaClient({
-        log: ['query'],
+        log: process.env.PRISMA_QUERY_LOG === '1' ? ['query'] : ['warn', 'error'],
       })
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db
+
+if (process.env.NODE_ENV !== 'production') {
+  db.$connect().catch(() => undefined)
+}

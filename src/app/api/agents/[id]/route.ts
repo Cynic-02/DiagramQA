@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
+import type { Prisma } from '@prisma/client'
 import { db } from '@/lib/db'
 import { getSession } from '@/lib/auth'
+import { cleanString, readJson } from '@/lib/api'
 import { PROVIDERS, CUSTOM_PROVIDER_PREFIX, type ProviderId } from '@/lib/ai/providers'
 
 /** DELETE /api/agents/[id] — delete a custom agent (owner only) */
@@ -45,18 +47,39 @@ export async function PATCH(
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  const body = (await req.json()) as Partial<{
+  const { data: body, response } = await readJson<Partial<{
     name: string
     role: string
     prompt: string
     provider: string
     model: string
     isPublic: boolean
-  }>
+  }>>(req)
+  if (response) return response
 
-  if (body.provider !== undefined) {
-    if (body.provider.startsWith(CUSTOM_PROVIDER_PREFIX)) {
-      const customId = body.provider.slice(CUSTOM_PROVIDER_PREFIX.length)
+  const name = body?.name !== undefined ? cleanString(body.name, 120) : undefined
+  const role = body?.role !== undefined ? cleanString(body.role, 120) : undefined
+  const prompt = body?.prompt !== undefined ? cleanString(body.prompt, 8000) : undefined
+  const provider = body?.provider !== undefined ? cleanString(body.provider, 200) : undefined
+  const model = body?.model !== undefined ? cleanString(body.model, 160) : undefined
+
+  if (body?.name !== undefined && !name) {
+    return NextResponse.json({ error: 'Name cannot be empty' }, { status: 400 })
+  }
+  if (body?.role !== undefined && !role) {
+    return NextResponse.json({ error: 'Role cannot be empty' }, { status: 400 })
+  }
+  if (body?.prompt !== undefined && !prompt) {
+    return NextResponse.json({ error: 'Prompt cannot be empty' }, { status: 400 })
+  }
+
+  if (body?.provider !== undefined && !provider) {
+    return NextResponse.json({ error: 'Invalid provider' }, { status: 400 })
+  }
+
+  if (provider) {
+    if (provider.startsWith(CUSTOM_PROVIDER_PREFIX)) {
+      const customId = provider.slice(CUSTOM_PROVIDER_PREFIX.length)
       const owned = await db.userApiKey.findFirst({
         where: { id: customId, userId: session.id, isCustom: true },
         select: { id: true },
@@ -64,21 +87,22 @@ export async function PATCH(
       if (!owned) {
         return NextResponse.json({ error: 'Unknown custom provider' }, { status: 400 })
       }
-    } else if (!PROVIDERS[body.provider as ProviderId]) {
+    } else if (!PROVIDERS[provider as ProviderId]) {
       return NextResponse.json({ error: 'Invalid provider' }, { status: 400 })
     }
   }
 
+  const data: Prisma.CustomAgentUpdateInput = {}
+  if (name) data.name = name
+  if (role) data.role = role
+  if (prompt) data.prompt = prompt
+  if (provider) data.provider = provider
+  if (model !== undefined) data.model = model
+  if (body?.isPublic !== undefined) data.isPublic = body.isPublic
+
   const updated = await db.customAgent.update({
     where: { id },
-    data: {
-      ...(body.name !== undefined && { name: body.name }),
-      ...(body.role !== undefined && { role: body.role }),
-      ...(body.prompt !== undefined && { prompt: body.prompt }),
-      ...(body.provider !== undefined && { provider: body.provider }),
-      ...(body.model !== undefined && { model: body.model }),
-      ...(body.isPublic !== undefined && { isPublic: body.isPublic }),
-    },
+    data,
   })
 
   return NextResponse.json({ agent: updated })

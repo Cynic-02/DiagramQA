@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
 import { getSession } from '@/lib/auth'
+import { assertRunAccess, readJson } from '@/lib/api'
 import { streamChat, type ChatMessage } from '@/lib/ai/providers'
 import type { ExtractionOutput, FinalQAItem } from '@/lib/types'
 
@@ -27,21 +28,35 @@ export async function POST(req: NextRequest) {
     return new Response('Unauthorized', { status: 401 })
   }
 
-  const { runId, message, provider, reasoning } = (await req.json()) as {
+  const { data: body, response } = await readJson<{
     runId: string
     message: string
     provider?: string
     reasoning?: boolean
+  }>(req)
+  if (response) {
+    return new Response(JSON.stringify(await response.json()), {
+      status: response.status,
+      headers: { 'Content-Type': 'application/json' },
+    })
   }
 
-  if (!runId || !message?.trim()) {
+  const runId = typeof body?.runId === 'string' ? body.runId.trim() : ''
+  const message = typeof body?.message === 'string' ? body.message.trim() : ''
+  const provider = typeof body?.provider === 'string' ? body.provider.trim() : undefined
+  const reasoning = body?.reasoning
+
+  if (!runId || !message) {
     return new Response('Missing runId or message', { status: 400 })
   }
 
-  const run = await db.run.findUnique({
-    where: { id: runId },
-    include: { diagram: true },
-  })
+  const { run, response: accessResponse } = await assertRunAccess(runId, session, true)
+  if (accessResponse) {
+    return new Response(JSON.stringify(await accessResponse.json()), {
+      status: accessResponse.status,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
   if (!run) {
     return new Response('Run not found', { status: 404 })
   }
@@ -71,7 +86,7 @@ export async function POST(req: NextRequest) {
     })),
   }
 
-  const systemPrompt = `You are a helpful tutor assistant for the AR2-DDCQG platform. The user uploaded a diagram and an AI pipeline extracted its structure and generated verified questions. Answer the user's follow-up questions about the diagram using the context below.
+  const systemPrompt = `You are a helpful tutor assistant for the DiagramMind platform. The user uploaded a diagram and an AI pipeline extracted its structure and generated verified questions. Answer the user's follow-up questions about the diagram using the context below.
 
 Diagram context (JSON):
 ${JSON.stringify(context, null, 2)}

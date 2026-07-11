@@ -27,6 +27,7 @@ import { MagneticButton } from '@/components/magnetic-button'
 import SiteConstellation from '@/components/three/SiteConstellation'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
+import { useTheme } from 'next-themes'
 
 const Hero3D = dynamic(() => import('@/components/three/Hero3D'), {
   ssr: false,
@@ -40,6 +41,8 @@ const Hero3D = dynamic(() => import('@/components/three/Hero3D'), {
     </section>
   ),
 })
+
+const Strands = dynamic(() => import('@/components/reactbits/Strands'), { ssr: false })
 
 /* ------------------------------------------------------------------ */
 /* Data                                                                */
@@ -219,15 +222,20 @@ function accent(index: number): string {
 
 export default function LandingPage() {
   const router = useRouter()
+  const { theme } = useTheme()
+  const isMinimal = theme?.startsWith('minimal')
+
   return (
-    <div className="relative flex min-h-screen flex-col">
+    <div className="relative flex min-h-screen flex-col bg-hero-void">
       {/* Page-fixed particle constellation — one continuous field behind
           every section, reshaping as the page scrolls (logo silhouette at
           the top, scattering through the middle, a checkmark glyph further
           down). Colors are read live from the active theme's own tokens. */}
-      <div className="pointer-events-none fixed inset-0 z-0" aria-hidden>
-        <SiteConstellation />
-      </div>
+      {!isMinimal && (
+        <div className="pointer-events-none fixed inset-0 z-0" aria-hidden>
+          <SiteConstellation />
+        </div>
+      )}
 
       <ScrollProgress />
 
@@ -457,9 +465,20 @@ function CTASection() {
     <section
       id="get-started"
       aria-labelledby="cta-heading"
-      className="relative w-full px-6 py-24 sm:px-10 sm:py-32"
+      className="relative w-full px-6 py-24 sm:px-10 sm:py-32 overflow-hidden"
     >
-      <div className="mx-auto max-w-5xl">
+      {/* Dynamic Strands background */}
+      <div className="absolute inset-0 z-0 opacity-20 pointer-events-none">
+        <Strands
+          colors={['#7C3AED', '#06B6D4', '#EAB308']}
+          count={3}
+          speed={0.3}
+          opacity={0.6}
+          scale={1.4}
+        />
+      </div>
+
+      <div className="mx-auto max-w-5xl relative z-10">
         <RevealOnScroll direction="up" amount={0.3}>
           <div className="brutal-block-lg relative overflow-hidden bg-card/60 px-6 py-12 text-center sm:px-12 sm:py-16">
             <div className="relative z-10">
@@ -524,7 +543,7 @@ function LandingFooter() {
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center gap-2">
             <span className="text-secondary font-mono text-sm font-black tracking-widest">
-              AR2-DDCQG
+              DiagramMind
             </span>
             <span className="text-border">·</span>
             <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">

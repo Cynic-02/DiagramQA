@@ -88,7 +88,7 @@ export function SidebarStageItem({
               isActive
                 ? 'text-primary-foreground'
                 : enabled
-                ? 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                ? 'text-muted-foreground hover:text-sidebar-accent-foreground hover:bg-sidebar-accent'
                 : 'cursor-not-allowed text-muted-foreground/40',
             )}
           >
@@ -97,7 +97,7 @@ export function SidebarStageItem({
                 layoutId={layoutId}
                 className={cn(
                   "absolute inset-0 rounded-[var(--radius)] border border-primary/30 bg-primary/10 shadow-sm",
-                  status === 'running' && "animate-pulse border-primary/50 shadow-[0_0_15px_rgba(128,82,255,0.15)]"
+                  status === 'running' && "animate-pulse border-primary/50 shadow-[var(--sidebar-active-glow)]"
                 )}
                 transition={{ type: 'spring', stiffness: 380, damping: 32 }}
               />
@@ -133,7 +133,7 @@ export function SidebarStageItem({
       aria-disabled={!enabled || undefined}
       className={cn(
         'group relative flex w-full items-center gap-3 rounded-[var(--radius)] px-3 py-2.5 text-left transition-colors',
-        !isActive && enabled && 'hover:bg-accent',
+        !isActive && enabled && 'hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
         !isActive && !enabled && 'cursor-not-allowed opacity-55',
       )}
     >
@@ -142,7 +142,7 @@ export function SidebarStageItem({
           layoutId={layoutId}
           className={cn(
             "absolute inset-0 rounded-[var(--radius)] border border-primary/30 bg-primary/10 shadow-sm",
-            status === 'running' && "animate-pulse border-primary/50 shadow-[0_0_15px_rgba(128,82,255,0.15)]"
+            status === 'running' && "animate-pulse border-primary/50 shadow-[var(--sidebar-active-glow)]"
           )}
           transition={{ type: 'spring', stiffness: 380, damping: 32 }}
         />

@@ -17,6 +17,7 @@
  */
 
 import { db } from '@/lib/db'
+import { decryptSecret } from '@/lib/crypto'
 
 export type ProviderId =
   | 'glm'
@@ -28,6 +29,7 @@ export type ProviderId =
   | 'groq'
   | 'qwen'
   | 'kimi'
+  | 'openrouter'
 
 /** Prefix used to address a user's custom provider, e.g. "custom:ck123". */
 export const CUSTOM_PROVIDER_PREFIX = 'custom:'
@@ -129,6 +131,15 @@ export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
     supportsVision: false,
     supportsReasoning: true,
   },
+  openrouter: {
+    id: 'openrouter',
+    label: 'OpenRouter',
+    apiKeyEnv: 'OPENROUTER_API_KEY',
+    baseURL: 'https://openrouter.ai/api/v1',
+    defaultModel: 'google/gemini-2.5-flash',
+    supportsVision: true,
+    supportsReasoning: true,
+  },
 }
 
 /** Returns the list of built-in providers that have API keys configured via env vars. */
@@ -188,10 +199,41 @@ export function getDefaultProvider(): ProviderConfig | null {
 function getEnvKeysForProvider(provider: ProviderConfig): string[] {
   const raw = process.env[provider.apiKeyEnv]
   if (!raw) return []
-  return raw
+  return splitKeys(raw)
+}
+
+function splitKeys(value: string): string[] {
+  return value
     .split(',')
     .map((k) => k.trim())
     .filter(Boolean)
+}
+
+function chatCompletionsUrl(baseURL: string): string {
+  const url = new URL(baseURL.trim().replace(/\/+$/, ''))
+  const path = url.pathname.replace(/\/+$/, '')
+  if (path.endsWith('/chat/completions')) {
+    return url.toString()
+  }
+  url.pathname = `${path}/chat/completions`.replace(/\/{2,}/g, '/')
+  return url.toString()
+}
+
+function extractTextContent(content: unknown): string {
+  if (typeof content === 'string') return content
+  if (Array.isArray(content)) {
+    return content
+      .map((part) => {
+        if (typeof part === 'string') return part
+        if (part && typeof part === 'object' && 'text' in part) {
+          const text = (part as { text?: unknown }).text
+          return typeof text === 'string' ? text : ''
+        }
+        return ''
+      })
+      .join('')
+  }
+  return ''
 }
 
 /**
@@ -229,6 +271,13 @@ async function resolveProviderKeys(
   provider: ProviderConfig,
   options: ChatOptions
 ): Promise<{ keys: string[]; model: string }> {
+  if (options.apiKeyOverride) {
+    const keys = splitKeys(options.apiKeyOverride)
+    if (keys.length > 0) {
+      return { keys, model: options.model || provider.defaultModel }
+    }
+  }
+
   if (options.userId) {
     try {
       const row = await db.userApiKey.findUnique({
@@ -237,10 +286,11 @@ async function resolveProviderKeys(
         },
       })
       if (row && !row.isCustom && row.apiKey) {
-        const keys = row.apiKey
-          .split(',')
-          .map((k) => k.trim())
-          .filter(Boolean)
+        await db.userApiKey.update({
+          where: { id: row.id },
+          data: { lastUsedAt: new Date() },
+        }).catch(() => undefined)
+        const keys = splitKeys(decryptSecret(row.apiKey))
         if (keys.length > 0) {
           return { keys, model: options.model || row.model || provider.defaultModel }
         }
@@ -276,6 +326,10 @@ async function loadCustomProvider(userId: string | undefined, customId: string) 
   if (!row.apiKey) {
     throw new Error(`Custom provider "${row.label || customId}" has no API key configured`)
   }
+  await db.userApiKey.update({
+    where: { id: row.id },
+    data: { lastUsedAt: new Date() },
+  }).catch(() => undefined)
   return row
 }
 
@@ -310,6 +364,8 @@ export interface ChatOptions {
    * and custom providers; omit for platform-key-only (env) behavior.
    */
   userId?: string
+  /** Internal: test an unsaved/supplied key without reading env or DB. */
+  apiKeyOverride?: string
 }
 
 export interface ChatResult {
@@ -328,6 +384,9 @@ export interface StreamChunk {
   reasoningDelta?: string
   /** true when the stream is complete */
   done?: boolean
+  /** built-in ProviderId, or `custom:<id>` for a custom provider */
+  provider?: string
+  model?: string
 }
 
 /**
@@ -393,6 +452,16 @@ export async function* streamChat(
 ): AsyncGenerator<StreamChunk> {
   if (options.provider?.startsWith(CUSTOM_PROVIDER_PREFIX)) {
     const customId = options.provider.slice(CUSTOM_PROVIDER_PREFIX.length)
+    try {
+      const row = await db.userApiKey.findFirst({
+        where: { id: customId, userId: options.userId, isCustom: true },
+      })
+      if (row) {
+        yield { provider: `custom:${row.label || customId}`, model: options.model || row.model || 'custom' }
+      }
+    } catch {
+      yield { provider: options.provider, model: options.model || 'custom' }
+    }
     yield* streamCustomProvider(customId, messages, options)
     return
   }
@@ -421,6 +490,7 @@ export async function* streamChat(
   let lastError: unknown
   for (const provider of chain) {
     try {
+      yield { provider: provider.id, model: options.model || provider.defaultModel }
       yield* streamProvider(provider, messages, options)
       return
     } catch (err) {
@@ -432,6 +502,52 @@ export async function* streamChat(
       lastError instanceof Error ? lastError.message : String(lastError)
     }`
   )
+}
+
+export async function testProviderConnection(options: {
+  providerId?: ProviderId
+  custom?: {
+    label?: string | null
+    baseURL: string
+    apiKey: string
+    model?: string | null
+  }
+  apiKey?: string
+  model?: string | null
+}): Promise<ChatResult> {
+  const messages: ChatMessage[] = [
+    { role: 'user', content: 'Connection test. Reply with exactly: ok' },
+  ]
+
+  if (options.custom) {
+    const model = options.custom.model || options.model || 'gpt-3.5-turbo'
+    return postChatCompletions(
+      options.custom.label || 'Custom provider',
+      options.custom.baseURL,
+      splitKeys(options.custom.apiKey),
+      model,
+      messages,
+      { reasoning: false },
+      {
+        supportsVision: false,
+        reasoningFlag: false,
+        resultProviderId: 'custom:test',
+      }
+    )
+  }
+
+  const provider = options.providerId ? PROVIDERS[options.providerId] : null
+  if (!provider) {
+    throw new Error('A valid providerId is required')
+  }
+  if (!options.apiKey) {
+    throw new Error('apiKey is required')
+  }
+  return callProvider(provider, messages, {
+    apiKeyOverride: options.apiKey,
+    model: options.model || undefined,
+    reasoning: false,
+  })
 }
 
 /* ------------------------------------------------------------------ */
@@ -613,12 +729,18 @@ async function postChatCompletions(
   let lastError: unknown
   for (let i = 0; i < keys.length; i++) {
     try {
-      const res = await fetch(`${baseURL}/chat/completions`, {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${keys[i]}`,
+      }
+      if (baseURL.includes('openrouter.ai')) {
+        headers['HTTP-Referer'] = 'https://github.com/google-deepmind/antigravity'
+        headers['X-Title'] = 'AR2-DDCQG'
+      }
+
+      const res = await fetch(chatCompletionsUrl(baseURL), {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${keys[i]}`,
-        },
+        headers,
         body: JSON.stringify(body),
       })
       if (!res.ok) {
@@ -632,7 +754,7 @@ async function postChatCompletions(
       }
       const data = await res.json()
       const msg = data.choices?.[0]?.message
-      const content = msg?.content ?? ''
+      const content = extractTextContent(msg?.content)
       const reasoningRaw =
         msg?.reasoning_content || msg?.reasoning || msg?.thinking || ''
       const reasoning = reasoningRaw
@@ -669,7 +791,7 @@ async function callCustomProvider(
 ): Promise<ChatResult> {
   const row = await loadCustomProvider(options.userId, customId)
   const model = options.model || row.model || 'gpt-3.5-turbo'
-  const keys = row.apiKey.split(',').map((k) => k.trim()).filter(Boolean)
+  const keys = splitKeys(decryptSecret(row.apiKey))
   return postChatCompletions(
     row.label || 'Custom provider',
     row.baseURL!,
@@ -701,7 +823,7 @@ async function* streamCustomProvider(
 ): AsyncGenerator<StreamChunk> {
   const row = await loadCustomProvider(options.userId, customId)
   const model = options.model || row.model || 'gpt-3.5-turbo'
-  const keys = row.apiKey.split(',').map((k) => k.trim()).filter(Boolean)
+  const keys = splitKeys(decryptSecret(row.apiKey))
   yield* streamChatCompletions(row.label || 'Custom provider', row.baseURL!, keys, model, messages, options, {
     supportsVision: true,
     reasoningFlag: false,
@@ -746,12 +868,18 @@ async function* streamChatCompletions(
   let lastError: unknown
   for (let i = 0; i < keys.length; i++) {
     try {
-      const attempt = await fetch(`${baseURL}/chat/completions`, {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${keys[i]}`,
+      }
+      if (baseURL.includes('openrouter.ai')) {
+        headers['HTTP-Referer'] = 'https://github.com/google-deepmind/antigravity'
+        headers['X-Title'] = 'AR2-DDCQG'
+      }
+
+      const attempt = await fetch(chatCompletionsUrl(baseURL), {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${keys[i]}`,
-        },
+        headers,
         body: JSON.stringify(body),
       })
       if (!attempt.ok) {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { db } from '@/lib/db'
+import { readJson } from '@/lib/api'
 
 /**
  * POST /api/auth/reset-password
@@ -10,10 +11,14 @@ import { db } from '@/lib/db'
  */
 export async function POST(req: NextRequest) {
   try {
-    const { token, password } = (await req.json()) as {
+    const { data: body, response } = await readJson<{
       token: string
       password: string
-    }
+    }>(req)
+    if (response) return response
+
+    const token = typeof body?.token === 'string' ? body.token.trim() : ''
+    const password = typeof body?.password === 'string' ? body.password : ''
 
     if (!token || !password || password.length < 6) {
       return NextResponse.json(

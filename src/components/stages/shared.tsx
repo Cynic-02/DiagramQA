@@ -64,10 +64,7 @@ export function StageHeader({ stageId }: { stageId: StageId }) {
             {stage.description}
           </p>
         </div>
-        <div className="flex shrink-0 items-center gap-2.5 self-start rounded-full border border-border/40 bg-card px-3.5 py-1.5 shadow-sm">
-          <StageStatusDot status={stageState.status} size="sm" />
-          <span className="text-xs font-bold uppercase">{STATUS_LABEL[stageState.status]}</span>
-        </div>
+        {/* Removed status badge per user request */}
       </div>
 
       {stageState.message && (

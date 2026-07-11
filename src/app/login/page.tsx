@@ -344,10 +344,10 @@ function VisualPanel({ reduce }: { reduce: boolean }) {
           <span className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-card px-3.5 py-1.5 font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-foreground shadow-sm">
             <span className="thinking-dot inline-flex h-2 w-2 rounded-full bg-foreground" />
             {reduce ? (
-              'AR2-DDCQG · Multi-agent pipeline'
+              'DiagramMind · Multi-agent pipeline'
             ) : (
               <DecryptedText
-                text="AR2-DDCQG · Multi-agent pipeline"
+                text="DiagramMind · Multi-agent pipeline"
                 animateOn="view"
                 speed={35}
                 maxIterations={14}
@@ -402,7 +402,7 @@ function BrandMark() {
         <ShaderLogo size={18} />
       </span>
       <span className="font-mono text-base font-black uppercase tracking-[0.1em] text-foreground">
-        AR2-DDCQG
+        DiagramMind
       </span>
     </>
   )

@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   KeyRound, Plus, Trash2, ArrowLeft, Loader2, Save, ShieldCheck,
-  ServerCog, Globe2, Pencil, X,
+  ServerCog, Globe2, Pencil, X, FlaskConical,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -172,19 +172,62 @@ function BuiltInProviderCard({
   const [model, setModel] = React.useState(provider.ownModel || '')
   const [saving, setSaving] = React.useState(false)
   const [removing, setRemoving] = React.useState(false)
+  const [testing, setTesting] = React.useState(false)
+
+  const testConnection = async () => {
+    if (!provider.keyId && !apiKey.trim()) {
+      toast.error('Enter an API key to test')
+      return
+    }
+    setTesting(true)
+    try {
+      const res = await fetch('/api/providers/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(
+          apiKey.trim()
+            ? { providerId: provider.id, apiKey, model: model || undefined }
+            : { keyId: provider.keyId }
+        ),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || 'Provider test failed')
+      toast.success(`${provider.label} connection works`, {
+        description: data.model ? `Model: ${data.model}` : undefined,
+      })
+    } catch (e) {
+      toast.error(`${provider.label} test failed`, {
+        description: e instanceof Error ? e.message : undefined,
+      })
+    } finally {
+      setTesting(false)
+    }
+  }
 
   const save = async () => {
-    if (!apiKey.trim()) {
+    if (!provider.keyId && !apiKey.trim()) {
       toast.error('Enter an API key')
       return
     }
     setSaving(true)
     try {
-      const res = await fetch('/api/providers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ providerId: provider.id, apiKey, model: model || undefined }),
-      })
+      let res: Response
+      if (provider.keyId) {
+        res = await fetch(`/api/providers/${provider.keyId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: model || null,
+            ...(apiKey.trim() && { apiKey }),
+          }),
+        })
+      } else {
+        res = await fetch('/api/providers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ providerId: provider.id, apiKey, model: model || undefined }),
+        })
+      }
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
         throw new Error(err.error || 'Failed to save key')
@@ -233,6 +276,17 @@ function BuiltInProviderCard({
             {provider.hasOwnKey ? 'Update key' : 'Add your key'}
           </Button>
           {provider.hasOwnKey && (
+            <>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-8 gap-1.5 text-xs"
+                onClick={testConnection}
+                disabled={testing}
+              >
+                {testing ? <Loader2 className="size-3 animate-spin" /> : <FlaskConical className="size-3" />}
+                Test
+              </Button>
             <Button
               size="sm"
               variant="ghost"
@@ -243,6 +297,7 @@ function BuiltInProviderCard({
               {removing ? <Loader2 className="size-3 animate-spin" /> : <Trash2 className="size-3" />}
               Remove
             </Button>
+            </>
           )}
         </div>
       ) : (
@@ -265,6 +320,10 @@ function BuiltInProviderCard({
             <Button size="sm" className="h-8 gap-1.5 text-xs" onClick={save} disabled={saving}>
               {saving ? <Loader2 className="size-3 animate-spin" /> : <Save className="size-3" />}
               Save
+            </Button>
+            <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs" onClick={testConnection} disabled={testing || !apiKey.trim()}>
+              {testing ? <Loader2 className="size-3 animate-spin" /> : <FlaskConical className="size-3" />}
+              Test
             </Button>
             <Button size="sm" variant="ghost" className="h-8 gap-1 text-xs" onClick={() => { setEditing(false); setApiKey('') }}>
               <X className="size-3" />
@@ -315,6 +374,33 @@ function CustomProviderForm({
   const [apiKey, setApiKey] = React.useState('')
   const [model, setModel] = React.useState('')
   const [saving, setSaving] = React.useState(false)
+  const [testing, setTesting] = React.useState(false)
+
+  const testConnection = async () => {
+    if (!label.trim() || !baseURL.trim() || !apiKey.trim()) {
+      toast.error('Name, base URL and API key are required')
+      return
+    }
+    setTesting(true)
+    try {
+      const res = await fetch('/api/providers/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isCustom: true, label, baseURL, apiKey, model: model || undefined }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || 'Provider test failed')
+      toast.success(`"${label}" connection works`, {
+        description: data.model ? `Model: ${data.model}` : undefined,
+      })
+    } catch (e) {
+      toast.error('Provider test failed', {
+        description: e instanceof Error ? e.message : undefined,
+      })
+    } finally {
+      setTesting(false)
+    }
+  }
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -372,6 +458,10 @@ function CustomProviderForm({
           </div>
           <div className="flex items-center justify-end gap-2 pt-1">
             <Button type="button" variant="outline" size="sm" onClick={onClose}>Cancel</Button>
+            <Button type="button" variant="outline" size="sm" onClick={testConnection} disabled={testing} className="gap-1.5">
+              {testing ? <Loader2 className="size-3.5 animate-spin" /> : <FlaskConical className="size-3.5" />}
+              Test
+            </Button>
             <Button type="submit" size="sm" disabled={saving} className="gap-1.5">
               {saving ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
               Add provider
@@ -399,6 +489,34 @@ function CustomProviderCard({
   const [apiKey, setApiKey] = React.useState('')
   const [saving, setSaving] = React.useState(false)
   const [deleting, setDeleting] = React.useState(false)
+  const [testing, setTesting] = React.useState(false)
+
+  const testConnection = async () => {
+    if (!provider.keyId && !apiKey.trim()) return
+    setTesting(true)
+    try {
+      const res = await fetch('/api/providers/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(
+          apiKey.trim()
+            ? { isCustom: true, label, baseURL, apiKey, model: model || undefined }
+            : { keyId: provider.keyId }
+        ),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || 'Provider test failed')
+      toast.success(`"${provider.label}" connection works`, {
+        description: data.model ? `Model: ${data.model}` : undefined,
+      })
+    } catch (e) {
+      toast.error('Provider test failed', {
+        description: e instanceof Error ? e.message : undefined,
+      })
+    } finally {
+      setTesting(false)
+    }
+  }
 
   const save = async () => {
     if (!provider.keyId) return
@@ -462,6 +580,10 @@ function CustomProviderCard({
           <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs" onClick={() => setEditing(true)}>
             <Pencil className="size-3" /> Edit
           </Button>
+          <Button size="sm" variant="ghost" className="h-8 gap-1.5 text-xs" onClick={testConnection} disabled={testing}>
+            {testing ? <Loader2 className="size-3 animate-spin" /> : <FlaskConical className="size-3" />}
+            Test
+          </Button>
           <Button
             size="sm"
             variant="ghost"
@@ -492,6 +614,10 @@ function CustomProviderCard({
             <Button size="sm" className="h-8 gap-1.5 text-xs" onClick={save} disabled={saving}>
               {saving ? <Loader2 className="size-3 animate-spin" /> : <Save className="size-3" />}
               Save
+            </Button>
+            <Button size="sm" variant="outline" className="h-8 gap-1.5 text-xs" onClick={testConnection} disabled={testing}>
+              {testing ? <Loader2 className="size-3 animate-spin" /> : <FlaskConical className="size-3" />}
+              Test
             </Button>
             <Button size="sm" variant="ghost" className="h-8 gap-1 text-xs" onClick={() => setEditing(false)}>
               <X className="size-3" /> Cancel

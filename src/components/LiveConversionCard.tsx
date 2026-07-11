@@ -109,7 +109,7 @@ export function LiveConversionCard({ className }: { className?: string }) {
               className="flex-1 text-center font-mono text-[9.5px] uppercase tracking-[0.14em]"
               style={{ color: 'rgba(245,240,230,0.65)' }}
             >
-              AR2-DDCQG · Live pipeline
+              DiagramMind · Live pipeline
             </span>
           </div>
 

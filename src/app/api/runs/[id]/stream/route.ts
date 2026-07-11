@@ -1,5 +1,7 @@
 import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
+import { getSession } from '@/lib/auth'
+import { assertRunAccess } from '@/lib/api'
 import {
   runExtraction,
   runGeneration,
@@ -49,12 +51,14 @@ export async function GET(
   ctx: { params: Promise<{ id: string }> }
 ) {
   const { id: runId } = await ctx.params
-
-  const run = await db.run.findUnique({
-    where: { id: runId },
-    include: { diagram: true },
-  })
-
+  const session = await getSession()
+  const { run, response } = await assertRunAccess(runId, session, true)
+  if (response) {
+    return new Response(JSON.stringify(await response.json()), {
+      status: response.status,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
   if (!run) {
     return new Response(JSON.stringify({ error: 'Run not found' }), {
       status: 404,
@@ -253,7 +257,12 @@ export async function GET(
 
         await db.run.update({
           where: { id: runId },
-          data: { status: 'completed', finalQA: JSON.stringify(finalQA) },
+          data: {
+            status: 'completed',
+            finalQA: JSON.stringify(finalQA),
+            completedAt: new Date(),
+            durationMs: run.startedAt ? Date.now() - run.startedAt.getTime() : null,
+          },
         })
 
         emitStage('results', 'done', `${finalQA.length} verified questions ready`, finalQA)
@@ -264,7 +273,12 @@ export async function GET(
         await db.run
           .update({
             where: { id: runId },
-            data: { status: 'failed', errorMessage: message },
+            data: {
+              status: 'failed',
+              errorMessage: message,
+              completedAt: new Date(),
+              durationMs: run.startedAt ? Date.now() - run.startedAt.getTime() : null,
+            },
           })
           .catch((dbErr) => console.error(`[pipeline ${runId}] failed to persist error:`, dbErr))
         emitLog('extraction', 'error', `Pipeline failed: ${message}`)

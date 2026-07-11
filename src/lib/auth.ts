@@ -5,7 +5,10 @@ import { db } from '@/lib/db'
 import { authOptions } from '@/lib/auth-options'
 
 export const SESSION_COOKIE = 'ar2-session'
-const SECRET = process.env.JWT_SECRET || 'ar2-ddcqg-dev-secret-change-in-production'
+const SECRET =
+  process.env.JWT_SECRET ||
+  process.env.NEXTAUTH_SECRET ||
+  'ar2-ddcqg-dev-secret-change-in-production'
 
 export interface SessionUser {
   id: string

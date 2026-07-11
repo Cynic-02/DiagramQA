@@ -41,7 +41,7 @@ const AGENTS = [
 export default function Hero3D({ onEnterConsole }: Hero3DProps) {
   const heroRef = useRef<HTMLElement>(null)
   const prefersReducedMotion = useReducedMotion() ?? false
-  const { resolvedTheme } = useTheme()
+  const { theme, resolvedTheme } = useTheme()
 
   /* -------------------- Scroll wiring -------------------- */
 
@@ -69,18 +69,29 @@ export default function Hero3D({ onEnterConsole }: Hero3DProps) {
 
   const entranceDelay = (d: number) => (prefersReducedMotion ? 0 : d)
 
+  const isMinimal = theme?.startsWith('minimal')
+
   /* -------------------- Render -------------------- */
 
   return (
     <section
       ref={heroRef}
       id="hero"
-      aria-label="AR2-DDCQG hero"
-      className="relative min-h-screen w-full overflow-hidden bg-hero-void"
+      aria-label="DiagramMind hero"
+      className="relative min-h-screen w-full overflow-hidden"
     >
-      <div aria-hidden className="pointer-events-none absolute inset-0 z-0">
-        <DiagramShapes3D theme={resolvedTheme === 'light' ? 'light' : 'dark'} className="h-full w-full" />
-      </div>
+      {!isMinimal && (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 z-0"
+          style={{
+            maskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 75%, rgba(0,0,0,0) 100%)',
+            WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 75%, rgba(0,0,0,0) 100%)',
+          }}
+        >
+          <DiagramShapes3D theme={resolvedTheme === 'light' ? 'light' : 'dark'} className="h-full w-full" />
+        </div>
+      )}
 
       {/* Layer 4: content overlay */}
       <motion.div
@@ -113,10 +124,10 @@ export default function Hero3D({ onEnterConsole }: Hero3DProps) {
           <span className="hw-panel inline-flex items-center gap-2 rounded-full px-4 py-2 font-mono text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: 'var(--primary)' }}>
             <span className="thinking-dot inline-flex h-2 w-2 rounded-full" style={{ background: 'var(--primary)' }} />
             {prefersReducedMotion ? (
-              'AR2-DDCQG · Multi-agent pipeline'
+              'DiagramMind · Multi-agent pipeline'
             ) : (
               <DecryptedText
-                text="AR2-DDCQG · Multi-agent pipeline"
+                text="DiagramMind · Multi-agent pipeline"
                 animateOn="view"
                 speed={35}
                 maxIterations={14}

@@ -82,7 +82,7 @@ export function AgentLogRail() {
                 type="button"
                 onClick={() => setOpen(false)}
                 aria-label="Collapse agent log"
-                className="inline-flex size-6 items-center justify-center border border-transparent rounded text-muted-foreground transition-colors hover:border-border/40 hover:bg-accent hover:text-accent-foreground"
+                className="inline-flex size-6 items-center justify-center border border-transparent rounded text-muted-foreground transition-colors hover:border-border/40 hover:bg-muted hover:text-foreground"
               >
                 <ChevronDown className="size-3.5" />
               </button>

@@ -31,6 +31,9 @@ import {
   MessageCircle,
   Eye,
   EyeOff,
+  Save,
+  Trash2,
+  CheckCircle,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { usePipelineStore } from '@/lib/store'
@@ -38,6 +41,8 @@ import { BLOOM_META } from '@/lib/bloom'
 import type { FinalQAItem } from '@/lib/types'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import Folder from '@/components/reactbits/Folder'
 import BorderGlow from '@/components/reactbits/BorderGlow'
 import { StageFrame, EmptyState, DataChip, KV } from './shared'
@@ -69,6 +74,48 @@ export function ResultsStage() {
   const running = usePipelineStore((s) => s.running)
   const bloomLevel = usePipelineStore((s) => s.bloomLevel)
   const resetRun = usePipelineStore((s) => s.resetRun)
+  const diagramDataUrl = usePipelineStore((s) => s.diagramDataUrl)
+  const runId = usePipelineStore((s) => s.runId)
+  const [zoomOpen, setZoomOpen] = React.useState(false)
+  const [scale, setScale] = React.useState(1)
+
+  // workspace modes
+  const [mode, setMode] = React.useState<'view' | 'review' | 'quiz'>('view')
+  const [editedQA, setEditedQA] = React.useState<FinalQAItem[]>([])
+
+  // Quiz progress states
+  const [currentQuizIndex, setCurrentQuizIndex] = React.useState(0)
+  const [quizAnswers, setQuizAnswers] = React.useState<Record<number, { pickedOption: number | null; textAnswer: string; submitted: boolean }>>({})
+  const [quizFinished, setQuizFinished] = React.useState(false)
+
+  React.useEffect(() => {
+    if (finalQA) {
+      setEditedQA(JSON.parse(JSON.stringify(finalQA)))
+      setCurrentQuizIndex(0)
+      setQuizAnswers({})
+      setQuizFinished(false)
+    }
+  }, [finalQA])
+
+  const saveEdits = async (updatedQA: FinalQAItem[]) => {
+    if (!runId) return
+    try {
+      const res = await fetch(`/api/runs/${runId}/complete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: 'completed',
+          finalQA: updatedQA,
+        }),
+      })
+      if (!res.ok) throw new Error()
+      usePipelineStore.setState({ finalQA: updatedQA })
+      setEditedQA(updatedQA)
+      toast.success('Question edits saved to course bank')
+    } catch {
+      toast.error('Failed to save edits to server')
+    }
+  }
 
   // results filtering / sorting
   const [filters, setFilters] = React.useState<FilterState>(DEFAULT_FILTERS)
@@ -140,7 +187,7 @@ export function ResultsStage() {
 
   const download = () => {
     const payload = {
-      schema: 'ar2-ddcqg.finalQA/v1',
+      schema: 'diagrammind.finalQA/v1',
       generatedAt: new Date().toISOString(),
       bloomLevel,
       diagramType: extraction?.diagramType ?? null,
@@ -231,8 +278,55 @@ export function ResultsStage() {
           </div>
         </div>
 
+        {/* Workspace mode selector */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-border/40 pb-4 gap-4">
+          <div className="flex items-center gap-1.5 p-1 bg-muted/20 border border-border/30 rounded-xl">
+            <button
+              onClick={() => setMode('view')}
+              type="button"
+              className={cn(
+                "px-4 py-1.5 rounded-lg text-xs font-bold transition-all",
+                mode === 'view' ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              👀 View Mode
+            </button>
+            <button
+              onClick={() => setMode('review')}
+              type="button"
+              className={cn(
+                "px-4 py-1.5 rounded-lg text-xs font-bold transition-all",
+                mode === 'review' ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              ✏️ Teacher Review
+            </button>
+            <button
+              onClick={() => setMode('quiz')}
+              type="button"
+              className={cn(
+                "px-4 py-1.5 rounded-lg text-xs font-bold transition-all",
+                mode === 'quiz' ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              🎓 Student Practice
+            </button>
+          </div>
+
+          {mode === 'review' && (
+            <Button
+              size="sm"
+              onClick={() => saveEdits(editedQA)}
+              className="gap-1.5 font-bold"
+            >
+              <Save className="size-3.5" />
+              Save Question Bank
+            </Button>
+          )}
+        </div>
+
         {/* Filter + sort bar */}
-        {finalQA.length > 1 && (
+        {mode === 'view' && finalQA.length > 1 && (
           <RevealOnScroll direction="up" amount={0.1}>
             <ResultsFilterBar
               state={filters}
@@ -247,24 +341,171 @@ export function ResultsStage() {
         {/* Grid: QA list + sticky MiniGraph/stats */}
         <div className="grid gap-4 lg:grid-cols-[1fr_300px]">
           <div className="space-y-3">
-            <AnimatePresence mode="popLayout">
-              {filteredQA.map((qa, i) => (
-                <FinalQACard key={qa.id} qa={qa} index={i} revealAll={revealAll} />
-              ))}
-            </AnimatePresence>
+            {mode === 'review' ? (
+              <div className="space-y-4">
+                {editedQA.length === 0 ? (
+                  <Card className="p-6 text-center text-muted-foreground text-xs">
+                    No questions in current bank.
+                  </Card>
+                ) : (
+                  editedQA.map((qa, i) => (
+                    <Card key={qa.id} className="p-5 border-2 border-border/50 bg-card/45 space-y-4 rounded-xl">
+                      <div className="flex items-center justify-between border-b border-border/30 pb-2">
+                        <span className="text-xs font-mono font-bold text-muted-foreground uppercase">
+                          Question {i + 1}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updated = editedQA.filter((_, idx) => idx !== i)
+                            setEditedQA(updated)
+                          }}
+                          className="text-[11px] font-bold text-destructive hover:underline flex items-center gap-1"
+                        >
+                          <Trash2 className="size-3" /> Remove
+                        </button>
+                      </div>
 
-            {filteredQA.length === 0 && (
-              <div className="flex flex-col items-center justify-center gap-2 border border-dashed border-border bg-card px-6 py-12 text-center rounded-[var(--radius)]">
-                <p className="text-sm font-bold text-foreground">
-                  No questions match these filters
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setFilters(DEFAULT_FILTERS)}
-                  className="text-xs font-bold text-secondary transition-colors hover:opacity-70"
-                >
-                  Clear filters
-                </button>
+                      <div className="space-y-3">
+                        {/* Question Text */}
+                        <div className="space-y-1">
+                          <Label className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Question Text</Label>
+                          <Input
+                            type="text"
+                            value={qa.question}
+                            onChange={(e) => {
+                              const updated = [...editedQA]
+                              updated[i].question = e.target.value
+                              setEditedQA(updated)
+                            }}
+                            className="text-xs"
+                          />
+                        </div>
+
+                        {/* Options if MCQ */}
+                        {qa.questionType === 'mcq' && qa.options && (
+                          <div className="space-y-2">
+                            <Label className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Options</Label>
+                            {qa.options.map((opt, oIdx) => (
+                              <div key={oIdx} className="flex gap-2 items-center">
+                                <span className="font-mono text-xs font-black">{String.fromCharCode(65 + oIdx)}</span>
+                                <Input
+                                  type="text"
+                                  value={opt}
+                                  onChange={(e) => {
+                                    const updated = [...editedQA]
+                                    if (updated[i].options) {
+                                      updated[i].options![oIdx] = e.target.value
+                                      setEditedQA(updated)
+                                    }
+                                  }}
+                                  className="text-xs flex-1"
+                                />
+                                <input
+                                  type="radio"
+                                  name={`correct-option-${qa.id}`}
+                                  checked={oIdx === qa.correctOptionIndex}
+                                  onChange={() => {
+                                    const updated = [...editedQA]
+                                    updated[i].correctOptionIndex = oIdx
+                                    setEditedQA(updated)
+                                  }}
+                                  title="Mark as correct answer"
+                                  className="size-3 text-primary"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Correct Answer */}
+                        {!qa.options && (
+                          <div className="space-y-1">
+                            <Label className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Correct Answer</Label>
+                            <Input
+                              type="text"
+                              value={qa.answer}
+                              onChange={(e) => {
+                                const updated = [...editedQA]
+                                updated[i].answer = e.target.value
+                                setEditedQA(updated)
+                              }}
+                              className="text-xs"
+                            />
+                          </div>
+                        )}
+
+                        {/* Bloom Level */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <Label className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Bloom Taxonomy</Label>
+                            <select
+                              value={qa.bloomLevel}
+                              onChange={(e) => {
+                                const updated = [...editedQA]
+                                updated[i].bloomLevel = e.target.value as FinalQAItem['bloomLevel']
+                                setEditedQA(updated)
+                              }}
+                              className="w-full h-9 rounded-md border border-border bg-card px-2 text-xs"
+                            >
+                              {(['Remember', 'Understand', 'Apply', 'Analyze', 'Evaluate', 'Create'] as const).map((l) => (
+                                <option key={l} value={l}>{l}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Difficulty Score</Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              max="100"
+                              value={qa.score}
+                              onChange={(e) => {
+                                const updated = [...editedQA]
+                                updated[i].score = parseInt(e.target.value) || 0
+                                setEditedQA(updated)
+                              }}
+                              className="text-xs"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  ))
+                )}
+              </div>
+            ) : mode === 'quiz' ? (
+              <StudentQuizPanel
+                questions={finalQA}
+                currentIndex={currentQuizIndex}
+                onIndexChange={setCurrentQuizIndex}
+                answers={quizAnswers}
+                onAnswerUpdate={(idx, data) => setQuizAnswers({ ...quizAnswers, [idx]: data })}
+                onFinish={() => setQuizFinished(true)}
+                finished={quizFinished}
+              />
+            ) : (
+              <div className="space-y-3">
+                <AnimatePresence mode="popLayout">
+                  {filteredQA.map((qa, i) => (
+                    <FinalQACard key={qa.id} qa={qa} index={i} revealAll={revealAll} />
+                  ))}
+                </AnimatePresence>
+
+                {filteredQA.length === 0 && (
+                  <div className="flex flex-col items-center justify-center gap-2 border border-dashed border-border bg-card px-6 py-12 text-center rounded-[var(--radius)]">
+                    <p className="text-sm font-bold text-foreground">
+                      No questions match these filters
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setFilters(DEFAULT_FILTERS)}
+                      className="text-xs font-bold text-secondary transition-colors hover:opacity-70"
+                    >
+                      Clear filters
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -290,6 +531,26 @@ export function ResultsStage() {
                   {finalQA.length} verified {finalQA.length === 1 ? 'item' : 'items'} · click to export
                 </button>
               </div>
+
+              {diagramDataUrl && (
+                <div className="border-b border-border/40 pb-4">
+                  <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">Uploaded Diagram</h3>
+                  <div
+                    onClick={() => { setScale(1); setZoomOpen(true); }}
+                    className="relative aspect-video w-full overflow-hidden border border-border/40 rounded-lg bg-muted/20 hover:scale-[1.01] transition-all cursor-zoom-in group/thumb"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={diagramDataUrl}
+                      alt="Uploaded diagram"
+                      className="h-full w-full object-cover group-hover/thumb:opacity-90 transition-opacity"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/15 opacity-0 group-hover/thumb:opacity-100 transition-opacity">
+                      <span className="rounded-full bg-card/95 px-2.5 py-1 text-[9px] font-bold shadow border border-border/40">Click to Zoom</span>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div>
                 <h3 className="mb-2 text-sm font-bold uppercase">Source graph</h3>
@@ -343,6 +604,85 @@ export function ResultsStage() {
           )}
         </div>
       </div>
+
+      {/* Diagram Zoom Lightbox Modal */}
+      <AnimatePresence>
+        {zoomOpen && diagramDataUrl && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[150] flex flex-col items-center justify-center bg-background/95 backdrop-blur-md p-4"
+          >
+            {/* Top Toolbar */}
+            <div className="absolute top-4 left-4 right-4 z-[160] flex items-center justify-between">
+              <span className="text-[11px] font-mono font-bold text-muted-foreground uppercase tracking-wider">
+                Diagram Viewer · Scale: {Math.round(scale * 100)}%
+              </span>
+              
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="size-8 rounded-full p-0"
+                  onClick={() => setScale((s) => Math.max(1, s - 0.25))}
+                  disabled={scale <= 1}
+                >
+                  —
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="size-8 rounded-full p-0"
+                  onClick={() => setScale((s) => Math.min(3, s + 0.25))}
+                  disabled={scale >= 3}
+                >
+                  +
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-8 px-2.5 rounded-full text-xs"
+                  onClick={() => setScale(1)}
+                >
+                  Reset
+                </Button>
+                <Button 
+                  variant="default" 
+                  size="sm" 
+                  className="size-8 rounded-full p-0 bg-primary text-primary-foreground hover:bg-primary/95"
+                  onClick={() => setZoomOpen(false)}
+                >
+                  ✕
+                </Button>
+              </div>
+            </div>
+
+            {/* Scrollable Container */}
+            <div 
+              className="w-full h-full flex items-center justify-center overflow-auto p-12 cursor-zoom-out"
+              onClick={() => setZoomOpen(false)}
+            >
+              <div 
+                className="relative transition-transform duration-200 ease-out shadow-2xl rounded-xl border border-border/45 overflow-hidden bg-card"
+                style={{ 
+                  transform: `scale(${scale})`,
+                  maxHeight: '85vh',
+                  maxWidth: '85vw'
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={diagramDataUrl}
+                  alt="Zoomed diagram"
+                  className="max-h-[85vh] max-w-[85vw] object-contain"
+                />
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </StageFrame>
   )
 }
@@ -594,5 +934,202 @@ function ScoreRing({ score, pending }: { score: number; pending?: boolean }) {
     >
       <span className="text-xs">{pending ? '?' : score.toFixed(1)}</span>
     </div>
+  )
+}
+
+function StudentQuizPanel({
+  questions,
+  currentIndex,
+  onIndexChange,
+  answers,
+  onAnswerUpdate,
+  onFinish,
+  finished
+}: {
+  questions: FinalQAItem[]
+  currentIndex: number
+  onIndexChange: (idx: number) => void
+  answers: Record<number, { pickedOption: number | null; textAnswer: string; submitted: boolean }>
+  onAnswerUpdate: (idx: number, data: { pickedOption: number | null; textAnswer: string; submitted: boolean }) => void
+  onFinish: () => void
+  finished: boolean
+}) {
+  const currentQuestion = questions[currentIndex]
+  const currentAnswer = answers[currentIndex] || { pickedOption: null, textAnswer: '', submitted: false }
+  const isMcq = currentQuestion.questionType === 'mcq' && !!currentQuestion.options && currentQuestion.options.length > 0
+
+  const handlePickMCQ = (idx: number) => {
+    if (currentAnswer.submitted) return
+    onAnswerUpdate(currentIndex, { ...currentAnswer, pickedOption: idx })
+  }
+
+  const handleSubmitAnswer = () => {
+    onAnswerUpdate(currentIndex, { ...currentAnswer, submitted: true })
+  }
+
+  const correctCount = questions.reduce((sum, q, i) => {
+    const ans = answers[i]
+    if (!ans) return sum
+    if (q.questionType === 'mcq') {
+      return ans.pickedOption === q.correctOptionIndex ? sum + 1 : sum
+    } else {
+      return ans.submitted ? sum + 1 : sum
+    }
+  }, 0)
+
+  if (finished) {
+    return (
+      <Card className="brutal-block p-8 text-center max-w-xl mx-auto space-y-6 rounded-2xl">
+        <div className="inline-flex size-16 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/30">
+          <CheckCircle className="size-8" />
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-xl font-black uppercase tracking-tight">Practice Unit Finished!</h2>
+          <p className="text-xs text-muted-foreground">
+            You have completed all {questions.length} questions in this diagram study unit.
+          </p>
+        </div>
+        <div className="border border-border/40 rounded-xl p-4 bg-muted/10 grid grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <div className="text-[10px] font-mono uppercase text-muted-foreground">Total Questions</div>
+            <div className="text-base font-black">{questions.length}</div>
+          </div>
+          <div className="space-y-1">
+            <div className="text-[10px] font-mono uppercase text-muted-foreground">Mastery Score</div>
+            <div className="text-base font-black text-emerald-500 animate-pulse">
+              {Math.round((correctCount / questions.length) * 100)}%
+            </div>
+          </div>
+        </div>
+        <div className="flex justify-center gap-3">
+          <Button variant="outline" size="sm" onClick={() => onIndexChange(0)}>
+            Restart Practice
+          </Button>
+        </div>
+      </Card>
+    )
+  }
+
+  return (
+    <Card className="brutal-block p-6 max-w-2xl mx-auto space-y-6 rounded-2xl">
+      <div className="flex items-center justify-between border-b border-border/30 pb-3">
+        <span className="text-xs font-mono font-bold text-muted-foreground uppercase">
+          Practice Unit · Q{currentIndex + 1} of {questions.length}
+        </span>
+        <div className="w-32 bg-muted h-1.5 rounded-full overflow-hidden">
+          <div 
+            className="bg-primary h-full transition-all duration-300"
+            style={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}
+          />
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <p className="text-base font-bold leading-relaxed">{currentQuestion.question}</p>
+
+        {isMcq ? (
+          <ul className="space-y-2">
+            {currentQuestion.options!.map((opt, i) => {
+              const isPicked = i === currentAnswer.pickedOption
+              const isCorrect = i === currentQuestion.correctOptionIndex
+              let btnCls = 'border-border bg-card hover:border-primary/50'
+              if (isPicked) btnCls = 'border-primary bg-primary/10 text-primary font-bold'
+              if (currentAnswer.submitted) {
+                if (isCorrect) btnCls = 'border-emerald-500 bg-emerald-500/10 text-emerald-500 font-bold'
+                else if (isPicked) btnCls = 'border-destructive bg-destructive/10 text-destructive'
+                else btnCls = 'border-border/30 opacity-60 bg-transparent'
+              }
+
+              return (
+                <li key={i}>
+                  <button
+                    type="button"
+                    disabled={currentAnswer.submitted}
+                    onClick={() => handlePickMCQ(i)}
+                    className={cn("flex w-full items-center gap-3 border-2 px-3 py-2.5 text-left text-xs transition-all rounded-xl", btnCls)}
+                  >
+                    <span className="font-mono font-black">{String.fromCharCode(65 + i)}</span>
+                    <span className="flex-1">{opt}</span>
+                    {currentAnswer.submitted && isCorrect && <Check className="size-4 text-emerald-500 shrink-0" />}
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        ) : (
+          <div className="space-y-3">
+            <Label htmlFor="short-answer" className="text-xs font-mono uppercase text-muted-foreground">
+              Your Answer Explanation
+            </Label>
+            <textarea
+              id="short-answer"
+              disabled={currentAnswer.submitted}
+              value={currentAnswer.textAnswer}
+              onChange={(e) => onAnswerUpdate(currentIndex, { ...currentAnswer, textAnswer: e.target.value })}
+              className="w-full h-24 rounded-lg border border-border bg-card p-3 text-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+              placeholder="Type your answer explanation here..."
+            />
+          </div>
+        )}
+      </div>
+
+      {currentAnswer.submitted && (
+        <motion.div
+          initial={{ opacity: 0, y: 5 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="border border-border/60 rounded-xl bg-muted/20 p-4 space-y-2.5"
+        >
+          <div className="text-[10px] font-mono uppercase text-muted-foreground font-bold">
+            Correct Answer
+          </div>
+          <p className="text-xs font-medium text-foreground">{currentQuestion.answer}</p>
+          <div className="space-y-1 pt-2 border-t border-border/30">
+            <div className="text-[9px] font-mono uppercase text-muted-foreground">Cognitive Target</div>
+            <p className="text-[10.5px] leading-relaxed text-muted-foreground">
+              This question evaluates your <strong>{currentQuestion.bloomLevel}</strong> capabilities, specifically testing your <strong>{currentQuestion.cognitiveSkill}</strong> skill relative to the diagram entities.
+            </p>
+          </div>
+        </motion.div>
+      )}
+
+      <div className="flex justify-between items-center pt-3 border-t border-border/30">
+        <Button
+          size="sm"
+          variant="outline"
+          type="button"
+          disabled={currentIndex === 0}
+          onClick={() => onIndexChange(currentIndex - 1)}
+        >
+          Previous
+        </Button>
+
+        {!currentAnswer.submitted ? (
+          <Button
+            size="sm"
+            type="button"
+            disabled={isMcq ? currentAnswer.pickedOption === null : !currentAnswer.textAnswer.trim()}
+            onClick={handleSubmitAnswer}
+          >
+            Submit Answer
+          </Button>
+        ) : currentIndex < questions.length - 1 ? (
+          <Button
+            size="sm"
+            type="button"
+            onClick={() => onIndexChange(currentIndex + 1)}
+          >
+            Next Question
+          </Button>
+        ) : (
+          <Button
+            size="sm"
+            type="button"
+            onClick={onFinish}
+          >
+            Finish Quiz
+          </Button>
+        )}
+      </div>
+    </Card>
   )
 }

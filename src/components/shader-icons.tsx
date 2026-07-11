@@ -135,7 +135,7 @@ export function ShaderLogo({ size = 28, className }: ShaderLogoProps) {
     // eslint-disable-next-line @next/next/no-img-element
     <img
       src="/logo-mark.png"
-      alt="AR2-DDCQG logo"
+      alt="DiagramMind logo"
       width={size}
       height={size}
       className={className}

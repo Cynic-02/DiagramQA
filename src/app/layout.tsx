@@ -48,17 +48,17 @@ const bricolage = monadSerif
 const archivoBlack = dalaSans
 
 export const metadata: Metadata = {
-  title: "AR2-DDCQG — Diagram Question Generation",
+  title: "DiagramMind — Diagram Question Generation",
   description:
     "An agentic, retrieval-augmented, diagram-driven pipeline that turns any diagram into a verified question set, conditioned on Bloom's taxonomy.",
   keywords: [
-    "AR2-DDCQG",
+    "DiagramMind",
     "diagram question generation",
     "multi-agent",
     "Bloom's taxonomy",
     "vision AI",
   ],
-  authors: [{ name: "AR2-DDCQG" }],
+  authors: [{ name: "DiagramMind" }],
   icons: {
     icon: "/logo-mark.png",
     shortcut: "/logo-mark.png",
@@ -68,6 +68,7 @@ export const metadata: Metadata = {
 
 import { CustomCursor } from "@/components/custom-cursor";
 import { CursorSpotlight } from "@/components/cursor-spotlight";
+import { HapticFeedbackInitializer } from "@/components/haptic-feedback-initializer";
 
 export default function RootLayout({
   children,
@@ -84,6 +85,7 @@ export default function RootLayout({
           <div className="grain-overlay" aria-hidden />
           <CustomCursor />
           <CursorSpotlight />
+          <HapticFeedbackInitializer />
           <PageTransition>{children}</PageTransition>
           <Toaster />
           <SonnerToaster position="bottom-right" />

@@ -212,6 +212,9 @@ export interface RunRecord {
   verification?: VerificationVerdict[]
   finalQA?: FinalQAItem[]
   errorMessage?: string
+  startedAt?: string
+  completedAt?: string
+  durationMs?: number
   createdAt: string
 }
 

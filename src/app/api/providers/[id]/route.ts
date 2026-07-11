@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
+import type { Prisma } from '@prisma/client'
 import { db } from '@/lib/db'
 import { getSession } from '@/lib/auth'
+import { cleanString, normalizeProviderBaseUrl, readJson, validateHttpUrl } from '@/lib/api'
+import { encryptSecret } from '@/lib/crypto'
 
-/**
- * PATCH /api/providers/[id] — update one of the caller's own credential rows
- * (built-in override or custom provider). `id` is the UserApiKey row id.
- */
 export async function PATCH(
   req: NextRequest,
   ctx: { params: Promise<{ id: string }> }
@@ -21,29 +20,40 @@ export async function PATCH(
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 
-  const body = (await req.json()) as Partial<{
+  const { data: body, response } = await readJson<Partial<{
     label: string
     apiKey: string
     baseURL: string
     model: string
-  }>
+  }>>(req)
+  if (response) return response
 
-  if (row.isCustom && body.baseURL !== undefined) {
-    try {
-      new URL(body.baseURL)
-    } catch {
-      return NextResponse.json({ error: 'baseURL must be a valid URL' }, { status: 400 })
+  const label = body?.label !== undefined ? cleanString(body.label, 120) : undefined
+  const apiKey = body?.apiKey !== undefined ? cleanString(body.apiKey, 8000) : undefined
+  const baseURL = body?.baseURL !== undefined ? cleanString(body.baseURL, 500) : undefined
+  const model = body?.model !== undefined ? cleanString(body.model, 160) : undefined
+
+  if (body?.apiKey !== undefined && !apiKey) {
+    return NextResponse.json({ error: 'apiKey cannot be empty' }, { status: 400 })
+  }
+  if (row.isCustom && body?.label !== undefined && !label) {
+    return NextResponse.json({ error: 'A provider name (label) is required' }, { status: 400 })
+  }
+  if (row.isCustom && body?.baseURL !== undefined) {
+    if (!baseURL || !validateHttpUrl(baseURL)) {
+      return NextResponse.json({ error: 'baseURL must be a valid HTTP(S) URL' }, { status: 400 })
     }
   }
 
+  const data: Prisma.UserApiKeyUpdateInput = {}
+  if (label !== undefined) data.label = label
+  if (apiKey) data.apiKey = encryptSecret(apiKey)
+  if (baseURL) data.baseURL = normalizeProviderBaseUrl(baseURL)
+  if (model !== undefined) data.model = model
+
   const updated = await db.userApiKey.update({
     where: { id },
-    data: {
-      ...(body.label !== undefined && { label: body.label.trim() || null }),
-      ...(body.apiKey !== undefined && body.apiKey.trim() && { apiKey: body.apiKey.trim() }),
-      ...(body.baseURL !== undefined && { baseURL: body.baseURL.trim().replace(/\/+$/, '') }),
-      ...(body.model !== undefined && { model: body.model.trim() || null }),
-    },
+    data,
   })
 
   return NextResponse.json({
@@ -54,11 +64,11 @@ export async function PATCH(
       baseURL: updated.baseURL,
       defaultModel: updated.model || '',
       isCustom: updated.isCustom,
+      lastUsedAt: updated.lastUsedAt?.toISOString() ?? null,
     },
   })
 }
 
-/** DELETE /api/providers/[id] — remove the caller's own credential row. */
 export async function DELETE(
   _req: NextRequest,
   ctx: { params: Promise<{ id: string }> }

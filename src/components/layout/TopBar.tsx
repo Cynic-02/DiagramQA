@@ -4,7 +4,7 @@ import * as React from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { RotateCcw, Menu, Check, X, Loader2, Activity, Home, Bot, KeyRound, LogOut } from 'lucide-react'
+import { RotateCcw, Menu, Check, X, Loader2, Activity, Home, Bot, KeyRound, LogOut, History, User } from 'lucide-react'
 import { STAGES } from '@/lib/types'
 import { usePipelineStore } from '@/lib/store'
 import { BLOOM_META } from '@/lib/bloom'
@@ -121,7 +121,7 @@ export function TopBar({ onOpenMobileSidebar }: TopBarProps) {
               new KeyboardEvent('keydown', { key: 'k', metaKey: true })
             )
           }}
-          className="hidden items-center gap-1.5 border border-border/70 rounded bg-muted/65 px-2 py-0.5 font-mono text-[10px] font-bold text-muted-foreground transition-all hover:bg-accent hover:text-accent-foreground lg:flex"
+          className="hidden items-center gap-1.5 border border-border/70 rounded bg-muted/65 px-2 py-0.5 font-mono text-[10px] font-bold text-muted-foreground transition-all hover:bg-muted hover:text-foreground lg:flex"
           aria-label="Open command palette"
         >
           <span>⌘K</span>
@@ -162,7 +162,13 @@ export function TopBar({ onOpenMobileSidebar }: TopBarProps) {
           <Link href="/app/agents"><Bot className="size-3" /><span className="hidden lg:inline">Agents</span></Link>
         </Button>
         <Button variant="ghost" size="sm" className="hidden h-8 gap-1.5 text-xs md:inline-flex" asChild>
+          <Link href="/app/history"><History className="size-3" /><span className="hidden lg:inline">History</span></Link>
+        </Button>
+        <Button variant="ghost" size="sm" className="hidden h-8 gap-1.5 text-xs md:inline-flex" asChild>
           <Link href="/app/settings/api-keys"><KeyRound className="size-3" /><span className="hidden lg:inline">API Keys</span></Link>
+        </Button>
+        <Button variant="ghost" size="sm" className="hidden h-8 gap-1.5 text-xs md:inline-flex" asChild>
+          <Link href="/app/settings/account"><User className="size-3" /><span className="hidden lg:inline">Profile</span></Link>
         </Button>
         <ThemeToggle />
         <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs" onClick={handleLogout}>

@@ -13,7 +13,6 @@ import { ResultsStage } from '@/components/stages/ResultsStage'
 import { ScrollProgress } from '@/components/scroll-progress'
 import { StageTransition } from '@/components/stage-transition'
 import { CommandPalette } from '@/components/command-palette'
-import { CompletionBurst } from '@/components/completion-burst'
 import { ChatPanel } from '@/components/chat-panel'
 
 function renderActiveStage(activeStage: string) {
@@ -45,25 +44,12 @@ export default function AppPage() {
   const chatOpen = usePipelineStore((s) => s.chatOpen)
   const setChatOpen = usePipelineStore((s) => s.setChatOpen)
 
-  const burstFiredRef = useRef(false)
-  const [burst, setBurst] = useState(false)
 
-  useEffect(() => {
-    if (!completed || burstFiredRef.current) return
-    burstFiredRef.current = true
-    const on = setTimeout(() => setBurst(true), 0)
-    const off = setTimeout(() => setBurst(false), 2200)
-    return () => {
-      clearTimeout(on)
-      clearTimeout(off)
-    }
-  }, [completed])
 
   return (
     <div className="relative flex min-h-screen flex-col grid-faint-lighter">
       <ScrollProgress />
       <CommandPalette />
-      <CompletionBurst trigger={burst} />
 
       <AppShell>
         <StageTransition stageId={activeStage}>
@@ -91,7 +77,7 @@ function Footer() {
       <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-4 px-6 py-6 text-sm text-muted-foreground sm:flex-row sm:items-center">
         <div className="flex items-center gap-2">
           <span className="font-mono text-xs font-bold tracking-widest text-foreground/80">
-            AR2-DDCQG
+            DiagramMind
           </span>
           <span className="text-border">·</span>
           <span className="text-xs">

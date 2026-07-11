@@ -25,7 +25,7 @@
  * aside from the model-calling layer.
  */
 
-import { chat } from '../ai/providers'
+import { chat, streamChat, type ChatMessage, type ChatOptions } from '../ai/providers'
 import { extractJson } from './json'
 import type {
   BloomLevel,
@@ -36,12 +36,63 @@ import type {
   FinalQAItem,
 } from '../types'
 import { BLOOM_META } from '../bloom'
+import { db } from '../db'
+import { DEFAULT_PROMPTS } from './default-prompts'
 
 /** Small helper to log + surface progress without blocking the pipeline. */
 export type Emit = (
   level: 'info' | 'warn' | 'error' | 'success',
   text: string
 ) => void
+
+async function streamAgentCall(
+  messages: ChatMessage[],
+  options: ChatOptions,
+  emit: Emit
+): Promise<{ content: string; reasoning: string[]; provider: string; model: string }> {
+  const stream = streamChat(messages, options)
+  let content = ''
+  let reasoningAccumulator = ''
+  let currentReasoningLine = ''
+  const reasoningLines: string[] = []
+  let provider = ''
+  let model = ''
+
+  for await (const chunk of stream) {
+    if (chunk.provider && chunk.model) {
+      provider = chunk.provider
+      model = chunk.model
+      emit('info', `[provider] ${chunk.provider} (${chunk.model})`)
+    }
+    if (chunk.reasoningDelta) {
+      reasoningAccumulator += chunk.reasoningDelta
+      currentReasoningLine += chunk.reasoningDelta
+      
+      if (chunk.reasoningDelta.includes('\n')) {
+        const parts = currentReasoningLine.split('\n')
+        for (let i = 0; i < parts.length - 1; i++) {
+          const line = parts[i].trim()
+          if (line) {
+            emit('info', line)
+            reasoningLines.push(line)
+          }
+        }
+        currentReasoningLine = parts[parts.length - 1]
+      }
+    }
+    if (chunk.delta) {
+      content += chunk.delta
+    }
+  }
+
+  const finalLine = currentReasoningLine.trim()
+  if (finalLine) {
+    emit('info', finalLine)
+    reasoningLines.push(finalLine)
+  }
+
+  return { content, reasoning: reasoningLines, provider, model }
+}
 
 /* ------------------------------------------------------------------ */
 /* 1. Extraction Agent (Vision)                                        */
@@ -55,40 +106,23 @@ export async function runExtraction(
 ): Promise<ExtractionOutput> {
   emit('info', 'Vision agent reading diagram…')
 
-  const prompt = `You are the Extraction Agent in a multi-agent diagram-question-generation pipeline.
-Analyse the attached diagram and extract its structure into JSON.
+  let prompt = DEFAULT_PROMPTS.extraction
+  if (userId) {
+    const override = await db.customAgent.findFirst({
+      where: { userId, role: 'system-extraction' },
+    })
+    if (override) prompt = override.prompt
+  }
 
-Return ONLY valid JSON (no markdown fences, no prose) with this EXACT shape:
-{
-  "diagramType": "<one of: architecture | flowchart | circuit | state-machine | process | class-diagram | network | other — pick the best fit>",
-  "summary": "<one or two sentence plain-English summary of what the diagram represents>",
-  "entities": [
-    { "id": "e1", "label": "<human-readable label as shown>", "type": "<component|process|decision|datastore|module|node|device|actor|state|class|layer>", "role": "<optional short role, e.g. 'entry point', 'database', 'decision gate'>" }
-  ],
-  "relationships": [
-    { "from": "e1", "to": "e2", "label": "<edge label or relationship verb>", "kind": "<flow|control|data|depends-on|contains|calls|inheritance>" }
-  ],
-  "layoutNotes": "<optional: brief note on spatial layout, e.g. 'left-to-right pipeline', 'hub-and-spoke'>"
-}
-
-Rules:
-- Extract between 4 and 14 entities (merge trivial duplicates).
-- Entity ids MUST be e1, e2, e3 … in reading order.
-- Every relationship.from / relationship.to MUST reference an existing entity id.
-- Labels should match what is literally written in the diagram where possible.
-- If the diagram is a flowchart, capture decision branches as relationships labelled yes/no or condition names.
-- Keep summary factual; do not speculate beyond what is visible.`
-
-  const result = await chat(
+  const result = await streamAgentCall(
     [
       { role: 'system', content: 'Output only raw JSON.' },
       { role: 'user', content: prompt, image: dataUrl },
     ],
-    { reasoning: true, provider: providerId, userId }
+    { reasoning: true, provider: providerId, userId },
+    emit
   )
 
-  emit('info', `[provider] ${result.provider} (${result.model})`)
-  for (const step of result.reasoning) emit('info', step)
   const raw = result.content
   const parsed = extractJson<ExtractionOutput>(raw)
 
@@ -172,40 +206,34 @@ Every question MUST be a multiple-choice question with EXACTLY 4 options.
     ? `{ "id": "q1", "text": "<question>", "bloomLevel": "${bloom}", "cognitiveSkill": "<recall|explain|apply|analyse|evaluate|design>", "targets": ["e1"], "options": ["<option A>", "<option B>", "<option C>", "<option D>"], "correctOptionIndex": 0 }`
     : `{ "id": "q1", "text": "<question>", "bloomLevel": "${bloom}", "cognitiveSkill": "<recall|explain|apply|analyse|evaluate|design>", "targets": ["e1"] }`
 
-  const prompt = `You are the Question Generation Agent in a multi-agent pipeline.
-A vision agent has extracted the following structured representation of a diagram:
+  let promptTemplate = DEFAULT_PROMPTS.generation
+  if (userId) {
+    const override = await db.customAgent.findFirst({
+      where: { userId, role: 'system-generation' },
+    })
+    if (override) promptTemplate = override.prompt
+  }
 
-${structure}
+  const prompt = promptTemplate
+    .replaceAll('{{STRUCTURE}}', structure)
+    .replaceAll('{{BLOOM}}', bloom)
+    .replaceAll('{{VERB}}', meta.verb)
+    .replaceAll('{{BLURB}}', meta.blurb)
+    .replaceAll('{{COUNT}}', String(count))
+    .replaceAll('{{PLURAL}}', count === 1 ? '' : 's')
+    .replaceAll('{{MCQ_INSTRUCTIONS}}', mcqInstructions)
+    .replaceAll('{{JSON_SHAPE}}', jsonShape)
+    .replaceAll('{{ID_EXAMPLES}}', `${idExamples}${count > 4 ? ', … up to q' + count : ''}`)
 
-Target cognitive level (Bloom's taxonomy): ${bloom}
-Cognitive verb for this level: "${meta.verb}"
-Definition: ${meta.blurb}
-
-Generate exactly ${count} question${count === 1 ? '' : 's'} that require a learner to operate at the ${bloom} level using ONLY information derivable from the diagram structure above.
-${mcqInstructions}
-
-Rules:
-- Each question MUST be answerable from the diagram structure alone.
-- Do NOT state or hint at the answer inside the question (no answer leakage).
-- Match the cognitive demand to "${bloom}": ${meta.blurb}
-- "targets" lists the entity ids the question is about (from the structure).
-- Vary which parts of the diagram each question targets.
-
-Return ONLY a valid JSON array (no markdown, no prose), each item exactly:
-${jsonShape}
-
-Use ids ${idExamples}${count > 4 ? ', … up to q' + count : ''}.`
-
-  const response = await chat(
+  const response = await streamAgentCall(
     [
       { role: 'system', content: 'Output only a raw JSON array.' },
       { role: 'user', content: prompt },
     ],
-    { reasoning: true, provider: providerId, userId }
+    { reasoning: true, provider: providerId, userId },
+    emit
   )
 
-  emit('info', `[provider] ${response.provider} (${response.model})`)
-  for (const step of response.reasoning) emit('info', step)
   const raw = response.content
   const parsed = extractJson<GeneratedQuestion[]>(raw)
 
@@ -293,32 +321,29 @@ question: pick exactly one option and report it as "selectedOptionIndex"
 option's text as your "answer".`
     : ''
 
-  const prompt = `You are the Answering Agent. You answer questions using ONLY the diagram structure below. You do NOT see any other agent's answer — answer independently and ground every answer in the diagram.
+  let promptTemplate = DEFAULT_PROMPTS.answering
+  if (userId) {
+    const override = await db.customAgent.findFirst({
+      where: { userId, role: 'system-answering' },
+    })
+    if (override) promptTemplate = override.prompt
+  }
 
-Diagram structure:
-${structure}
+  const prompt = promptTemplate
+    .replaceAll('{{STRUCTURE}}', structure)
+    .replaceAll('{{QUESTIONS}}', qs)
+    .replaceAll('{{MCQ_INSTRUCTIONS}}', mcqInstructions)
+    .replaceAll('{{MCQ_OPTION}}', hasMcq ? ', "selectedOptionIndex": 0' : '')
 
-Questions:
-${qs}
-${mcqInstructions}
-
-For each question, provide a concise, correct answer and brief reasoning that cites the relevant entities/relationships. Assign a confidence score (0.0–1.0) reflecting how directly the diagram supports your answer.
-
-Return ONLY a valid JSON array (no markdown), each item exactly:
-{ "questionId": "q1", "answer": "<answer>", "reasoning": "<1-2 sentences grounded in the diagram>", "confidence": 0.85${hasMcq ? ', "selectedOptionIndex": 0' : ''} }
-
-Answer every question. questionId must match the input ids.`
-
-  const response = await chat(
+  const response = await streamAgentCall(
     [
       { role: 'system', content: 'Output only a raw JSON array.' },
       { role: 'user', content: prompt },
     ],
-    { reasoning: true, provider: providerId, userId }
+    { reasoning: true, provider: providerId, userId },
+    emit
   )
 
-  emit('info', `[provider] ${response.provider} (${response.model})`)
-  for (const step of response.reasoning) emit('info', step)
   const raw = response.content
   const parsed = extractJson<GeneratedAnswer[]>(raw)
 
@@ -376,45 +401,32 @@ export async function runVerification(
     }
   })
 
-  const prompt = `You are the Verification / Critic Agent. For each Q&A pair below, check it against the extracted diagram structure.
+  let promptTemplate = DEFAULT_PROMPTS.verification
+  if (userId) {
+    const override = await db.customAgent.findFirst({
+      where: { userId, role: 'system-verification' },
+    })
+    if (override) promptTemplate = override.prompt
+  }
 
-Diagram structure:
-${JSON.stringify(
-  {
-    diagramType: extraction.diagramType,
-    summary: extraction.summary,
-    entities: extraction.entities,
-    relationships: extraction.relationships,
-  },
-  null,
-  2
-)}
+  const prompt = promptTemplate
+    .replaceAll('{{STRUCTURE}}', JSON.stringify({
+      diagramType: extraction.diagramType,
+      summary: extraction.summary,
+      entities: extraction.entities,
+      relationships: extraction.relationships,
+    }, null, 2))
+    .replaceAll('{{PAIRS}}', JSON.stringify(pairs, null, 2))
 
-Q&A pairs:
-${JSON.stringify(pairs, null, 2)}
-
-For each pair, evaluate:
-1. correctness — is the answer correct given the diagram? (correct | partial | incorrect)
-2. ambiguity — is the question ambiguous or unanswerable from the diagram? (boolean)
-3. difficultyAccurate — does the question genuinely demand the stated Bloom level "${'<level>'}"? (boolean)
-4. leakRisk — does the question leak its own answer? (boolean)
-5. issues — short list of any problems (empty array if none)
-6. suggestion — optional one-line improvement
-7. status — overall verdict: "pass" (all good), "flagged" (minor issues but usable), "reject" (incorrect or seriously ambiguous/leaky)
-
-Return ONLY a valid JSON array (no markdown), one entry per question, each exactly:
-{ "questionId": "q1", "status": "pass", "correctness": "correct", "ambiguity": false, "difficultyAccurate": true, "leakRisk": false, "issues": [], "suggestion": "optional" }`
-
-  const response = await chat(
+  const response = await streamAgentCall(
     [
       { role: 'system', content: 'Output only a raw JSON array.' },
       { role: 'user', content: prompt },
     ],
-    { reasoning: true, provider: providerId, userId }
+    { reasoning: true, provider: providerId, userId },
+    emit
   )
 
-  emit('info', `[provider] ${response.provider} (${response.model})`)
-  for (const step of response.reasoning) emit('info', step)
   const raw = response.content
   const parsed = extractJson<VerificationVerdict[]>(raw)
 

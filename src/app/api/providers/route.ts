@@ -1,35 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { randomUUID } from 'crypto'
 import { db } from '@/lib/db'
 import { getSession } from '@/lib/auth'
+import { cleanString, normalizeProviderBaseUrl, readJson, validateHttpUrl } from '@/lib/api'
+import { encryptSecret } from '@/lib/crypto'
 import { PROVIDERS, getAvailableProvidersForUser, type ProviderId } from '@/lib/ai/providers'
 
-/**
- * GET /api/providers
- *
- * Returns the merged list of AI providers this user can select from:
- *  - every built-in provider, flagged with whether it's usable (either the
- *    caller is the platform's allow-listed account with an env key, or
- *    they've added their own) and whether the active key is their own or
- *    the platform's
- *  - the user's own custom (fully user-defined) OpenAI-compatible providers
- *
- * Never returns raw API keys — only a `hasKey` boolean per row.
- */
 export async function GET() {
   const session = await getSession()
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const rows = await db.userApiKey.findMany({
-    where: { userId: session.id },
-    orderBy: { createdAt: 'asc' },
-  })
+  // Wrapped: a schema/database drift on this table (e.g. a column the
+  // Prisma client expects but the DB doesn't have yet) previously crashed
+  // this whole route with an unhandled 500, which made every provider
+  // look "missing" in the UI even for accounts that should have working
+  // built-in access. Degrade to "no personal keys" instead of a hard
+  // failure so at least the allow-listed built-in fallback still works.
+  let rows: Awaited<ReturnType<typeof db.userApiKey.findMany>> = []
+  try {
+    rows = await db.userApiKey.findMany({
+      where: { userId: session.id },
+      orderBy: { createdAt: 'asc' },
+    })
+  } catch (err) {
+    console.error('[GET /api/providers] userApiKey.findMany failed', err)
+  }
   const overridesByProvider = new Map(
     rows.filter((r) => !r.isCustom).map((r) => [r.providerId, r])
   )
-  // Gated per-user — only reflects env keys this specific account is
-  // allowed to fall back to, not every env key the platform has.
   const availableForThisUser = await getAvailableProvidersForUser(session.id)
   const envAvailable = new Set(availableForThisUser.map((p) => p.id))
 
@@ -47,6 +47,7 @@ export async function GET() {
       usable: envAvailable.has(p.id) || !!override,
       ownModel: override?.model ?? null,
       keyId: override?.id ?? null,
+      lastUsedAt: override?.lastUsedAt?.toISOString() ?? null,
     }
   })
 
@@ -62,85 +63,76 @@ export async function GET() {
       hasPlatformKey: false,
       hasOwnKey: true,
       usable: true,
+      lastUsedAt: r.lastUsedAt?.toISOString() ?? null,
     }))
 
   return NextResponse.json({ providers: [...builtIn, ...custom] })
 }
 
-/**
- * POST /api/providers
- * Body (built-in override):  { providerId: "openai", apiKey, model? }
- * Body (custom provider):    { isCustom: true, label, baseURL, apiKey, model? }
- *
- * Creates or updates the caller's own credential row. Built-in overrides
- * are upserted (one row per user+providerId); custom providers are always
- * created fresh (call PATCH /api/providers/[id] to edit one).
- */
 export async function POST(req: NextRequest) {
   const session = await getSession()
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const body = (await req.json()) as {
+  const { data: body, response } = await readJson<{
     providerId?: string
     label?: string
     apiKey?: string
     baseURL?: string
     model?: string
     isCustom?: boolean
-  }
+  }>(req)
+  if (response) return response
 
-  if (!body.apiKey?.trim()) {
+  const apiKey = cleanString(body?.apiKey, 8000)
+  const label = cleanString(body?.label, 120)
+  const baseURL = cleanString(body?.baseURL, 500)
+  const model = cleanString(body?.model, 160)
+
+  if (!apiKey) {
     return NextResponse.json({ error: 'apiKey is required' }, { status: 400 })
   }
 
-  if (body.isCustom) {
-    if (!body.label?.trim()) {
+  if (body?.isCustom) {
+    if (!label) {
       return NextResponse.json({ error: 'A provider name (label) is required' }, { status: 400 })
     }
-    if (!body.baseURL?.trim()) {
+    if (!baseURL) {
       return NextResponse.json({ error: 'A base URL is required for a custom provider' }, { status: 400 })
     }
-    try {
-      new URL(body.baseURL.trim())
-    } catch {
-      return NextResponse.json({ error: 'baseURL must be a valid URL' }, { status: 400 })
+    if (!validateHttpUrl(baseURL)) {
+      return NextResponse.json({ error: 'baseURL must be a valid HTTP(S) URL' }, { status: 400 })
     }
 
-    // providerId for a custom row is just a placeholder until we know the
-    // row's own id — fill it in right after creation so @@unique holds.
     const created = await db.userApiKey.create({
       data: {
         userId: session.id,
-        providerId: 'pending',
-        label: body.label.trim(),
-        apiKey: body.apiKey.trim(),
-        baseURL: body.baseURL.trim().replace(/\/+$/, ''),
-        model: body.model?.trim() || null,
+        providerId: `custom_${randomUUID()}`,
+        label,
+        apiKey: encryptSecret(apiKey),
+        baseURL: normalizeProviderBaseUrl(baseURL),
+        model,
         isCustom: true,
       },
-    })
-    const finalized = await db.userApiKey.update({
-      where: { id: created.id },
-      data: { providerId: created.id },
     })
 
     return NextResponse.json({
       provider: {
-        id: `custom:${finalized.id}`,
-        keyId: finalized.id,
-        label: finalized.label,
-        baseURL: finalized.baseURL,
-        defaultModel: finalized.model || '',
+        id: `custom:${created.id}`,
+        keyId: created.id,
+        label: created.label,
+        baseURL: created.baseURL,
+        defaultModel: created.model || '',
         isCustom: true,
         hasOwnKey: true,
         usable: true,
+        lastUsedAt: created.lastUsedAt?.toISOString() ?? null,
       },
     })
   }
 
-  const providerId = body.providerId as ProviderId | undefined
+  const providerId = body?.providerId as ProviderId | undefined
   if (!providerId || !PROVIDERS[providerId]) {
     return NextResponse.json({ error: 'A valid providerId is required' }, { status: 400 })
   }
@@ -150,15 +142,15 @@ export async function POST(req: NextRequest) {
     create: {
       userId: session.id,
       providerId,
-      label: body.label?.trim() || null,
-      apiKey: body.apiKey.trim(),
-      model: body.model?.trim() || null,
+      label,
+      apiKey: encryptSecret(apiKey),
+      model,
       isCustom: false,
     },
     update: {
-      apiKey: body.apiKey.trim(),
-      model: body.model?.trim() || null,
-      label: body.label?.trim() || null,
+      apiKey: encryptSecret(apiKey),
+      model,
+      label,
     },
   })
 
@@ -171,6 +163,7 @@ export async function POST(req: NextRequest) {
       hasOwnKey: true,
       usable: true,
       ownModel: row.model,
+      lastUsedAt: row.lastUsedAt?.toISOString() ?? null,
     },
   })
 }

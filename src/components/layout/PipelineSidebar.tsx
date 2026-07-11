@@ -1,6 +1,7 @@
 'use client'
 
 import * as React from 'react'
+import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronLeft, ChevronRight, Loader2, Check, X } from 'lucide-react'
 import { STAGES, STAGE_ORDER } from '@/lib/types'
@@ -68,17 +69,17 @@ function SidebarContent({
         )}
       >
         {collapsed ? (
-          <div className="flex items-center gap-0" title="AR2-DDCQG">
+          <Link href="/" className="flex items-center justify-center gap-0" title="DiagramMind">
             <ShaderLogo size={18} />
-          </div>
+          </Link>
         ) : (
           <>
-            <div className="flex items-center gap-2">
+            <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
               <ShaderLogo size={16} />
               <span className="font-mono text-[13px] font-black uppercase tracking-tight text-foreground">
-                AR2-DDCQG
+                DiagramMind
               </span>
-            </div>
+            </Link>
             <span className="rounded-full border border-accent/40 bg-accent/15 px-1.5 py-px font-mono text-[10px] font-bold leading-none text-accent-foreground">
               v0.1
             </span>
@@ -130,7 +131,7 @@ function SidebarContent({
             type="button"
             onClick={() => setSidebarCollapsed(!collapsed)}
             aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            className="inline-flex h-8 items-center gap-1.5 rounded-md px-2 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-accent/60 hover:text-foreground"
+            className="inline-flex h-8 items-center gap-1.5 rounded-md px-2 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
           >
             {collapsed ? (
               <ChevronRight className="size-4" />

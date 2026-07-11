@@ -1,13 +1,14 @@
 'use client'
 
 import * as React from 'react'
+import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Send, MessageSquare, Loader2, Sparkles } from 'lucide-react'
+import { X, Send, MessageSquare, Loader2, Sparkles, Copy, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { ProviderSelect } from '@/components/provider-select'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import ReactMarkdown from 'react-markdown'
 
 interface ChatMsg {
   id: string
@@ -23,9 +24,8 @@ interface ChatPanelProps {
 }
 
 /**
- * ChatPanel — a sliding right-side panel for follow-up Q&A about the diagram.
- * Uses the /api/chat endpoint which grounds answers in the extraction +
- * generated Q&A context. Persists conversation to the DB.
+ * ChatPanel — a premium, floating chatbot panel widget in the bottom-right corner.
+ * Triggered by a circular FAB bubble with pulsing notification dot.
  */
 export function ChatPanel({ runId, open, onOpenChange }: ChatPanelProps) {
   const [messages, setMessages] = React.useState<ChatMsg[]>([])
@@ -101,138 +101,234 @@ export function ChatPanel({ runId, open, onOpenChange }: ChatPanelProps) {
     }
   }
 
-  return (
-    <AnimatePresence>
-      {open && (
-        <motion.div
-          initial={{ opacity: 0, x: 40, scale: 0.97 }}
-          animate={{ opacity: 1, x: 0, scale: 1 }}
-          exit={{ opacity: 0, x: 40, scale: 0.97 }}
-          transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-          className="brutal-block fixed bottom-4 right-4 z-40 flex h-[min(600px,calc(100vh-2rem))] w-[min(420px,calc(100vw-2rem))] flex-col overflow-hidden bg-card"
-        >
-          {/* Header */}
-          <div className="flex h-12 shrink-0 items-center justify-between border-b-[3px] border-border px-4">
-            <div className="flex items-center gap-2">
-              <div className="flex size-6 items-center justify-center border-[2px] border-border bg-accent text-accent-foreground">
-                <MessageSquare className="size-3.5" />
-              </div>
-              <div className="leading-tight">
-                <div className="text-[13px] font-bold">Follow-up Q&amp;A</div>
-                <div className="text-[10px] text-muted-foreground">
-                  Ask about this diagram
-                </div>
-              </div>
-            </div>
-            <button
-              onClick={() => onOpenChange(false)}
-              className="inline-flex size-7 items-center justify-center border-[2px] border-transparent text-muted-foreground transition-colors hover:border-border hover:bg-destructive hover:text-destructive-foreground"
-              aria-label="Close chat"
-            >
-              <X className="size-4" />
-            </button>
-          </div>
+  // Render through a portal straight to document.body. This makes the
+  // widget's `fixed` positioning immune to any ancestor applying a CSS
+  // transform/filter/perspective anywhere in the tree — any of those
+  // creates a new "containing block" for fixed-position descendants,
+  // silently repositioning them relative to that ancestor instead of the
+  // real viewport. That's a real, hard-to-spot class of bug (page
+  // transition animations, stage transitions, etc. all use transforms),
+  // so a portal sidesteps it permanently rather than requiring every
+  // future animated wrapper to remember not to break this.
+  const [mounted, setMounted] = React.useState(false)
+  React.useEffect(() => setMounted(true), [])
 
-          {/* Provider picker */}
-          <div className="shrink-0 border-b-[2px] border-border px-3 py-2">
-            <ProviderSelect value={provider} onChange={setProvider} className="h-8 w-full text-xs" />
-          </div>
+  const content = (
+    <>
+      {/* Floating Chat Trigger — larger, labeled, impossible to miss */}
+      <button
+        type="button"
+        onClick={() => onOpenChange(!open)}
+        className={cn(
+          "fixed bottom-6 right-6 z-[100] flex h-14 items-center gap-2 rounded-full border-2 border-border px-5 shadow-xl hover:scale-105 active:scale-95 transition-all cursor-pointer",
+          open ? "bg-card text-foreground" : "bg-primary text-primary-foreground"
+        )}
+        aria-label={open ? 'Close follow-up chat' : 'Ask a follow-up question about this diagram'}
+      >
+        {open ? (
+          <X className="size-5" />
+        ) : (
+          <>
+            <MessageSquare className="size-5" />
+            <span className="text-sm font-bold whitespace-nowrap">Ask a follow-up</span>
+          </>
+        )}
+        {!open && (
+          <span className="absolute -top-1 -right-1 flex size-3.5">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-75"></span>
+            <span className="relative inline-flex size-3.5 rounded-full border-2 border-card bg-accent"></span>
+          </span>
+        )}
+      </button>
 
-          {/* Messages */}
-          <div
-            ref={scrollRef}
-            className="scroll-slim flex-1 space-y-3 overflow-y-auto p-4"
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: 15, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 15, scale: 0.96 }}
+            transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+            className="brutal-block !fixed bottom-[92px] right-6 z-[90] flex h-[min(540px,calc(100vh-7rem))] w-[min(400px,calc(100vw-2.5rem))] flex-col overflow-hidden bg-card"
           >
-            {loadingHistory && messages.length === 0 ? (
-              <div className="flex h-full items-center justify-center">
-                <Loader2 className="size-4 animate-spin text-muted-foreground" />
-              </div>
-            ) : messages.length === 0 ? (
-              <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
-                <div className="flex size-10 items-center justify-center border-[2px] border-border bg-accent text-accent-foreground">
-                  <Sparkles className="size-5" />
+            {/* Header */}
+            <div className="flex h-12 shrink-0 items-center justify-between border-b border-border/60 px-4">
+              <div className="flex items-center gap-2">
+                <div className="flex size-6 items-center justify-center border border-border bg-accent text-accent-foreground rounded-md">
+                  <MessageSquare className="size-3.5" />
                 </div>
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-foreground/80">
-                    Ask anything about this diagram
-                  </p>
-                  <p className="mx-auto max-w-[260px] text-xs text-muted-foreground">
-                    The assistant is grounded in the extracted structure and
-                    generated Q&amp;A. Try &quot;Explain the relationship
-                    between X and Y.&quot;
-                  </p>
+                <div className="leading-tight">
+                  <div className="text-[12px] font-bold">Follow-up Q&amp;A</div>
+                  <div className="text-[9px] text-muted-foreground">
+                    Ask about this diagram
+                  </div>
                 </div>
               </div>
-            ) : (
-              messages.map((msg) => <ChatBubble key={msg.id} msg={msg} />)
-            )}
-            {loading && (
-              <div className="flex justify-start">
-                <div className="flex items-center gap-1.5 border-[2px] border-border bg-card px-3 py-2">
-                  <span className="thinking-dot size-1.5 rounded-full bg-accent" />
-                  <span
-                    className="thinking-dot size-1.5 rounded-full bg-accent"
-                    style={{ animationDelay: '150ms' }}
-                  />
-                  <span
-                    className="thinking-dot size-1.5 rounded-full bg-accent"
-                    style={{ animationDelay: '300ms' }}
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Input */}
-          <div className="shrink-0 border-t-[3px] border-border p-3">
-            <div className="flex items-end gap-2">
-              <textarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Ask a follow-up question…"
-                rows={1}
-                className="scroll-slim max-h-28 min-h-[40px] flex-1 resize-none border-[2px] border-border bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-accent focus:outline-none"
-                disabled={loading}
-              />
-              <Button
-                size="icon"
-                onClick={send}
-                disabled={!input.trim() || loading}
-                className="brutal-block brutal-interactive size-10 shrink-0"
+              <button
+                onClick={() => onOpenChange(false)}
+                className="inline-flex size-6 items-center justify-center border border-transparent text-muted-foreground rounded hover:border-border hover:bg-destructive hover:text-white transition-all cursor-pointer"
+                aria-label="Close chat"
               >
-                {loading ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : (
-                  <Send className="size-4" />
-                )}
-              </Button>
+                <X className="size-3.5" />
+              </button>
             </div>
-          </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+
+            {/* Provider picker */}
+            <div className="shrink-0 border-b border-border/40 px-3 py-1.5 bg-muted/20">
+              <ProviderSelect value={provider} onChange={setProvider} className="h-7 w-full text-[10px] px-2.5 py-0" />
+            </div>
+
+            {/* Messages */}
+            <div
+              ref={scrollRef}
+              className="scroll-slim flex-1 space-y-3 overflow-y-auto p-4"
+            >
+              {loadingHistory && messages.length === 0 ? (
+                <div className="flex h-full items-center justify-center">
+                  <Loader2 className="size-4 animate-spin text-muted-foreground" />
+                </div>
+              ) : messages.length === 0 ? (
+                <div className="flex h-full flex-col items-center justify-center gap-2.5 text-center p-2">
+                  <div className="flex size-9 items-center justify-center border border-border bg-accent text-accent-foreground rounded-lg">
+                    <Sparkles className="size-4.5" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold text-foreground/80">
+                      Ask anything about this diagram
+                    </p>
+                    <p className="mx-auto max-w-[220px] text-[10px] text-muted-foreground leading-normal">
+                      The assistant is grounded in the extracted structure and
+                      generated Q&amp;A. Try &quot;Explain the relationship
+                      between X and Y.&quot;
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                messages.map((msg) => <ChatBubble key={msg.id} msg={msg} />)
+              )}
+              {loading && (
+                <div className="flex justify-start">
+                  <div className="flex items-center gap-1.5 border border-border bg-muted/30 px-3 py-1.5 rounded-2xl">
+                    <span className="thinking-dot size-1.5 rounded-full bg-accent" />
+                    <span
+                      className="thinking-dot size-1.5 rounded-full bg-accent"
+                      style={{ animationDelay: '150ms' }}
+                    />
+                    <span
+                      className="thinking-dot size-1.5 rounded-full bg-accent"
+                      style={{ animationDelay: '300ms' }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Input */}
+            <div className="shrink-0 border-t border-border/60 p-3 bg-muted/10">
+              <div className="flex items-end gap-2">
+                <textarea
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Ask a follow-up question…"
+                  rows={1}
+                  className="scroll-slim max-h-24 min-h-[38px] flex-1 resize-none border border-border/80 bg-card px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none rounded-lg"
+                  disabled={loading}
+                />
+                <Button
+                  size="icon"
+                  onClick={send}
+                  disabled={!input.trim() || loading}
+                  className="brutal-interactive size-9 shrink-0 rounded-lg cursor-pointer"
+                >
+                  {loading ? (
+                    <Loader2 className="size-3.5 animate-spin" />
+                  ) : (
+                    <Send className="size-3.5" />
+                  )}
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   )
+
+  if (!mounted) return null
+  return createPortal(content, document.body)
 }
 
 function ChatBubble({ msg }: { msg: ChatMsg }) {
   const isUser = msg.role === 'user'
+  const [copied, setCopied] = React.useState(false)
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(msg.content)
+    setCopied(true)
+    toast.success('Explanation copied to clipboard')
+    setTimeout(() => setCopied(false), 2000)
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.2 }}
-      className={cn('flex', isUser ? 'justify-end' : 'justify-start')}
+      transition={{ duration: 0.15 }}
+      className={cn('flex group relative items-start gap-2', isUser ? 'justify-end' : 'justify-start')}
     >
+      {!isUser && (
+        <button
+          onClick={handleCopy}
+          type="button"
+          className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground self-center shrink-0"
+          title="Copy explanation"
+        >
+          {copied ? <Check className="size-3 text-emerald-500" /> : <Copy className="size-3" />}
+        </button>
+      )}
+
       <div
         className={cn(
-          'max-w-[85%] border-[2px] border-border px-3.5 py-2 text-sm leading-relaxed',
+          'max-w-[85%] border border-border/60 px-3.5 py-2 text-[11px] leading-relaxed rounded-2xl shadow-sm',
           isUser
-            ? 'bg-accent text-accent-foreground'
-            : 'bg-card text-foreground/90'
+            ? 'bg-primary text-primary-foreground rounded-tr-none'
+            : 'bg-card text-foreground/90 rounded-tl-none'
         )}
       >
-        {msg.content}
+        {isUser ? (
+          msg.content
+        ) : (
+          <ReactMarkdown
+            components={{
+              p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+              ul: ({ children }) => <ul className="list-disc pl-4 mb-2 space-y-1">{children}</ul>,
+              ol: ({ children }) => <ol className="list-decimal pl-4 mb-2 space-y-1">{children}</ol>,
+              li: ({ children }) => <li className="marker:text-primary">{children}</li>,
+              code: ({ className, children, ...props }) => {
+                const match = /language-(\w+)/.exec(className || '')
+                return match ? (
+                  <pre className="overflow-x-auto rounded bg-muted/60 p-2 font-mono text-[10px] my-2 border border-border/40">
+                    <code className={className} {...props}>
+                      {children}
+                    </code>
+                  </pre>
+                ) : (
+                  <code className="rounded bg-muted/70 px-1 py-0.5 font-mono text-[10px]" {...props}>
+                    {children}
+                  </code>
+                )
+              },
+              strong: ({ children }) => <strong className="font-bold text-foreground">{children}</strong>,
+              a: ({ href, children }) => (
+                <a href={href} target="_blank" rel="noopener noreferrer" className="text-primary underline hover:text-primary/80">
+                  {children}
+                </a>
+              )
+            }}
+          >
+            {msg.content}
+          </ReactMarkdown>
+        )}
       </div>
     </motion.div>
   )
