@@ -180,7 +180,7 @@ export function AgentThinkingConsole({
     () =>
       logs
         .filter((l) => l.stage === stageId && !l.text.startsWith('[provider]'))
-        .map((l) => l.text),
+        .map((l) => ({ text: l.text, level: l.level })),
     [logs, stageId]
   )
   const hasRealReasoning = liveLines.length > 0
@@ -314,8 +314,8 @@ export function AgentThinkingConsole({
           {hasRealReasoning ? (
             // Real model reasoning is available for this stage — show only
             // genuine content, no scripted placeholder lines.
-            liveLines.map((t, i) => (
-              <ThoughtLine key={`l-${i}`} text={t} accent={accent} done />
+            liveLines.map((l, i) => (
+              <ThoughtLine key={`l-${i}`} text={l.text} level={l.level} accent={accent} done />
             ))
           ) : (
             <>
@@ -367,18 +367,27 @@ function ThoughtLine({
   accent,
   done,
   typing,
+  level,
 }: {
   text: string
   accent: string
   done?: boolean
   typing?: boolean
+  /** Non-reasoning lines (e.g. a provider fallback notice) get a distinct
+      color so "this provider hit its quota, trying the next one" reads as
+      a status event, not as part of the model's own reasoning. */
+  level?: 'info' | 'warn' | 'error' | 'success'
 }) {
+  const glyphColor = level === 'warn' ? '#f59e0b' : level === 'error' ? '#f87171' : accent
+  const textColor =
+    level === 'warn' ? 'text-amber-300/90' : level === 'error' ? 'text-red-300/90' : 'text-white/85'
+  const glyph = level === 'warn' ? '⚠' : level === 'error' ? '✕' : done ? '✓' : '›'
   return (
     <div className="flex items-start gap-2">
-      <span className="mt-px shrink-0 select-none" style={{ color: accent }}>
-        {done ? '✓' : '›'}
+      <span className="mt-px shrink-0 select-none" style={{ color: glyphColor }}>
+        {glyph}
       </span>
-      <span className="min-w-0 flex-1 break-words text-white/85">
+      <span className={cn('min-w-0 flex-1 break-words', textColor)}>
         {text}
         {typing && (
           <span

@@ -66,13 +66,20 @@ export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
     baseURL: 'https://api.openai.com/v1',
     defaultModel: 'gpt-4o',
     supportsVision: true,
-    supportsReasoning: true,
+    // gpt-4o has no chain-of-thought trace via /chat/completions — OpenAI's
+    // actual reasoning models (o-series, gpt-5-thinking) only expose a
+    // reasoning summary through the separate Responses API, a different
+    // request/response shape this integration doesn't implement yet.
+    supportsReasoning: false,
   },
   deepseek: {
     id: 'deepseek',
     label: 'DeepSeek',
     apiKeyEnv: 'DEEPSEEK_API_KEY',
     baseURL: 'https://api.deepseek.com/v1',
+    // Chat calls use deepseek-chat; when reasoning is requested the call
+    // layer swaps to deepseek-reasoner instead, since deepseek-chat never
+    // returns reasoning_content regardless of any flag.
     defaultModel: 'deepseek-chat',
     supportsVision: false,
     supportsReasoning: true,
@@ -100,24 +107,31 @@ export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
     label: 'xAI Grok',
     apiKeyEnv: 'XAI_API_KEY',
     baseURL: 'https://api.x.ai/v1',
+    // grok-2-latest doesn't reason out loud; xAI's reasoning-capable models
+    // (grok-3-mini, grok-4) would need to be the model here for this to
+    // return anything.
     defaultModel: 'grok-2-latest',
     supportsVision: false,
-    supportsReasoning: true,
+    supportsReasoning: false,
   },
   groq: {
     id: 'groq',
     label: 'Groq',
     apiKeyEnv: 'GROQ_API_KEY',
     baseURL: 'https://api.groq.com/openai/v1',
+    // llama-3.3-70b-versatile doesn't reason out loud; Groq does host
+    // reasoning models (e.g. deepseek-r1-distill-*) but not as the default.
     defaultModel: 'llama-3.3-70b-versatile',
     supportsVision: false,
-    supportsReasoning: true,
+    supportsReasoning: false,
   },
   qwen: {
     id: 'qwen',
     label: 'Qwen (Alibaba)',
     apiKeyEnv: 'DASHSCOPE_API_KEY',
     baseURL: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
+    // DashScope's compatible-mode endpoint supports enable_thinking for
+    // Qwen3-based snapshots of qwen-plus, returning reasoning_content.
     defaultModel: 'qwen-plus',
     supportsVision: true,
     supportsReasoning: true,
@@ -127,15 +141,19 @@ export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
     label: 'Kimi (Moonshot)',
     apiKeyEnv: 'MOONSHOT_API_KEY',
     baseURL: 'https://api.moonshot.cn/v1',
+    // moonshot-v1-32k doesn't reason out loud; Moonshot's thinking-capable
+    // models aren't the default here.
     defaultModel: 'moonshot-v1-32k',
     supportsVision: false,
-    supportsReasoning: true,
+    supportsReasoning: false,
   },
   openrouter: {
     id: 'openrouter',
     label: 'OpenRouter',
     apiKeyEnv: 'OPENROUTER_API_KEY',
     baseURL: 'https://openrouter.ai/api/v1',
+    // OpenRouter's unified `reasoning` request param + response field works
+    // across many of the models it routes to, including the default here.
     defaultModel: 'google/gemini-2.5-flash',
     supportsVision: true,
     supportsReasoning: true,
@@ -344,6 +362,35 @@ function isQuotaExhaustedError(err: unknown): boolean {
   )
 }
 
+/** One failed attempt in a provider fallback chain, for reporting to the caller. */
+export interface FallbackAttempt {
+  providerId: string
+  label: string
+  /** true if this attempt failed specifically due to quota/rate-limit exhaustion */
+  quotaExhausted: boolean
+  message: string
+}
+
+/**
+ * Builds a clear, human-readable summary when every provider in the
+ * fallback chain has failed — distinguishing "everything is just quota-
+ * exhausted right now" (a transient, well-understood state) from a mix of
+ * failures, instead of surfacing a raw concatenated technical error.
+ */
+function buildAllProvidersFailedMessage(attempts: FallbackAttempt[]): string {
+  if (attempts.length === 0) {
+    return 'No AI providers were available to try.'
+  }
+  const allQuota = attempts.every((a) => a.quotaExhausted)
+  const detail = attempts
+    .map((a) => `${a.label} — ${a.quotaExhausted ? 'quota/rate limit exceeded' : a.message}`)
+    .join('; ')
+  if (allQuota) {
+    return `All configured AI providers have hit their quota or rate limit right now. Try again in a bit, or add another provider's API key in Settings → API Keys. (${detail})`
+  }
+  return `All configured AI providers failed. (${detail})`
+}
+
 export interface ChatMessage {
   role: 'system' | 'user' | 'assistant'
   content: string
@@ -366,6 +413,13 @@ export interface ChatOptions {
   userId?: string
   /** Internal: test an unsaved/supplied key without reading env or DB. */
   apiKeyOverride?: string
+  /**
+   * Called each time a provider in the fallback chain fails and the call
+   * is about to move on to the next one — lets the caller (e.g. the
+   * pipeline's log stream) surface "X is rate-limited, trying Y" live
+   * instead of only learning about it if every provider ends up failing.
+   */
+  onFallback?: (attempt: FallbackAttempt) => void
 }
 
 export interface ChatResult {
@@ -427,19 +481,23 @@ export async function chat(
 
   const chain = [preferred, ...available.filter((p) => p.id !== preferred!.id)]
 
-  let lastError: unknown
+  const attempts: FallbackAttempt[] = []
   for (const provider of chain) {
     try {
       return await callProvider(provider, messages, options)
     } catch (err) {
-      lastError = err
+      const message = err instanceof Error ? err.message : String(err)
+      const attempt: FallbackAttempt = {
+        providerId: provider.id,
+        label: provider.label,
+        quotaExhausted: isQuotaExhaustedError(err),
+        message,
+      }
+      attempts.push(attempt)
+      options.onFallback?.(attempt)
     }
   }
-  throw new Error(
-    `All providers failed. Last error: ${
-      lastError instanceof Error ? lastError.message : String(lastError)
-    }`
-  )
+  throw new Error(buildAllProvidersFailedMessage(attempts))
 }
 
 /**
@@ -487,21 +545,25 @@ export async function* streamChat(
 
   const chain = [preferred, ...available.filter((p) => p.id !== preferred!.id)]
 
-  let lastError: unknown
+  const attempts: FallbackAttempt[] = []
   for (const provider of chain) {
     try {
       yield { provider: provider.id, model: options.model || provider.defaultModel }
       yield* streamProvider(provider, messages, options)
       return
     } catch (err) {
-      lastError = err
+      const message = err instanceof Error ? err.message : String(err)
+      const attempt: FallbackAttempt = {
+        providerId: provider.id,
+        label: provider.label,
+        quotaExhausted: isQuotaExhaustedError(err),
+        message,
+      }
+      attempts.push(attempt)
+      options.onFallback?.(attempt)
     }
   }
-  throw new Error(
-    `All providers failed. Last error: ${
-      lastError instanceof Error ? lastError.message : String(lastError)
-    }`
-  )
+  throw new Error(buildAllProvidersFailedMessage(attempts))
 }
 
 export async function testProviderConnection(options: {
@@ -530,7 +592,6 @@ export async function testProviderConnection(options: {
       { reasoning: false },
       {
         supportsVision: false,
-        reasoningFlag: false,
         resultProviderId: 'custom:test',
       }
     )
@@ -578,6 +639,14 @@ async function* streamProvider(
 ): AsyncGenerator<StreamChunk> {
   if (provider.id === 'glm') {
     yield* streamGLM(messages, options)
+    return
+  }
+  if (provider.id === 'claude') {
+    yield* streamClaude(provider, messages, options)
+    return
+  }
+  if (provider.id === 'gemini') {
+    yield* streamGemini(provider, messages, options)
     return
   }
   yield* streamOpenAICompatible(provider, messages, options)
@@ -690,6 +759,34 @@ async function* streamGLM(
 /* ---- OpenAI-compatible providers (DeepSeek, OpenAI, Grok, Groq, Qwen, Kimi, custom) ---- */
 
 /**
+ * "reasoning: true" means something different per provider/model — this
+ * resolves it to the actual model override + extra request-body fields
+ * needed, instead of a single generic flag that only ever worked for one
+ * provider. Providers not listed here get no extra fields (matching their
+ * `supportsReasoning: false`, so requesting reasoning is a harmless no-op
+ * rather than sending a param the API doesn't understand).
+ */
+function reasoningRequestExtras(
+  provider: ProviderConfig,
+  options: ChatOptions
+): { model?: string; extra: Record<string, unknown> } {
+  if (!options.reasoning) return { extra: {} }
+  switch (provider.id) {
+    case 'deepseek':
+      // deepseek-chat never returns reasoning_content, no matter what flag
+      // is sent; deepseek-reasoner always does, with no extra flag needed.
+      // Only override if the caller didn't already pin an explicit model.
+      return options.model ? { extra: {} } : { model: 'deepseek-reasoner', extra: {} }
+    case 'qwen':
+      return { extra: { enable_thinking: true } }
+    case 'openrouter':
+      return { extra: { reasoning: { max_tokens: 1024 } } }
+    default:
+      return { extra: {} }
+  }
+}
+
+/**
  * Low-level OpenAI-compatible `/chat/completions` call, parameterised by
  * label/baseURL/keys/model so it can serve both built-in providers and
  * fully custom user-defined ones.
@@ -701,7 +798,7 @@ async function postChatCompletions(
   model: string,
   messages: ChatMessage[],
   options: ChatOptions,
-  opts: { supportsVision: boolean; reasoningFlag: boolean; resultProviderId: string }
+  opts: { supportsVision: boolean; extraBody?: Record<string, unknown>; resultProviderId: string }
 ): Promise<ChatResult> {
   const hasImage = messages.some((m) => m.image)
 
@@ -721,9 +818,7 @@ async function postChatCompletions(
     }),
     temperature: options.temperature ?? 0.7,
     max_tokens: options.maxTokens,
-  }
-  if (options.reasoning && opts.reasoningFlag) {
-    body.reasoning = true
+    ...opts.extraBody,
   }
 
   let lastError: unknown
@@ -777,11 +872,16 @@ async function callOpenAICompatible(
 ): Promise<ChatResult> {
   const { keys, model } = await resolveProviderKeys(provider, options)
   if (keys.length === 0) throw new Error(`${provider.label} API key not configured`)
-  return postChatCompletions(provider.label, provider.baseURL!, keys, model, messages, options, {
-    supportsVision: provider.supportsVision,
-    reasoningFlag: provider.id === 'deepseek',
-    resultProviderId: provider.id,
-  })
+  const { model: reasoningModel, extra } = reasoningRequestExtras(provider, options)
+  return postChatCompletions(
+    provider.label,
+    provider.baseURL!,
+    keys,
+    reasoningModel || model,
+    messages,
+    options,
+    { supportsVision: provider.supportsVision, extraBody: extra, resultProviderId: provider.id }
+  )
 }
 
 async function callCustomProvider(
@@ -799,7 +899,7 @@ async function callCustomProvider(
     model,
     messages,
     options,
-    { supportsVision: true, reasoningFlag: false, resultProviderId: `${CUSTOM_PROVIDER_PREFIX}${customId}` }
+    { supportsVision: true, resultProviderId: `${CUSTOM_PROVIDER_PREFIX}${customId}` }
   )
 }
 
@@ -810,10 +910,16 @@ async function* streamOpenAICompatible(
 ): AsyncGenerator<StreamChunk> {
   const { keys, model } = await resolveProviderKeys(provider, options)
   if (keys.length === 0) throw new Error(`${provider.label} API key not configured`)
-  yield* streamChatCompletions(provider.label, provider.baseURL!, keys, model, messages, options, {
-    supportsVision: provider.supportsVision,
-    reasoningFlag: provider.id === 'deepseek',
-  })
+  const { model: reasoningModel, extra } = reasoningRequestExtras(provider, options)
+  yield* streamChatCompletions(
+    provider.label,
+    provider.baseURL!,
+    keys,
+    reasoningModel || model,
+    messages,
+    options,
+    { supportsVision: provider.supportsVision, extraBody: extra }
+  )
 }
 
 async function* streamCustomProvider(
@@ -826,7 +932,6 @@ async function* streamCustomProvider(
   const keys = splitKeys(decryptSecret(row.apiKey))
   yield* streamChatCompletions(row.label || 'Custom provider', row.baseURL!, keys, model, messages, options, {
     supportsVision: true,
-    reasoningFlag: false,
   })
 }
 
@@ -837,7 +942,7 @@ async function* streamChatCompletions(
   model: string,
   messages: ChatMessage[],
   options: ChatOptions,
-  opts: { supportsVision: boolean; reasoningFlag: boolean }
+  opts: { supportsVision: boolean; extraBody?: Record<string, unknown> }
 ): AsyncGenerator<StreamChunk> {
   const hasImage = messages.some((m) => m.image)
 
@@ -857,9 +962,7 @@ async function* streamChatCompletions(
       return { role: m.role, content: m.content }
     }),
     temperature: options.temperature ?? 0.7,
-  }
-  if (options.reasoning && opts.reasoningFlag) {
-    body.reasoning = true
+    ...opts.extraBody,
   }
 
   // Rotate keys only on the initial connection — once bytes start streaming
@@ -985,6 +1088,89 @@ async function callClaude(
   return { content, reasoning, provider: 'claude', model }
 }
 
+/**
+ * Claude streaming via the Messages API's native SSE (`stream: true`).
+ * Anthropic interleaves distinct content blocks by index — text and
+ * thinking blocks are both streamed as `content_block_delta` events, so
+ * `delta.type` (`thinking_delta` vs `text_delta`) is what routes each
+ * chunk to reasoningDelta vs delta, not which block index it belongs to.
+ */
+async function* streamClaude(
+  provider: ProviderConfig,
+  messages: ChatMessage[],
+  options: ChatOptions
+): AsyncGenerator<StreamChunk> {
+  const { keys, model } = await resolveProviderKeys(provider, options)
+  if (keys.length === 0) throw new Error(`${provider.label} API key not configured`)
+  const apiKey = keys[0]
+
+  const system = messages.filter((m) => m.role === 'system').map((m) => m.content).join('\n')
+  const conv = messages
+    .filter((m) => m.role !== 'system')
+    .map((m) => ({ role: m.role, content: m.content }))
+
+  const body: Record<string, unknown> = {
+    model,
+    max_tokens: options.maxTokens ?? 4096,
+    messages: conv,
+    stream: true,
+  }
+  if (system) body.system = system
+  if (options.reasoning) {
+    body.thinking = { type: 'enabled', budget_tokens: 2000 }
+  }
+
+  const res = await fetch(`${provider.baseURL}/messages`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify(body),
+  })
+  if (!res.ok || !res.body) {
+    const errText = res.body ? '' : await res.text().catch(() => '')
+    throw new Error(`${provider.label} stream error ${res.status}: ${errText.slice(0, 200)}`)
+  }
+
+  const reader = res.body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    buffer += decoder.decode(value, { stream: true })
+    const lines = buffer.split('\n')
+    buffer = lines.pop() || ''
+    for (const line of lines) {
+      const trimmed = line.trim()
+      if (!trimmed.startsWith('data: ')) continue
+      const json = trimmed.slice(6)
+      if (!json) continue
+      let evt: Record<string, unknown>
+      try {
+        evt = JSON.parse(json)
+      } catch {
+        continue
+      }
+      if (evt.type === 'content_block_delta') {
+        const delta = evt.delta as { type?: string; text?: string; thinking?: string }
+        if (delta?.type === 'thinking_delta' && delta.thinking) {
+          yield { reasoningDelta: delta.thinking }
+        } else if (delta?.type === 'text_delta' && delta.text) {
+          yield { delta: delta.text }
+        }
+      } else if (evt.type === 'message_stop') {
+        yield { delta: '', done: true }
+        return
+      }
+    }
+  }
+  yield { delta: '', done: true }
+}
+
 /* ---- Gemini (Google Generative Language API) ---- */
 
 async function callGemini(
@@ -1073,4 +1259,106 @@ async function callGemini(
     }
   }
   throw lastError instanceof Error ? lastError : new Error(`${provider.label} failed with all configured keys`)
+}
+
+/**
+ * Gemini streaming via `:streamGenerateContent?alt=sse` — Google's native
+ * SSE streaming endpoint. Each event is a partial GenerateContentResponse
+ * with the same `parts[].thought` shape as the non-streaming call, so a
+ * part is routed to reasoningDelta vs delta purely on that flag.
+ */
+async function* streamGemini(
+  provider: ProviderConfig,
+  messages: ChatMessage[],
+  options: ChatOptions
+): AsyncGenerator<StreamChunk> {
+  const { keys, model } = await resolveProviderKeys(provider, options)
+  if (keys.length === 0) throw new Error(`${provider.label} API key not configured`)
+
+  const system = messages.filter((m) => m.role === 'system').map((m) => m.content).join('\n')
+  const conv = messages.filter((m) => m.role !== 'system')
+  const contents = conv.map((m) => {
+    const parts: Record<string, unknown>[] = [{ text: m.content }]
+    if (m.image) {
+      const match = /^data:([^;]+);base64,(.+)$/.exec(m.image)
+      if (match) {
+        parts.push({ inlineData: { mimeType: match[1], data: match[2] } })
+      } else {
+        parts.push({ inlineData: { mimeType: 'image/png', data: m.image } })
+      }
+    }
+    return { role: m.role === 'assistant' ? 'model' : 'user', parts }
+  })
+
+  const body: Record<string, unknown> = {
+    contents,
+    generationConfig: {
+      temperature: options.temperature ?? 0.7,
+      maxOutputTokens: options.maxTokens ?? 4096,
+      ...(options.reasoning ? { thinkingConfig: { includeThoughts: true } } : {}),
+    },
+  }
+  if (system) body.systemInstruction = { parts: [{ text: system }] }
+
+  let lastError: unknown
+  for (let i = 0; i < keys.length; i++) {
+    const apiKey = keys[i]
+    const url = `${provider.baseURL}/models/${model}:streamGenerateContent?alt=sse&key=${apiKey}`
+    let res: Response
+    try {
+      res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+    } catch (err) {
+      lastError = err
+      if (i === keys.length - 1) throw err
+      continue
+    }
+    if (!res.ok || !res.body) {
+      const errText = res.body ? '' : await res.text().catch(() => '')
+      const err = new Error(`${provider.label} stream error ${res.status}: ${errText.slice(0, 200)}`)
+      if ((res.status === 429 || isQuotaExhaustedError(err)) && i < keys.length - 1) {
+        lastError = err
+        continue
+      }
+      throw err
+    }
+
+    const reader = res.body.getReader()
+    const decoder = new TextDecoder()
+    let buffer = ''
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split('\n')
+      buffer = lines.pop() || ''
+      for (const line of lines) {
+        const trimmed = line.trim()
+        if (!trimmed.startsWith('data: ')) continue
+        const json = trimmed.slice(6)
+        if (!json) continue
+        try {
+          const chunk = JSON.parse(json)
+          const candidates = chunk.candidates || []
+          const parts = candidates.flatMap(
+            (c: { content?: { parts?: { text?: string; thought?: boolean }[] } }) =>
+              c.content?.parts || []
+          )
+          for (const p of parts as { text?: string; thought?: boolean }[]) {
+            if (!p.text) continue
+            if (p.thought) yield { reasoningDelta: p.text }
+            else yield { delta: p.text }
+          }
+        } catch {
+          // skip malformed chunk
+        }
+      }
+    }
+    yield { delta: '', done: true }
+    return
+  }
+  throw lastError instanceof Error ? lastError : new Error(`${provider.label} stream failed with all configured keys`)
 }

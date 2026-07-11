@@ -25,7 +25,13 @@
  * aside from the model-calling layer.
  */
 
-import { chat, streamChat, type ChatMessage, type ChatOptions } from '../ai/providers'
+import {
+  chat,
+  streamChat,
+  type ChatMessage,
+  type ChatOptions,
+  type FallbackAttempt,
+} from '../ai/providers'
 import { extractJson } from './json'
 import type {
   BloomLevel,
@@ -45,12 +51,31 @@ export type Emit = (
   text: string
 ) => void
 
+/** Logs a clear, distinct line the moment a provider is skipped over in
+    the fallback chain — the pipeline log otherwise only ever reveals a
+    failed provider indirectly (if every provider fails) or not at all
+    (if a later one in the chain quietly succeeds). */
+function onProviderFallback(emit: Emit, attempt: FallbackAttempt) {
+  emit(
+    'warn',
+    attempt.quotaExhausted
+      ? `${attempt.label} is rate-limited / quota-exhausted right now — trying the next provider…`
+      : `${attempt.label} failed (${attempt.message}) — trying the next provider…`
+  )
+}
+
 async function streamAgentCall(
   messages: ChatMessage[],
   options: ChatOptions,
   emit: Emit
 ): Promise<{ content: string; reasoning: string[]; provider: string; model: string }> {
-  const stream = streamChat(messages, options)
+  const stream = streamChat(messages, {
+    ...options,
+    onFallback: (attempt) => {
+      onProviderFallback(emit, attempt)
+      options.onFallback?.(attempt)
+    },
+  })
   let content = ''
   let reasoningAccumulator = ''
   let currentReasoningLine = ''
