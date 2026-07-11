@@ -15,7 +15,7 @@ import RotatingText from '@/components/reactbits/RotatingText'
 import DecryptedText from '@/components/reactbits/DecryptedText'
 import { ShaderLogo } from '@/components/shader-icons'
 import { LiveConversionCard } from '@/components/LiveConversionCard'
-import DiagramShapes3D from '@/components/three/DiagramShapes3D'
+import BlueprintScene from '@/components/three/BlueprintScene'
 import { MagneticButton } from '@/components/magnetic-button'
 
 /* ------------------------------------------------------------------ */
@@ -89,7 +89,7 @@ export default function Hero3D({ onEnterConsole }: Hero3DProps) {
             WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 75%, rgba(0,0,0,0) 100%)',
           }}
         >
-          <DiagramShapes3D theme={resolvedTheme === 'light' ? 'light' : 'dark'} className="h-full w-full" />
+          <BlueprintScene theme={resolvedTheme === 'light' ? 'light' : 'dark'} className="h-full w-full" />
         </div>
       )}
 

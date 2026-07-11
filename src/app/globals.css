@@ -362,38 +362,129 @@
   .spring-transition {
     transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   }
+
+  /* ----------------------------------------------------------------
+     GLASS PANELS — proper glassmorphism recipe:
+     1. backdrop-filter blur + saturate (saturate keeps blurred content
+        from reading as flat grey fog — it pushes the color of whatever
+        is behind the glass back up)
+     2. a two-tone edge: brighter top/left catch light, dimmer
+        bottom/right, instead of one flat border color
+     3. a diagonal specular sheen pseudo-element (::before) — the detail
+        that actually reads as "glass" rather than "translucent card"
+     4. layered shadow: soft ambient + a thin inset highlight, so the
+        panel looks like it's sitting a few mm above the page
+     ---------------------------------------------------------------- */
   .brutal-block, .glass, .glass-strong, .glass-primary, .hw-panel {
     background: var(--bg-panel);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
     border: 1px solid var(--border-panel);
+    border-top-color: color-mix(in srgb, var(--foreground) 14%, var(--border-panel));
+    border-left-color: color-mix(in srgb, var(--foreground) 8%, var(--border-panel));
     border-radius: var(--radius);
-    box-shadow: var(--shadow-md), inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+    box-shadow:
+      var(--shadow-md),
+      0 1px 0 0 color-mix(in srgb, var(--foreground) 6%, transparent) inset,
+      0 -1px 0 0 rgba(0, 0, 0, 0.05) inset;
     position: relative;
     overflow: hidden;
+    isolation: isolate;
     transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  /* Specular sheen — a soft diagonal band of light across the upper
+     portion of the panel, like light grazing curved glass. Kept
+     low-opacity and non-interactive; it's the detail that separates
+     "blurred card" from "glass." */
+  .brutal-block::before, .glass::before, .glass-strong::before,
+  .glass-primary::before, .hw-panel::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background: linear-gradient(
+      115deg,
+      color-mix(in srgb, var(--foreground) 10%, transparent) 0%,
+      transparent 22%,
+      transparent 78%,
+      color-mix(in srgb, var(--foreground) 4%, transparent) 100%
+    );
+    opacity: 0.5;
+    mix-blend-mode: overlay;
+  }
+  .dark .brutal-block::before, .dark .glass::before, .dark .glass-strong::before,
+  .dark .glass-primary::before, .dark .hw-panel::before {
+    background: linear-gradient(
+      115deg,
+      rgba(255, 255, 255, 0.09) 0%,
+      transparent 22%,
+      transparent 78%,
+      rgba(255, 255, 255, 0.03) 100%
+    );
+    mix-blend-mode: soft-light;
+    opacity: 0.7;
+  }
+  /* Everything else in the panel renders above the sheen */
+  .brutal-block > *, .glass > *, .glass-strong > *, .glass-primary > *, .hw-panel > * {
+    position: relative;
+    z-index: 2;
   }
   .brutal-block:hover, .glass:hover, .hw-panel:hover {
     border-color: var(--border-strong);
+    background: var(--bg-elevated);
     transform: translateY(-2px);
-    box-shadow: var(--shadow-lg), 0 0 15px color-mix(in srgb, var(--primary) 10%, transparent);
+    box-shadow:
+      var(--shadow-lg),
+      0 0 20px color-mix(in srgb, var(--primary) 12%, transparent),
+      0 1px 0 0 color-mix(in srgb, var(--foreground) 8%, transparent) inset;
   }
   .brutal-block-sm {
     background: var(--bg-elevated);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(14px) saturate(150%);
+    -webkit-backdrop-filter: blur(14px) saturate(150%);
     border: 1px solid var(--border-panel);
+    border-top-color: color-mix(in srgb, var(--foreground) 12%, var(--border-panel));
     border-radius: 12px;
-    box-shadow: var(--shadow-sm);
+    box-shadow: var(--shadow-sm), 0 1px 0 0 color-mix(in srgb, var(--foreground) 5%, transparent) inset;
+    position: relative;
+    overflow: hidden;
     transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
   }
   .brutal-block-lg {
     background: var(--bg-panel);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(28px) saturate(165%);
+    -webkit-backdrop-filter: blur(28px) saturate(165%);
     border: 1px solid var(--border-panel);
+    border-top-color: color-mix(in srgb, var(--foreground) 14%, var(--border-panel));
     border-radius: var(--radius);
-    box-shadow: var(--shadow-lg);
+    box-shadow:
+      var(--shadow-lg),
+      0 1px 0 0 color-mix(in srgb, var(--foreground) 7%, transparent) inset;
+    position: relative;
+    overflow: hidden;
+  }
+  .brutal-block-lg::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background: linear-gradient(
+      120deg,
+      color-mix(in srgb, var(--foreground) 9%, transparent) 0%,
+      transparent 30%
+    );
+    opacity: 0.6;
+    mix-blend-mode: overlay;
+  }
+  .dark .brutal-block-lg::before {
+    background: linear-gradient(120deg, rgba(255, 255, 255, 0.08) 0%, transparent 30%);
+    mix-blend-mode: soft-light;
+  }
+  .brutal-block-lg > * {
+    position: relative;
+    z-index: 2;
   }
   .brutal-interactive {
     transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
@@ -403,6 +494,16 @@
   }
   .glow-accent, .glow-soft {
     box-shadow: var(--shadow-red);
+  }
+
+  /* Frosted app chrome (top bars, sticky headers, floating rails) —
+     lighter blur than content panels since these sit over moving
+     content and need to stay legible without a heavy sheen. */
+  .glass-chrome {
+    background: color-mix(in srgb, var(--background) 72%, transparent);
+    backdrop-filter: blur(14px) saturate(150%);
+    -webkit-backdrop-filter: blur(14px) saturate(150%);
+    border-color: var(--border-panel);
   }
 
   .text-balance { text-wrap: balance; }
@@ -659,6 +760,26 @@
   transform: none !important;
   box-shadow: var(--shadow-md) !important;
   border-color: var(--border-strong) !important;
+}
+
+/* Minimal themes are flat by design — kill the specular sheen and
+   two-tone glass edge from the Cognitive Atlas glass recipe. */
+.minimal-light .brutal-block::before, .minimal-dark .brutal-block::before,
+.minimal-light .glass::before, .minimal-dark .glass::before,
+.minimal-light .glass-strong::before, .minimal-dark .glass-strong::before,
+.minimal-light .glass-primary::before, .minimal-dark .glass-primary::before,
+.minimal-light .hw-panel::before, .minimal-dark .hw-panel::before,
+.minimal-light .brutal-block-lg::before, .minimal-dark .brutal-block-lg::before {
+  display: none !important;
+}
+.minimal-light .brutal-block, .minimal-dark .brutal-block,
+.minimal-light .glass, .minimal-dark .glass,
+.minimal-light .hw-panel, .minimal-dark .hw-panel,
+.minimal-light .brutal-block-lg, .minimal-dark .brutal-block-lg {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-top-color: var(--border-panel) !important;
+  border-left-color: var(--border-panel) !important;
 }
 
 /* Disable background gradients/borders from the other theme */

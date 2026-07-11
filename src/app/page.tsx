@@ -24,10 +24,8 @@ import {
   StaggerItem,
 } from '@/components/reveal'
 import { MagneticButton } from '@/components/magnetic-button'
-import SiteConstellation from '@/components/three/SiteConstellation'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
-import { useTheme } from 'next-themes'
 
 const Hero3D = dynamic(() => import('@/components/three/Hero3D'), {
   ssr: false,
@@ -222,21 +220,9 @@ function accent(index: number): string {
 
 export default function LandingPage() {
   const router = useRouter()
-  const { theme } = useTheme()
-  const isMinimal = theme?.startsWith('minimal')
 
   return (
     <div className="relative flex min-h-screen flex-col bg-hero-void">
-      {/* Page-fixed particle constellation — one continuous field behind
-          every section, reshaping as the page scrolls (logo silhouette at
-          the top, scattering through the middle, a checkmark glyph further
-          down). Colors are read live from the active theme's own tokens. */}
-      {!isMinimal && (
-        <div className="pointer-events-none fixed inset-0 z-0" aria-hidden>
-          <SiteConstellation />
-        </div>
-      )}
-
       <ScrollProgress />
 
       {/* Floating theme toggle — visible immediately on landing */}

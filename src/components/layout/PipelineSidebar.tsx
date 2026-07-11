@@ -39,7 +39,7 @@ export function PipelineSidebar({ collapsed, variant = 'rail' }: PipelineSidebar
       animate={{ width: collapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH }}
       transition={{ type: 'spring', stiffness: 320, damping: 36 }}
       aria-label="Pipeline navigation"
-      className="relative z-20 hidden shrink-0 self-start border-r border-border/40 bg-sidebar lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col"
+      className="glass-chrome relative z-20 hidden shrink-0 self-start border-r lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col"
     >
       <SidebarContent collapsed={collapsed} variant="rail" />
     </motion.aside>

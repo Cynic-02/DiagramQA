@@ -47,7 +47,7 @@ export function TopBar({ onOpenMobileSidebar }: TopBarProps) {
   }
 
   return (
-    <header className="sticky top-0 z-30 w-full flex h-14 shrink-0 items-center gap-3 border-b border-border/40 bg-background/80 backdrop-blur-md px-4 sm:px-6">
+    <header className="glass-chrome sticky top-0 z-30 w-full flex h-14 shrink-0 items-center gap-3 border-b px-4 sm:px-6">
       {/* Mobile sidebar trigger */}
       {onOpenMobileSidebar && (
         <Button
