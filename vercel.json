@@ -1,0 +1,13 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "bun run build",
+  "installCommand": "bun install",
+  "functions": {
+    "src/app/api/chat/stream/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/runs/[id]/stream/route.ts": {
+      "maxDuration": 300
+    }
+  }
+}

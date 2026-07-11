@@ -1,0 +1,322 @@
+     1→# AR2-DDCQG Build Worklog
+     2→
+     3→Shared work log for all agents working on the AR2-DDCQG platform.
+     4→Each agent MUST append a new section (starting with `---`) after finishing
+     5→its Task ID. Do NOT overwrite previous sections.
+     6→
+     7→---
+     8→Task ID: 1
+     9→Agent: orchestrator (main)
+    10→Task: Foundation — deps, prisma schema, shared types, Zustand store, socket client, dark theme, layout, API routes
+    11→
+    12→Work Log:
+    13→- Installed `three`, `@react-three/fiber`, `@react-three/drei`, `socket.io-client`, `@types/three` in the main project.
+    14→- Rewrote `prisma/schema.prisma` with `Diagram` and `Run` models (run stores JSON-stringified stage outputs). Ran `bun run db:push`.
+    15→- Created `src/lib/types.ts` — canonical types: StageId, StageStatus, BloomLevel, StageMeta, STAGES, STAGE_ORDER, ExtractionOutput, GeneratedQuestion, GeneratedAnswer, VerificationVerdict, FinalQAItem, StageEvent, LogLine, RunRecord, CreateRunResponse.
+    16→- Created `src/lib/bloom.ts` — BLOOM_META with verb/blurb/hue per Bloom level.
+    17→- Created `src/lib/store.ts` — Zustand store `usePipelineStore` with stage states, outputs, logs, run lifecycle, sidebar collapse, `hydrateFromHistory`.
+    18→- Created `src/lib/socket.ts` — singleton socket.io client targeting `/?XTransformPort=3003` (pipeline mini-service).
+    19→- Rewrote `src/app/globals.css` — dark-first palette (emerald primary, amber/coral accents, NO indigo/blue), glass/glass-strong/glow-accent/grid-faint/scroll-slim utilities.
+    20→- Rewrote `src/app/layout.tsx` — dark default, ThemeProvider, Sonner + Toaster, updated metadata.
+    21→- Created `src/components/theme-provider.tsx`.
+    22→- Created API routes: `POST /api/runs` (create diagram+run), `GET /api/runs/[id]` (hydrate), `POST /api/runs/[id]` (also serves `/complete` via separate file — see note), `GET /api/history`.
+    23→- Removed default `src/app/api/route.ts`.
+    24→
+    25→Stage Summary:
+    26→- Foundation complete. The store/socket/types contracts are frozen.
+    27→- Pipeline mini-service port = 3003. Socket path = "/", XTransformPort=3003 in query.
+    28→- Bloom default = "Analyze".
+    29→- Dark mode is the default and only shipped mode.
+    30→- Stage order: upload → extraction → generation → answering → verification → results.
+    31→- All stage payloads flow through `StageEvent` on the socket channel `stage` and are applied via `usePipelineStore.applyStageEvent`.
+    32→- Subagents must NOT mutate `src/lib/types.ts`, `src/lib/store.ts`, or `src/lib/bloom.ts` — they are contracts. If a field is missing, flag it in the worklog instead.
+    33→
+    34→---
+    35→Task ID: 2-a
+    36→Agent: full-stack-developer (3D hero)
+    37→Task: 3D Hero section — diagram→graph transformation scene, scroll handoff, fallback, hero content overlay
+    38→
+    39→Work Log:
+    40→- Created `src/components/three/Hero3D.tsx` — default-exported client component. Renders its own `<section id="hero" className="relative min-h-screen ...">` wrapper. Accepts `onEnterConsole?: () => void`. The "Begin" button smooth-scrolls to `#console` (falls back to `window.scrollBy` by one viewport) and then calls `onEnterConsole?.()`.
+    41→  - WebGL detection (`detectWebGL`) + low-end heuristic (`max-width: 640px) AND hardwareConcurrency < 4`). Both lazy-init via `useState(() => ...)` to satisfy `react-hooks/set-state-in-effect`. SSR-safe (`typeof window === 'undefined'` guards).
+    42→  - `prefers-reduced-motion` via framer-motion `useReducedMotion()`. When set: text entrance animations skip (`initial={false}`), scene jumps straight to final assembled graph (no scatter→flat→graph phases), auto-rotation disabled (only scroll-driven group rotation remains).
+    43→  - Scroll wiring via `useScroll({ target: heroRef, offset: ["start start", "end start"] })`:
+    44→    - `cameraZ` = 9 → 4 → 3 over [0, 0.5, 1]
+    45→    - `canvasOpacity` = 1 → 0.6 → 0 over [0, 0.6, 1]
+    46→    - `groupRotY` = 0 → π·0.6 over [0, 1]
+    47→    - `contentOpacity` = 1 → 0 over [0, 0.45]; `contentY` = 0 → -80
+    48→  - Canvas unmounts when `scrollYProgress > 0.96` (hysteresis remount at ≤0.9) to free GPU.
+    49→  - 4-layer z-stack: (0) radial emerald glow, (1) Canvas/fallback, (2) radial background-tinted gradient behind text for legibility (NOT a flat box), (10) content overlay.
+    50→  - Content overlay: eyebrow chip ("AR2-DDCQG · Multi-agent pipeline" with pulsing emerald dot), staggered fade-up h1 with emerald→teal gradient on "verified question set", subhead mentioning the four agents, Begin button + "No sign-up · Local sandbox" caption, agent chips row (Extraction / Generation / Answering / Verification with colored status dots), footer hint "Scroll to enter the console ↓". All entrance animations use a `[0.22, 1, 0.36, 1]` ease with staggered delays.
+    51→- Created `src/components/three/DiagramGraphScene.tsx` — R3F `<Canvas>` + `<GraphGroup>`. Default export `DiagramGraphScene({ cameraZ, groupRotY, reducedMotion })` (props are `MotionValue<number>` + boolean). Canvas is transparent (`gl={{ alpha: true }}`, `style={{ background: 'transparent' }}`), `dpr={[1,2]}`, default `frameloop` (continuous).
+    52→  - Scene: 14 nodes (4 labeled INPUT/PARSER/GRAPH/QA in coral highlight, 10 satellite in emerald), 23 edges. Hard-coded `SCATTERED` / `FLAT` (z=0 plane) / `GRAPH` (3D volume) position tables.
+    53→  - Animation timeline (clock-based, in a single `useFrame`): p1 = smoothstep(0,1.8,t) for scattered→flat; p2 = smoothstep(1.6,4.2,t) for flat→graph. With `reducedMotion`, both clamp to 1 instantly.
+    54→  - Subtle per-node "breathing" oscillation (±0.07) on the 4 highlight nodes after assembly, written into the shared `positionsRef` so edges stay perfectly synced.
+    55→  - Camera Z driven by `cameraZ.get()` (scroll); pointer parallax (x ±0.7, y ±0.4) lerped at 0.04 (or 0.1 toward origin when reducedMotion). `camera.lookAt(0,0,0)` each frame.
+    56→  - Group rotation = `groupRotY.get() + autoRotRef` (autoRot ≈ 0.07 rad/s, disabled in reducedMotion); plus a tiny `sin(t*0.15)*0.06` x-tilt.
+    57→  - Important: used `state.camera` (from `useFrame` arg) instead of `useThree()` so the `react-hooks/immutability` lint rule doesn't fire on camera position mutations. Used `camera.position.set(...)` rather than direct property writes.
+    58→  - Edges: drei `<Line>` with imperative `geometry.setPositions(...)` each frame via a structural `LineLike` ref type. Initial `points={[[0,0,0],[0,0,0]]}` placeholder.
+    59→  - Labels: drei `<Text>` inside `<Billboard>` (always faces camera) with `outlineWidth` for legibility, wrapped in a `<group>` whose position is updated each frame to follow the labeled node (with +0.45 y offset). Text color `#e2e8f0`, font size 0.2, monospace-feel via `letterSpacing`. (Note: troika loads its default font from a CDN; if blocked in a sandbox, labels silently no-op — the visual narrative still works without them.)
+    60→  - Lighting: ambient 0.6 + hemisphere (emerald top, dark bottom) 0.4 + emerald pointLight intensity 40 at [6,6,6] + white directional 1.4 at [-4,-2,4]. Moody, high-contrast.
+    61→  - Materials: `meshStandardMaterial` with `emissive` matching `color`, `emissiveIntensity` 0.5/0.75, `roughness 0.3`, `metalness 0.2`, `toneMapped={false}` so emissive colors stay vivid.
+    62→- Created `src/components/three/HeroFallback.tsx` — static SVG fallback shown when WebGL is unavailable or low-end heuristic matches. Renders the same diagram→graph concept: flat pipeline (INPUT→PARSER→GRAPH→QA rectangles) on the left with satellite branch dots, a coral "LIFT" arrow, and a 6-node 3D knowledge graph on the right with glow halos. CSS radial glow behind it. Tasteful, not broken-looking.
+    63→- Lint: `bun run lint` is clean (0 errors, 0 warnings). Fixed two initial errors:
+    64→  1. `react-hooks/immutability` on `camera.position.z = ...` → switched to `camera.position.set(...)` via `state.camera` from `useFrame` (not `useThree`).
+    65→  2. `react-hooks/set-state-in-effect` on `setWebglOk(...)` in `useEffect` → moved detection into lazy `useState(() => ...)` initializers (SSR-guarded).
+    66→- TypeScript strict: `bunx tsc --noEmit` reports 0 errors in `src/components/three/*`. (Pre-existing errors in `examples/`, `skills/`, and `src/lib/store.ts` are outside this task's scope and were not touched, per the orchestrator's "do not mutate types/store/bloom" rule.)
+    67→
+    68→Decisions the orchestrator needs to know:
+    69→- **Export contract**: `export default function Hero3D(props: { onEnterConsole?: () => void })` from `src/components/three/Hero3D.tsx`. Hero3D renders its OWN `<section id="hero" className="relative min-h-screen w-full overflow-hidden bg-background">`. The page should mount it with `next/dynamic(() => import('@/components/three/Hero3D'), { ssr: false })` and place a separate `<section id="console">` (or any element with `id="console"`) immediately after — Hero3D's "Begin" button will `scrollIntoView({behavior:'smooth'})` to it. The optional `onEnterConsole` callback fires after the scroll is triggered.
+    70→- **Page layout suggestion**: `<> <Hero3D /> <section id="console"> ...app console... </section> </>`. The hero is `min-h-screen`, so the console section starts on the next viewport. No additional scroll container needed — `useScroll` targets the hero `<section>` itself.
+    71→- **Color policy honored**: emerald primary (`#34d399`), coral highlight (`#fb7c5c`), amber/orange accents on agent chips. NO indigo/blue. All text uses Tailwind tokens (`text-foreground`, `text-muted-foreground`) so it adapts to the dark theme.
+    72→- **`prefers-reduced-motion`**: respected. Entrance animations skip, scene shows the final assembled 3D graph statically (auto-rotation disabled), camera still responds to scroll (user-initiated, not "motion").
+    73→- **Troika font**: drei `<Text>` uses its default font (loaded from gstatic CDN). If the sandbox blocks that, labels simply don't render — the diagram→graph narrative is fully carried by the nodes + edges. No build-time font dependency.
+    74→- **Bundle**: drei imports are explicit (`Line`, `Text`, `Billboard`) — no namespace import. Three is imported as `* as THREE` and used only for `MathUtils` + types.
+    75→- **`<Float>` not used**: chose per-node breathing oscillation in `useFrame` over drei `<Float>` because Float's group-level offset would desync labeled-node meshes from their edge endpoints (edges use base positions). The visual goal ("organic motion on a few highlight nodes") is preserved and stays edge-synced. Flagging here for transparency.
+    76→
+    77→---
+    78→Task ID: 2-b
+    79→Agent: full-stack-developer (pipeline sidebar + app shell)
+    80→Task: Pipeline Sidebar + App Shell — `<section id="console">` wrapper, sticky sidebar with animated collapse, top bar, live agent log rail
+    81→
+    82→Work Log:
+    83→- Created `src/components/layout/StageStatusDot.tsx` — reusable presentational indicator. Props `{ status: StageStatus; size?: 'sm' | 'md'; className? }`. idle=hollow muted circle, running=pulsing emerald ring + spinning border-top ring + center pip, done=emerald check, flagged=amber triangle pulse, error=coral X. `useReducedMotion()` skips animations. All motion via framer-motion (no globals.css keyframes added).
+    84→- Created `src/components/layout/SidebarStageItem.tsx` — single nav row. Exports `STAGE_ICON: Record<StageId, LucideIcon>` (Upload/ScanEye/Sparkles/MessageSquareQuote/ShieldCheck/ListChecks). Active stage gets `glass glow-accent` panel + left emerald accent bar with framer-motion `layoutId="active-stage-panel"` (rail) / `"active-stage-panel-sheet"` (sheet) for smooth slide. Click guard: enabled when `id==='upload' || status!=='idle'`; idle future stages show `Lock` + reduced opacity + `cursor-not-allowed`. Uses `aria-disabled` (not `disabled`) so collapsed-state Tooltip still fires.
+    85→- Created `src/components/layout/PipelineSidebar.tsx` — the sidebar. `motion.aside` animates width 280↔64 (spring 320/36). `hidden lg:flex lg:sticky lg:top-0 lg:h-screen lg:self-start`. `variant="sheet"` renders bare content for the mobile Sheet. Header (Hexagon + "AR2-DDCQG" mono + "v0.1" pill), Nav (STAGES → SidebarStageItem, with expanded-only progress connector line at `left-[22px]` whose height animates to `progress*100%`), "Pipeline running — collapse the rail" hint (AnimatePresence), Run block (bloom pill colored by `BLOOM_META[level].hue` via inline `color-mix`, truncated run id mono, status with spinner/check/X, error message), Footer (collapse toggle chevron).
+    86→- Created `src/components/layout/TopBar.tsx` — slim sticky `glass-strong` bar (`h-12 sticky top-0 z-30`). Left: mobile Menu button (`lg:hidden`, calls `onOpenMobileSidebar`) + active stage label (animated key-swap) + agent. Right: bloom pill (hue-colored), run status badge (Idle/Running/Failed/Done), LIVE pill (pulsing emerald dot, only while running), run id mono, New-run button (`RotateCcw`, `disabled={running}`, Tooltip).
+    87→- Created `src/components/layout/AgentLogRail.tsx` — `fixed bottom-4 right-4 z-40` floating cluster, default collapsed to a small `Terminal` toggle button. Expanded: `glass-strong` panel `w-[min(560px,calc(100vw-2rem))]` with header (`Terminal` + "AGENT LOG" + count) + body `max-h-72 overflow-y-auto scroll-slim`. Each LogRow: timestamp (mono HH:MM:SS) + stage tag (colored by `STAGE_COLOR`: slate/emerald/amber/teal/coral — NO blue) + level icon + text. Empty state "No agent activity yet." `role="log" aria-live="polite"`. AnimatePresence expand/collapse.
+    88→- Created `src/components/layout/AppShell.tsx` — the shell. `export function AppShell({ children }: { children: React.ReactNode })`. Root `<section id="console" className="relative flex min-h-screen flex-col bg-background">`. Top hairline emerald gradient thread (`z-40`). Inner `flex flex-1`: desktop `PipelineSidebar` (rail) + mobile `Sheet` (left, 280px, sr-only `SheetTitle`) + main column. Main = `TopBar` (sticky) + `<main className="relative flex-1">` with `grid-faint` bg (`opacity-[0.035]`), top radial emerald glow, `children` (`relative z-10`), `AgentLogRail`.
+    89→- Lint: `bun run lint` clean (0 errors, 0 warnings). `bunx tsc --noEmit` clean for `src/components/layout/*` (pre-existing errors in `examples/`, `skills/`, `src/lib/store.ts` were NOT touched, per the "do not mutate types/store/bloom" rule).
+    90→- Dev server compiles cleanly (verified via `dev.log`).
+    91→
+    92→Decisions the orchestrator needs to know:
+    93→- **Export contract**: `export function AppShell({ children }: { children: React.ReactNode })` from `src/components/layout/AppShell.tsx`. Mount as `<AppShell>{renderActiveStage()}</AppShell>` where `renderActiveStage()` returns the stage component for the current `activeStage` from `usePipelineStore`. AppShell renders `<section id="console">` as its root — the hero's "Begin" button already targets `#console`.
+    94→- **Page layout suggestion**: `<> <Hero3D /> <AppShell>{renderActiveStage()}</AppShell> <Footer/> </>`. AppShell is `min-h-screen flex flex-col`, so a page-level footer rendered as a sibling AFTER the shell sits at the bottom of the viewport when content is short.
+    95→- **Store contract consumed (read-only)**: `activeStage`, `stages`, `bloomLevel`, `runId`, `running`, `completed`, `failed`, `errorMessage`, `logs`, `sidebarCollapsed`, `setActiveStage`, `setSidebarCollapsed`, `resetRun`. No store mutations.
+    96→- **Mobile sidebar**: AppShell owns the Sheet state; the trigger is a `Menu` button in the TopBar (`lg:hidden`) wired via the `onOpenMobileSidebar` prop. The Sheet uses `PipelineSidebar variant="sheet"`.
+    97→- **Sticky behavior**: sidebar is `lg:sticky lg:top-0 lg:h-screen lg:self-start`; TopBar is `sticky top-0`. The AppShell inner row is plain `flex flex-1` (NO `overflow-hidden`) so sticky works. Page scrolls naturally (no internal scroll container).
+    98→- **Log rail is `fixed bottom-4 right-4`**: floats across the viewport (visible even on the hero). Default-collapsed to a small toggle button, so unobtrusive. If the orchestrator wants it scoped strictly to the console, change `fixed` → `absolute` in `AgentLogRail.tsx` and add `min-h` to main — flagging here.
+    99→- **No new CSS keyframes**: the `running` dot's spinning ring uses framer-motion `animate={{ rotate: 360 }}` so `globals.css` was not modified.
+   100→- **Color policy honored**: emerald primary throughout, amber for flagged, coral/red for error, teal-400 for the answering stage log tag. NO indigo, NO blue. All structural colors use Tailwind theme tokens (`bg-background`, `text-foreground`, `text-muted-foreground`, `border-border`, `bg-card`, `bg-sidebar`, `bg-accent`, `bg-muted`).
+   101→- **`STAGE_ICON`** is exported from `SidebarStageItem.tsx` for reuse by other agents (e.g., stage headers).
+   102→- **Files NOT touched**: `src/lib/types.ts`, `src/lib/store.ts`, `src/lib/bloom.ts`, `src/app/page.tsx`, `src/app/globals.css`, `src/app/layout.tsx`.
+   103→
+   104→---
+   105→Task ID: 2-c
+   106→Agent: full-stack-developer (stage components)
+   107→Task: Six stage content components (Upload, Extraction, Generation, Answering, Verification, Results) + shared helpers + MiniGraph + usePipelineSocket hook
+   108→
+   109→Work Log:
+   110→- Created `src/components/stages/shared.tsx` — StageHeader, EmptyState, RunningShimmer, StageFrame, DataChip, KV, StatusPill.
+   111→- Created `src/components/stages/MiniGraph.tsx` — SVG entity/relationship graph (deterministic circular layout, animated edge pathLength).
+   112→- Created `src/components/stages/UploadStage.tsx` — dropzone + preview + Bloom selector + "Run pipeline" CTA (POST /api/runs → setRunId+setDiagram+startRun → emit pipeline:start). Includes sample diagram affordance.
+   113→- Created `src/components/stages/ExtractionStage.tsx`, `GenerationStage.tsx`, `AnsweringStage.tsx`, `VerificationStage.tsx`, `ResultsStage.tsx` — each reads the store, shows empty/running/data states with framer-motion.
+   114→- Created `src/hooks/use-pipeline-socket.ts` — wires socket `stage`/`log` events to store; persists terminal events to /api/runs/[id].
+   115→- Lint clean.
+   116→
+   117→Stage Summary:
+   118→- All stage components export named functions consumed by page.tsx.
+   119→- UploadStage handles the full run-initiation flow (API + socket emit).
+   120→- usePipelineSocket() must be called once at page level.
+   121→
+   122→---
+   123→Task ID: 2-d
+   124→Agent: orchestrator (backend pipeline service)
+   125→Task: Backend pipeline mini-service (socket.io + 4 agents with VLM/LLM)
+   126→
+   127→Work Log:
+   128→- Created `mini-services/pipeline-service/package.json` (bun --hot, socket.io + z-ai-web-dev-sdk).
+   129→- Created `mini-services/pipeline-service/json.ts` — robust JSON extraction (strips markdown fences, slices to first {/[ ... last }/]).
+   130→- Created `mini-services/pipeline-service/agents.ts` — 4 agents + curation:
+   131→  - runExtraction (VLM glm-4.6v): diagram → ExtractionOutput, supports image_url + file_url (PDF) data URLs.
+   132→  - runGeneration (LLM): extraction + Bloom level → GeneratedQuestion[] (4 questions, no answer leakage).
+   133→  - runAnswering (LLM): questions + extraction ONLY (never generator answers) → GeneratedAnswer[] with confidence.
+   134→  - runVerification (LLM): Q&A pairs + extraction → VerificationVerdict[] (correctness/ambiguity/leak/difficulty).
+   135→  - curateFinalQA: filters rejected, scores by confidence*correctness - penalties, sorts pass-first.
+   136→- Created `mini-services/pipeline-service/index.ts` — socket.io server on port 3003, path "/", listens for `pipeline:start`, streams `stage` + `log` events through all 5 stages with live progress.
+   137→- Installed deps; service running on port 3003.
+   138→
+   139→Stage Summary:
+   140→- Pipeline service port = 3003, socket path = "/".
+   141→- Agent prompts enforce strict JSON output matching src/lib/types.ts contracts.
+   142→- Answering agent is deliberately isolated from generator's answers (leak-detection design).
+   143→- Verification can flag/reject; rejected items are excluded from finalQA.
+   144→
+   145→---
+   146→Task ID: 3
+   147→Agent: orchestrator (page integration)
+   148→Task: Integrate page.tsx (hero + console + footer), wire store/socket, start services, lint
+   149→
+   150→Work Log:
+   151→- Rewrote `src/app/page.tsx` — lazy-loads Hero3D (ssr:false) with spinner fallback, renders AppShell with renderActiveStage(activeStage) switching across all 6 stages, wires usePipelineSocket() once at top, sticky footer with agent legend.
+   152→- Lint clean. Page compiles and serves GET / 200.
+   153→
+   154→Stage Summary:
+   155→- Single `/` route = Hero3D → AppShell(active stage) → Footer.
+   156→- Socket listeners live for the whole page lifetime via usePipelineSocket.
+   157→- Footer is mt-auto inside a min-h-screen flex-col wrapper (sticky-bottom compliant).
+   158→
+   159→---
+   160→Task ID: 4
+   161→Agent: orchestrator (thinking console enhancement)
+   162→Task: Implement Z.ai-console-style "agent thinking" animation for all agent stages
+   163→
+   164→Work Log:
+   165→- Added CSS keyframes to `src/app/globals.css`: `thinking-blink` (caret), `thinking-scan` (progress bar sweep), `thinking-scanlines` (CRT overlay), `thinking-dot` (pulsing header dots), `thinking-sweep` (top accent sweep), `thinking-glow`. Exposed as utility classes `.thinking-caret`, `.thinking-scanlines`, `.thinking-dot`, `.thinking-sweep`.
+   166→- Created `src/components/stages/AgentThinkingConsole.tsx` — the signature component:
+   167→  - Terminal panel (dark oklch bg, accent-colored border + glow, scanline overlay, window-chrome dots, top accent sweep).
+   168→  - Header: agent icon + name + "THINKING" label + 3 staggered pulsing dots + live metrics (ctx tokens ticking up, elapsed seconds, "live" indicator).
+   169→  - Body: streams per-agent scripted reasoning steps character-by-character (~22ms/char + jitter) with `›` prompt for the typing line and `✓` for completed lines. Blinking block caret follows the typing position. After scripted thoughts finish, appends real log lines from the store (filtered by stage) so the console stays alive during the actual model call. Auto-scrolls. Trailing "awaiting model response…" prompt with blinking caret when idle.
+   170→  - Footer: status label + scanning progress bar.
+   171→  - Per-agent config (icon, accent color, thought scripts) for all 6 stages: extraction=emerald/ScanEye, generation=amber/Sparkles, answering=teal/PenLine, verification=coral/ShieldCheck, results=emerald.
+   172→  - `useTypewriter` hook with reduced-motion fallback (instant render).
+   173→  - Respects `prefers-reduced-motion`.
+   174→- Integrated `AgentThinkingConsole` into all 5 stages, replacing `RunningShimmer`:
+   175→  - `ExtractionStage.tsx`, `GenerationStage.tsx`, `AnsweringStage.tsx`, `VerificationStage.tsx`, `ResultsStage.tsx`.
+   176→- Lint clean. Browser-verified: extraction console streams "loading diagram into vision context… → segmenting visual regions…" with live ctx/s metrics; generation console streams "loading extraction context… → conditioning on Bloom level… → selecting target entities…". Full pipeline still completes end-to-end (4 verified questions).
+   177→
+   178→Stage Summary:
+   179→- The Z.ai-console thinking animation is now the signature "agent working" visualization across every agent stage.
+   180→- Each agent has its own accent color and scripted reasoning sequence that types out in real time, then hands off to live log streaming.
+   181→- Component is reusable: `<AgentThinkingConsole stageId="extraction" label="…" />`.
+   182→- `RunningShimmer` is still exported from shared.tsx (unused by stages now but kept for backwards compat).
+   183→
+   184→---
+   185→Task ID: 5-A
+   186→Agent: full-stack-developer (3D hero cinematic enhancement)
+   187→
+   188→Task: Enhance the 3D hero (DiagramGraphScene / Hero3D / HeroFallback) to be more cinematic and "alive" — particle starfield, data-flow pulses along edges, node glow pulse, cinematic camera intro, volumetric fog, hero overlay polish, fallback motion.
+   189→
+   190→Work Log:
+   191→- `src/components/three/DiagramGraphScene.tsx` (enhanced, NOT rewritten contract — same default export `DiagramGraphScene({ cameraZ, groupRotY, reducedMotion })`):
+   192→  1. **Particle starfield** — new `<Starfield>` component renders a single `THREE.Points` (NOT individual meshes) of 520 points on a spherical shell (radius 25–40) with a `BufferGeometry` built once via `useMemo`. Per-vertex colors mix 65% cool neutral white (`#e2e8f0`) + 35% emerald tint (`#9ae6c8`), each brightness-jittered. `pointsMaterial` uses `size=0.035`, `sizeAttenuation`, `transparent`, `opacity=0.5`, `depthWrite=false`, `vertexColors`, `toneMapped=false`. The whole cloud rotates very slowly in its own `useFrame` (y: 0.03 rad/s, x: 0.01 rad/s) for gentle parallax. Disabled entirely under `prefers-reduced-motion`. `frustumCulled={false}` so it never pops out.
+   193→  2. **Data-flow pulses** — added 23 small emissive spheres (one per edge) as children of the rotating `<group>` so they stay aligned with the edges. Each pulse lerps from→to along its edge on a loop (`speed=0.15`, so ~6.7s per traversal) with a per-edge phase offset (`i / EDGES.length`) so edges don't pulse in sync. Scale modulated by `Math.sin(phase·π)` so the pulse fades in at the source node, peaks mid-edge, fades out at the destination — a "comet" feel. Color: coral for pipeline edges (both endpoints in `HIGHLIGHT`, i.e. the INPUT→PARSER→GRAPH→QA chain), emerald for everything else. `emissiveIntensity=2.4`, `toneMapped=false`, `frustumCulled=false`. Hidden (`scale=0`) until `p2 > 0.5` (graph mostly assembled) and fully disabled under reduced motion.
+   194→  3. **Highlight node glow pulse** — in the existing per-node loop, after computing positions, the 4 coral highlight nodes get their `emissiveIntensity` modulated each frame: `0.6 + pulse·(0.35 + 0.85·wave)` where `wave = 0.5 + 0.5·sin(t·1.6 + i·0.9)`. Range at full assembly: ~0.6 ↔ ~1.8 — a clearly visible "breathing" glow, staggered per node. Only kicks in after `p2 > 0.4`. Material accessed via `mesh.material` narrowed with `instanceof THREE.MeshStandardMaterial` (no separate ref array needed). Disabled under reduced motion (stays at JSX default 0.75).
+   195→  4. **Cinematic camera intro** — added a 1.5s eased dolly on mount: `introAmount = 1 - smoothstep(0, 1.5, t)` (1 at start → 0 after 1.5s). Camera Z = `cameraZ.get() + 5·introAmount` (so z=14 → baseZ=9 at scroll 0, easing in). Slight downward tilt during intro via `camera.lookAt(0, -0.4·introAmount, 0)` (looks slightly below origin, resolves to neutral). To avoid a first-frame jump, the Canvas `camera` prop's initial Z is now `reducedMotion ? 9 : 14` so the initial position matches the intro start exactly. After 1.5s, behavior is the existing scroll-driven Z + pointer parallax. Skipped entirely under reduced motion (`introAmount=0`).
+   196→  5. **Volumetric fog** — added `<fog attach="fog" args={['#0a0e1a', 12, 38]} />` inside the Canvas. `near=12` keeps the graph (radius ~3) fully crisp; distant starfield particles (radius 25–40) and any far edges fade into the dark background — adds depth and mood without clipping the subject.
+   197→- `src/components/three/Hero3D.tsx` (export contract UNCHANGED — still `export default function Hero3D({ onEnterConsole }: Hero3DProps)`):
+   198→  6. **Live system status line** — replaced the single "Scroll to enter the console ↓" footer with a stacked two-row footer: a top "SYSTEM ONLINE · 4 AGENTS STANDBY" line in monospace with the same blinking emerald dot pattern used in the eyebrow chip (`animate-ping` ring + solid pip), and the original scroll hint below it. Wrapped in a single `motion.div` with the same entrance timing as before. Reinforces the technical/product feel.
+   199→  7. **Agent chips pipeline connectors** — each chip (except the first) now renders a small absolutely-positioned `<span>` connector at `-left-2 top-1/2 h-px w-2 -translate-y-1/2 bg-foreground/15` that visually spans the 8px `gap-2` between chips, suggesting a pipeline. Each chip is now `relative` to anchor the connector. Subtle, fades on wrapped rows without breaking layout.
+   200→- `src/components/three/HeroFallback.tsx` (no export contract — still default export):
+   201→  8. **CSS motion for no-WebGL users** — added a scoped `<style>` block (kept in-file so `globals.css` stays untouched per the frozen-file rule) with three keyframes: `hfBreathe` (opacity 0.5↔1, 3.4s), `hfDrift` (translate3d 0,0,0 ↔ 14px,-8px,0, 14s) for the radial glow div, and `hfShimmer` (opacity 0.55↔0.9, 4.2s) for the flat-diagram satellite dots. Applied `.hf-breathe` + staggered `.hf-d1..d5` delays to the 6 graph-node halos so they pulse in a wave; `.hf-shimmer` to the 4 flat-side satellite dots; `.hf-drift` to the HTML radial glow div. All animations are disabled under `@media (prefers-reduced-motion: reduce)` via `animation: none !important`.
+   202→
+   203→Constraints honored:
+   204→- `'use client'` at top of all three files. TypeScript strict, no `any`. No new packages installed (used only `three`, `@react-three/fiber`, `@react-three/drei`, `framer-motion`, `lucide-react` — all already present).
+   205→- **Performance**: starfield is a single `THREE.Points` (1 draw call) with a memoized `BufferGeometry`; data-flow pulses are 23 small 8-segment spheres (cheap); all per-frame work stays in the existing single `useFrame` for the graph + one tiny `useFrame` for the starfield rotation. `frustumCulled={false}` on starfield + pulses to avoid rebinding bounding-sphere checks.
+   206→- **`prefers-reduced-motion`**: starfield rotation disabled, data-flow pulses hidden (scale=0), highlight emissive pulse frozen at JSX default, cinematic intro skipped (camera jumps straight to baseZ=9), fallback CSS animations disabled via `@media` query. The scroll-driven camera + group rotation remain (user-initiated, not "motion").
+   207→- **Color policy**: emerald primary (`#34d399`), coral accent (`#fb7c5c`), neutral whites + emerald tints for particles. NO indigo, NO blue. Fog color `#0a0e1a` is a near-black neutral (matches the dark `--background` token).
+   208→- **Frozen files respected**: did NOT touch `src/lib/types.ts`, `src/lib/store.ts`, `src/lib/bloom.ts`, `src/app/page.tsx`, `src/app/globals.css` (or any file outside the three in scope).
+   209→- **Scroll-fade behavior preserved**: `cameraZ`, `canvasOpacity`, `groupRotY`, `contentOpacity`, `contentY` MotionValues and the canvas unmount/remount hysteresis are untouched. The hero still fades into the console on scroll.
+   210→
+   211→Verification:
+   212→- `bun run lint` — clean (0 errors, 0 warnings).
+   213→- `bunx tsc --noEmit` — 0 errors in `src/components/three/*` (the 4 remaining tsc errors are in `examples/`, `skills/`, `src/lib/store.ts` — pre-existing and outside this task's scope per the orchestrator's frozen-file rule).
+   214→- Dev server (`dev.log`) — compiles cleanly, `GET / 200` serving.
+   215→
+   216→Decisions the orchestrator needs to know:
+   217→- **Export contract UNCHANGED**: `export default function Hero3D({ onEnterConsole }: Hero3DProps)` from `src/components/three/Hero3D.tsx`. The page can continue to mount it via `next/dynamic(() => import('@/components/three/Hero3D'), { ssr: false })`.
+   218→- **Canvas camera initial Z is now conditional** on `reducedMotion` (14 for the cinematic intro, 9 for reduced motion). This is set via the `camera` prop on `<Canvas>` so it's applied at mount — no runtime cost. If the orchestrator ever mounts/unmounts the canvas with a key that changes `reducedMotion`, the camera will re-init correctly; otherwise it's stable for the page session.
+   219→- **Starfield geometry is built with `Math.random()`** in `useMemo` — fine because Hero3D is loaded with `ssr:false` (client-only). If SSR is ever enabled for the hero, the random positions would mismatch; not a concern under the current page contract.
+   220→- **Data-flow pulse material access**: I narrow `mesh.material` with `instanceof THREE.MeshStandardMaterial` rather than adding a separate ref array — keeps the code smaller and the lint clean. The `react-hooks/immutability` rule did NOT fire on `mat.emissiveIntensity = ...` (the material is accessed via a user-owned ref → `nodeRefs.current[i].material`, same pattern as the existing `groupRef.current.rotation.y = ...` which was already lint-clean).
+   221→- **No post-processing bloom**: the "glow" effect on pulses + highlight nodes is faked via `emissiveIntensity` + `toneMapped={false}` (so the color values exceed 1.0 and stay vivid). A real bloom pass would require `@react-three/postprocessing` which is not installed and would violate the "no new packages" constraint. The current look is "bright dot" rather than "halo'd bloom" — flagging here for transparency.
+   222→- **Troika font note (unchanged from Task 2-a)**: drei `<Text>` labels still use the default CDN font; if blocked, labels silently no-op. The cinematic narrative now has even more carrying it (starfield + pulses + intro dolly + fog) so the labels are even less load-bearing.
+   223→
+   224→Stage Summary:
+   225→- The 3D hero is now substantially more cinematic and "alive" without changing any export contract or breaking the scroll handoff into the console.
+   226→- Single draw-call starfield + 23 cheap pulse spheres keep the perf budget flat vs. the previous version.
+   227→- Reduced-motion users get a static (but still fully assembled + scroll-responsive) scene; no-WebGL users get a breathing/drifting SVG fallback.
+   228→
+   229→---
+   230→Task ID: 5-B
+   231→Agent: full-stack-developer (BloomWheel builder)
+   232→
+   233→Work Log:
+   234→- Created `src/components/stages/BloomWheel.tsx` — a pure controlled SVG
+   235→  radial wheel selector for Bloom's taxonomy levels.
+   236→  - Export: `BloomWheel({ value: BloomLevel, onChange, className? })`.
+   237→  - 6 annular sectors (60° each), Remember centered at 12 o'clock going
+   238→    clockwise to Create. Outer R=140, inner R=70, 320×320 viewBox.
+   239→  - `annularSector()` helper computes correct SVG arc paths
+   240→    (large-arc-flag + sweep-flag). `polar()` uses top=0 / clockwise-positive.
+   241→  - Segments filled with each level's `BLOOM_META.hue` via `color-mix`
+   242→    (15% default / 48% selected). Selected: brighter stroke + drop-shadow
+   243→    glow + 1.035× scale. Hover: 1.05× spring scale.
+   244→  - Verb labels rendered tangentially along each arc (rotated, flipped
+   245→    upright on the bottom half), monospace 11px.
+   246→  - Center readout (HTML overlay) crossfades on selection: colored dot +
+   247→    level name + verb.
+   248→  - Spring-animated triangle pointer at the outer edge rotates to the
+   249→    selected segment.
+   250→  - Faint dashed ambiance ring, 72s linear rotation (disabled under
+   251→    reduced motion).
+   252→  - Mount entrance: opacity + scale + rotate-in spring.
+   253→  - Full `prefers-reduced-motion` support via `useReducedMotion()`.
+   254→  - A11y: SVG `role="radiogroup"`; each segment `<path>` is
+   255→    `role="radio"`, `tabIndex=0`, `aria-checked`, Enter/Space handler,
+   256→    `:focus-visible` stroke (inline `<style>` — globals.css untouched).
+   257→- Integrated into `src/components/stages/UploadStage.tsx`:
+   258→  - Removed the flat `grid grid-cols-2 … md:grid-cols-6` Bloom button
+   259→    grid and the standalone blurb box.
+   260→  - New layout in a `glass Card`: `md:grid-cols-[auto_1fr]` — wheel on
+   261→    the left, blurb + `DataChip` + verb label on the right (stacks on
+   262→    mobile).
+   263→  - Kept heading + helper text; passed `value={bloomLevel}` /
+   264→    `onChange={setBloomLevel}`.
+   265→  - Removed unused `BLOOM_LEVELS` / `BloomLevel` imports; kept
+   266→    `BLOOM_META` (still used) and `cn` (still used in dropzone).
+   267→  - Dropzone, preview, sample-diagram affordance, CTA, run/reset logic
+   268→    all left intact.
+   269→- Verified: `bun run lint` clean (no errors). Dev server compiles and
+   270→  serves `GET / 200` after edits.
+   271→
+   272→Stage Summary:
+   273→The Upload stage's Bloom level selector is now a signature interactive
+   274→radial wheel moment instead of a flat button grid. The wheel is a
+   275→reusable, fully controlled, accessible, motion-respecting component
+   276→that drops cleanly into UploadStage (and could be reused elsewhere).
+   277→No shared types, store, globals.css, layout, or three/ files were
+   278→mutated.
+   279→
+   280→---
+   281→Task ID: 5
+   282→Agent: orchestrator (proactive enhancements)
+   283→Task: Implement a cohesive set of UI/animation/UX improvements across the platform
+   284→
+   285→Work Log:
+   286→- **Enhanced 3D hero** (Task 5-A, subagent): particle starfield (520 points, single THREE.Points), pulsing data-flow along all 23 edges (staggered emissive spheres), pronounced highlight-node breathing, 1.5s cinematic camera dolly intro, volumetric fog for depth, live "SYSTEM ONLINE · 4 AGENTS STANDBY" status line, agent-chip pipeline connectors, HeroFallback CSS motion.
+   287→- **Bloom's taxonomy radial wheel** (Task 5-B, subagent): new `BloomWheel.tsx` — interactive SVG 6-segment annular wheel replacing the flat button grid in UploadStage. Spring-animated pointer, crossfading center, slow rotating dashed ambiance ring, full a11y (radiogroup/radio roles, keyboard), reduced-motion support. Integrated into UploadStage with wheel+blurb layout.
+   288→- **useCountUp hook** (`src/hooks/use-count-up.tsx`): rAF ease-out-cubic count-up with `CountUpText` wrapper. Integrated into ExtractionStage (entity/relationship counts), GenerationStage (question count), ResultsStage (questions/avg score/pass rate/entities). Respects reduced-motion.
+   289→- **Cursor spotlight** (`src/components/cursor-spotlight.tsx`): global soft radial glow following the pointer via CSS variables + rAF throttle. Disabled on touch/reduced-motion.
+   290→- **Scroll progress bar** (`src/components/scroll-progress.tsx`): thin emerald gradient bar at viewport top tracking page scroll (spring-smoothed).
+   291→- **Stage transitions** (`src/components/stage-transition.tsx`): AnimatePresence mode="wait" slide+fade+blur transition between stages.
+   292→- **Command palette** (`src/components/command-palette.tsx`): Cmd/Ctrl+K (or J) palette with Navigate / Difficulty / Actions groups. ⌘K hint button added to TopBar.
+   293→- **Completion burst** (`src/components/completion-burst.tsx`): one-shot particle confetti + animated check badge + radial flash when pipeline completes.
+   294→- **Results stage polish**: animated SVG verification donut (pass/flag distribution), per-card copy-to-clipboard button (with CheckCheck feedback), count-up stats, hover-lift cards.
+   295→- **page.tsx**: wired CursorSpotlight, ScrollProgress, CommandPalette, CompletionBurst, StageTransition around the AppShell.
+   296→- Lint clean. Browser-verified end-to-end: hero starfield renders, Bloom wheel interactive, stage transitions smooth, thinking console streams, completion burst fires, results donut + count-ups + copy all functional. Full pipeline produces 4 verified Q&A.
+   297→
+   298→Stage Summary:
+   299→- 9 new components/hooks; 5 stage files enhanced.
+   300→- All enhancements respect prefers-reduced-motion and avoid indigo/blue.
+   301→- The platform now has: cinematic 3D hero with starfield + data-flow, radial Bloom selector, cursor spotlight, scroll progress, smooth stage transitions, Cmd+K command palette, completion celebration, animated results with donut + copy + count-ups.
+   302→
+   303→---
+   304→Task ID: 6
+   305→Agent: orchestrator (reference-inspired enhancements)
+   306→Task: Implement the best ideas from the uploaded manus-ai reference (ambient orbs, results filter/sort, scroll reveals, geometric divider)
+   307→
+   308→Work Log:
+   309→- Studied the uploaded manus-ai-ar2-ddcqg reference (ideas.md + 30 components). Identified 4 genuinely-better ideas not yet implemented. Re-implemented them with the project's emerald/coral palette (NOT the reference's purple/magenta, which violates the color policy).
+   310→- **Ambient floating gradient orbs** (`src/components/ambient-orbs.tsx`): 4 blurred emerald/coral/teal/amber orbs with scroll parallax (different speeds) + slow drift animation. Fixed, pointer-events-none, z-0 behind all content. Adds real atmosphere/depth. Reduced-motion renders static.
+   311→- **Results FilterBar + Sort** (`src/components/stages/ResultsFilterBar.tsx`): a genuine functional gap filled. Filter by Bloom level (multi-select chips colored by hue), sort (score desc/asc, difficulty asc/desc, verified-first), verified-only toggle, clear button, live "N shown" count. `applyFilters` helper + `FilterState` type. Integrated into ResultsStage with local state; cards wrapped in `AnimatePresence mode="popLayout"` + `layout` so they reorder/remove smoothly. Empty-state when no matches.
+   312→- **RevealOnScroll choreography** (`src/components/reveal.tsx`): `RevealOnScroll` (direction-aware fade+slide on viewport enter) + `StaggerContainer`/`StaggerItem`. Applied to StageFrame children (delayed fade-up) and the ResultsFilterBar. Reduced-motion = instant.
+   313→- **Geometric SVG section divider** (`src/components/section-divider.tsx`): placed between the 3D hero and the flat console. Diagonal sheared plane + thin emerald accent line + node-edge graph motif (emerald + coral nodes) + animated data-flow dot travelling across. Reinforces the diagram→graph concept. Reduced-motion skips the dot.
+   314→- **page.tsx**: wrapped hero/console/footer in `relative z-10` containers so the z-0 AmbientOrbs sit behind them. Mounted AmbientOrbs + SectionDivider.
+   315→- Excluded `upload/**` and `mini-services/**` from eslint (reference files were polluting lint).
+   316→- Lint clean. Browser-verified: orbs + divider render on load, full pipeline produces 4 verified Q&A, filter bar appears, verified-only toggle works, sort dropdown opens + reorders questions (verified score order 1.0,1.0,1.0,0.9), no console errors.
+   317→
+   318→Stage Summary:
+   319→- 4 new components; ResultsStage gained real filter/sort functionality + animated list reordering.
+   320→- The platform now has ambient atmospheric depth (orbs), a signature diagram→graph divider, choreographed scroll reveals, and a fully functional results filter/sort system.
+   321→- All enhancements use emerald/coral/teal/amber palette (no indigo/blue/purple), respect reduced-motion.
+   322→

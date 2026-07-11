@@ -1,0 +1,145 @@
+// AR2-DDCQG — Agentic, Retrieval-Augmented, Diagram-Driven Course Question Generation
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  runs         Run[]
+  chatMessages ChatMessage[]
+  agents       CustomAgent[]
+  resets       PasswordReset[]
+  apiKeys      UserApiKey[]
+}
+
+model Diagram {
+  id        String   @id @default(cuid())
+  filename  String
+  mimeType  String
+  dataUrl   String
+  createdAt DateTime @default(now())
+  runs      Run[]
+}
+
+model Run {
+  id           String   @id @default(cuid())
+  diagramId    String
+  diagram      Diagram  @relation(fields: [diagramId], references: [id], onDelete: Cascade)
+  userId       String?
+  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  bloomLevel   String
+  /// Number of questions to generate for this run. Null means "use the
+  /// pipeline default" (4), preserving prior behavior for existing rows.
+  questionCount Int?
+  /// When true, the Generator Agent produces multiple-choice questions
+  /// (with options + a correct answer index) instead of short-answer
+  /// questions. Null/false = short-answer (prior default behavior).
+  mcqOnly      Boolean?
+  /// User-selected AI provider override (e.g. "gemini", "glm", "deepseek").
+  /// Null means "let the pipeline auto-pick the default provider", same
+  /// behavior as before this field existed.
+  provider     String?
+  status       String   @default("running")
+  diagramType  String?
+  extraction   String?
+  questions    String?
+  answers      String?
+  verification String?
+  finalQA      String?
+  errorMessage String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([diagramId])
+  @@index([createdAt])
+  @@index([userId])
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  runId     String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      String
+  content   String
+  createdAt DateTime @default(now())
+
+  @@index([runId])
+  @@index([userId])
+}
+
+model PasswordReset {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([token])
+}
+
+model CustomAgent {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  role        String
+  prompt      String
+  provider    String   @default("glm")
+  model       String?
+  isPublic    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([isPublic])
+}
+
+/// Per-account AI provider credentials. Two flavours, distinguished by
+/// `isCustom`:
+///
+///  - Built-in override (isCustom = false): `providerId` matches one of the
+///    fixed ProviderId values in src/lib/ai/providers.ts (e.g. "openai").
+///    The user's own key/model takes priority over the platform's env-based
+///    key whenever this row is present. One row per (userId, providerId).
+///
+///  - Custom provider (isCustom = true): a fully user-defined OpenAI-
+///    compatible endpoint. `providerId` is a generated slug unique to this
+///    row ("custom_<cuid>"), `label` is the human-facing provider name the
+///    user chose, and `baseURL` + `model` are required. Referenced elsewhere
+///    (Run.provider, CustomAgent.provider, chat `provider` option) as
+///    `custom:<id>`.
+model UserApiKey {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Built-in ProviderId for overrides; ignored (a fresh cuid is used) for custom providers.
+  providerId String
+  /// Display name. Required + user-chosen for custom providers; optional label for overrides.
+  label      String?
+  apiKey     String
+  /// Required for custom providers (OpenAI-compatible chat/completions base URL).
+  baseURL    String?
+  /// Default model id to use with this key.
+  model      String?
+  isCustom   Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([userId, providerId])
+  @@index([userId])
+}
