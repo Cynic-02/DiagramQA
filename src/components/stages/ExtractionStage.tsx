@@ -22,12 +22,45 @@ import { AgentThinkingConsole } from './AgentThinkingConsole'
 import { MiniGraph } from './MiniGraph'
 import { CountUpText } from '@/hooks/use-count-up'
 import TiltedCard from '@/components/reactbits/TiltedCard'
+import { ExtractionEditor } from './ExtractionEditor'
+import { Button } from '@/components/ui/button'
+import { toast } from 'sonner'
 
 export function ExtractionStage() {
   const extraction = usePipelineStore((s) => s.extraction)
   const status = usePipelineStore((s) => s.stages.extraction.status)
   const diagramDataUrl = usePipelineStore((s) => s.diagramDataUrl)
   const diagramFilename = usePipelineStore((s) => s.diagramFilename)
+  const runId = usePipelineStore((s) => s.runId)
+  
+  const [isEditing, setIsEditing] = React.useState(false)
+
+  const proceedToGeneration = async () => {
+    if (!runId) return
+    try {
+      const res = await fetch(`/api/runs/${runId}/reset-stage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stage: 'generation' }),
+      })
+      if (!res.ok) throw new Error()
+      
+      usePipelineStore.setState({
+        running: true,
+        completed: false,
+        failed: false,
+        errorMessage: null,
+        activeStage: 'generation',
+        questions: [],
+        answers: [],
+        verification: [],
+        finalQA: [],
+      })
+      toast.success('Starting question generation with corrected extraction...')
+    } catch {
+      toast.error('Failed to trigger question generation')
+    }
+  }
 
   return (
     <StageFrame stageId="extraction">
@@ -53,8 +86,25 @@ export function ExtractionStage() {
 
       {extraction && (
         <div className="space-y-6">
-          {/* ---- Top: thumbnail + summary ---- */}
-          <Card className="overflow-hidden p-0">
+          {isEditing ? (
+            <ExtractionEditor
+              runId={runId || ''}
+              initialData={extraction}
+              onClose={() => setIsEditing(false)}
+            />
+          ) : (
+            <>
+              <div className="flex justify-end gap-2.5">
+                <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                  🛠️ Correct Ingested Graph
+                </Button>
+                <Button size="sm" onClick={proceedToGeneration} className="gap-1.5 font-bold">
+                  Proceed to Generation <ArrowRight className="size-3.5" />
+                </Button>
+              </div>
+
+              {/* ---- Top: thumbnail + summary ---- */}
+              <Card className="overflow-hidden p-0">
             <div className="grid gap-0 md:grid-cols-[260px_1fr]">
               <div className="flex items-center justify-center border-b border-border/40 bg-muted p-4 md:border-b-0 md:border-r border-border/40">
                 {diagramDataUrl && diagramDataUrl.startsWith('data:image') ? (
@@ -182,6 +232,8 @@ export function ExtractionStage() {
               <Loader2 className="size-3 animate-spin text-foreground" />
               <span>Updating with latest extraction…</span>
             </div>
+          )}
+            </>
           )}
         </div>
       )}

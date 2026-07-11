@@ -36,6 +36,39 @@ export async function GET(
     return NextResponse.json({ error: 'Run not found' }, { status: 404 })
   }
 
+  // Hydrate questions dynamically if the normalized database is empty but finalQA is present
+  let dbQuestions = await db.question.findMany({
+    where: { runId: run.id },
+    orderBy: { createdAt: 'asc' },
+  })
+
+  if (dbQuestions.length === 0 && run.finalQA) {
+    const finalQA = parse<FinalQAItem[]>(run.finalQA) || []
+    const questions = parse<GeneratedQuestion[]>(run.questions) || []
+    for (const item of finalQA) {
+      try {
+        const q = await db.question.create({
+          data: {
+            id: item.id,
+            runId: run.id,
+            bloomLevel: item.bloomLevel || run.bloomLevel,
+            type: item.questionType?.toUpperCase() === 'MCQ' ? 'MCQ' : 'SHORT',
+            text: item.question,
+            options: item.options ? JSON.stringify(item.options) : null,
+            answer: item.answer,
+            explanation: item.explanation || "",
+            verificationScore: item.score ? Math.round(item.score * 100) : 100,
+            verificationVerdict: (item.verification || 'pass').toUpperCase(),
+            isApproved: item.verification !== 'reject',
+          }
+        })
+        dbQuestions.push(q)
+      } catch (err) {
+        console.error('Failed to auto-hydrate question:', err)
+      }
+    }
+  }
+
   const record: RunRecord = {
     id: run.id,
     diagramId: run.diagramId,
@@ -54,6 +87,11 @@ export async function GET(
     startedAt: run.startedAt?.toISOString(),
     completedAt: run.completedAt?.toISOString(),
     durationMs: run.durationMs ?? undefined,
+    folderId: run.folderId ?? undefined,
+    questionsList: dbQuestions.map(q => ({
+      ...q,
+      options: q.options ? JSON.parse(q.options) : null,
+    })),
     createdAt: run.createdAt.toISOString(),
   }
   return NextResponse.json(record)
@@ -106,6 +144,29 @@ export async function POST(
       finalQA: payload.finalQA ? JSON.stringify(payload.finalQA) : null,
       errorMessage: typeof payload.errorMessage === 'string' ? payload.errorMessage : null,
     },
+  })
+
+  return NextResponse.json({ ok: true })
+}
+
+export async function PATCH(
+  req: NextRequest,
+  ctx: { params: Promise<{ id: string }> }
+) {
+  const { id } = await ctx.params
+  const session = await getSession()
+  const { run, response: accessResponse } = await assertRunAccess(id, session)
+  if (accessResponse) return accessResponse
+  if (!run) return NextResponse.json({ error: 'Run not found' }, { status: 404 })
+
+  const body = await req.json().catch(() => ({}))
+  const { folderId } = body
+
+  await db.run.update({
+    where: { id },
+    data: {
+      folderId: folderId === null ? null : folderId,
+    }
   })
 
   return NextResponse.json({ ok: true })

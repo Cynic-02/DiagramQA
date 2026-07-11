@@ -152,101 +152,131 @@ export async function GET(
 
       try {
         /* ---- Extraction ---- */
-        emitStage('extraction', 'running', 'Vision agent parsing diagram…')
-        const extraction: ExtractionOutput = await runExtraction(
-          imageDataUrl,
-          (level, text) => emitLog('extraction', level, text),
-          providerId,
-          userId
-        )
-        await db.run.update({
-          where: { id: runId },
-          data: {
-            diagramType: extraction.diagramType,
-            extraction: JSON.stringify(extraction),
-          },
-        })
-        emitStage(
-          'extraction',
-          'done',
-          'Diagram parsed',
-          extraction,
-          lastProvider.extraction?.provider,
-          lastProvider.extraction?.model
-        )
+        let extraction: ExtractionOutput
+        if (run.extraction) {
+          extraction = JSON.parse(run.extraction) as ExtractionOutput
+          emitLog('extraction', 'info', 'Loaded diagram extraction from cache')
+          emitStage('extraction', 'done', 'Diagram parsed (cached)', extraction)
+        } else {
+          emitStage('extraction', 'running', 'Vision agent parsing diagram…')
+          extraction = await runExtraction(
+            imageDataUrl,
+            (level, text) => emitLog('extraction', level, text),
+            providerId,
+            userId
+          )
+          await db.run.update({
+            where: { id: runId },
+            data: {
+              diagramType: extraction.diagramType,
+              extraction: JSON.stringify(extraction),
+            },
+          })
+          emitStage(
+            'extraction',
+            'done',
+            'Diagram parsed',
+            extraction,
+            lastProvider.extraction?.provider,
+            lastProvider.extraction?.model
+          )
+        }
 
         /* ---- Generation ---- */
-        emitStage('generation', 'running', `Generating ${bloomLevel}-level questions…`)
-        const questions: GeneratedQuestion[] = await runGeneration(
-          extraction,
-          bloomLevel,
-          (level, text) => emitLog('generation', level, text),
-          providerId,
-          userId,
-          questionCount,
-          mcqOnly
-        )
-        await db.run.update({
-          where: { id: runId },
-          data: { questions: JSON.stringify(questions) },
-        })
-        emitStage(
-          'generation',
-          'done',
-          `${questions.length} questions generated`,
-          questions,
-          lastProvider.generation?.provider,
-          lastProvider.generation?.model
-        )
+        let questions: GeneratedQuestion[]
+        if (run.questions) {
+          questions = JSON.parse(run.questions) as GeneratedQuestion[]
+          emitLog('generation', 'info', `Loaded ${questions.length} generated questions from cache`)
+          emitStage('generation', 'done', `${questions.length} questions generated (cached)`, questions)
+        } else {
+          emitStage('generation', 'running', `Generating ${bloomLevel}-level questions…`)
+          questions = await runGeneration(
+            extraction,
+            bloomLevel,
+            (level, text) => emitLog('generation', level, text),
+            providerId,
+            userId,
+            questionCount,
+            mcqOnly
+          )
+          await db.run.update({
+            where: { id: runId },
+            data: { questions: JSON.stringify(questions) },
+          })
+          emitStage(
+            'generation',
+            'done',
+            `${questions.length} questions generated`,
+            questions,
+            lastProvider.generation?.provider,
+            lastProvider.generation?.model
+          )
+        }
 
         /* ---- Answering ---- */
-        emitStage('answering', 'running', 'Answering independently from the diagram…')
-        const answers: GeneratedAnswer[] = await runAnswering(
-          extraction,
-          questions,
-          (level, text) => emitLog('answering', level, text),
-          providerId,
-          userId
-        )
-        await db.run.update({
-          where: { id: runId },
-          data: { answers: JSON.stringify(answers) },
-        })
-        emitStage(
-          'answering',
-          'done',
-          `${answers.length} independent answers produced`,
-          answers,
-          lastProvider.answering?.provider,
-          lastProvider.answering?.model
-        )
+        let answers: GeneratedAnswer[]
+        if (run.answers) {
+          answers = JSON.parse(run.answers) as GeneratedAnswer[]
+          emitLog('answering', 'info', `Loaded ${answers.length} independent answers from cache`)
+          emitStage('answering', 'done', `${answers.length} answers produced (cached)`, answers)
+        } else {
+          emitStage('answering', 'running', 'Answering independently from the diagram…')
+          answers = await runAnswering(
+            extraction,
+            questions,
+            (level, text) => emitLog('answering', level, text),
+            providerId,
+            userId
+          )
+          await db.run.update({
+            where: { id: runId },
+            data: { answers: JSON.stringify(answers) },
+          })
+          emitStage(
+            'answering',
+            'done',
+            `${answers.length} independent answers produced`,
+            answers,
+            lastProvider.answering?.provider,
+            lastProvider.answering?.model
+          )
+        }
 
         /* ---- Verification ---- */
-        emitStage('verification', 'running', 'Verifying Q&A pairs…')
-        const verdicts: VerificationVerdict[] = await runVerification(
-          extraction,
-          questions,
-          answers,
-          (level, text) => emitLog('verification', level, text),
-          providerId,
-          userId
-        )
-        await db.run.update({
-          where: { id: runId },
-          data: { verification: JSON.stringify(verdicts) },
-        })
-        const rejected = verdicts.filter((v) => v.status === 'reject')
-        const vStatus: StageStatus = rejected.length > 0 ? 'flagged' : 'done'
-        emitStage(
-          'verification',
-          vStatus,
-          rejected.length > 0
-            ? `${rejected.length} question(s) rejected — flagged for review`
-            : 'All Q&A pairs verified',
-          verdicts,
-          lastProvider.verification?.provider,
-          lastProvider.verification?.model
-        )
+        let verdicts: VerificationVerdict[]
+        if (run.verification) {
+          verdicts = JSON.parse(run.verification) as VerificationVerdict[]
+          emitLog('verification', 'info', 'Loaded verification verdicts from cache')
+          const rejected = verdicts.filter((v) => v.status === 'reject')
+          const vStatus: StageStatus = rejected.length > 0 ? 'flagged' : 'done'
+          emitStage('verification', vStatus, 'Verification complete (cached)', verdicts)
+        } else {
+          emitStage('verification', 'running', 'Verifying Q&A pairs…')
+          verdicts = await runVerification(
+            extraction,
+            questions,
+            answers,
+            (level, text) => emitLog('verification', level, text),
+            providerId,
+            userId
+          )
+          await db.run.update({
+            where: { id: runId },
+            data: { verification: JSON.stringify(verdicts) },
+          })
+          const rejected = verdicts.filter((v) => v.status === 'reject')
+          const vStatus: StageStatus = rejected.length > 0 ? 'flagged' : 'done'
+          emitStage(
+            'verification',
+            vStatus,
+            rejected.length > 0
+              ? `${rejected.length} question(s) rejected — flagged for review`
+              : 'All Q&A pairs verified',
+            verdicts,
+            lastProvider.verification?.provider,
+            lastProvider.verification?.model
+          )
+        }
 
         /* ---- Curation / Results ---- */
         emitLog('results', 'info', 'Curating verified question set…')
@@ -254,6 +284,30 @@ export async function GET(
         // Small beat so the UI can show the "curating" state, matching
         // the pacing of the original Socket.io orchestrator.
         await new Promise((r) => setTimeout(r, 500))
+
+        // Populate normalized Question table
+        await db.question.deleteMany({ where: { runId } }).catch(() => undefined)
+        for (const item of finalQA) {
+          try {
+            await db.question.create({
+              data: {
+                id: item.id,
+                runId,
+                bloomLevel: item.bloomLevel || bloomLevel,
+                type: mcqOnly ? "MCQ" : "SHORT",
+                text: item.question,
+                options: mcqOnly ? JSON.stringify((questions.find(q => q.id === item.id) as any)?.options || []) : null,
+                answer: item.answer,
+                explanation: item.explanation || "",
+                verificationScore: item.score ? Math.round(item.score * 100) : 100,
+                verificationVerdict: (item.verification || 'pass').toUpperCase(),
+                isApproved: item.verification !== 'reject',
+              }
+            })
+          } catch (err) {
+            console.error('Failed to save question during stream:', err)
+          }
+        }
 
         await db.run.update({
           where: { id: runId },

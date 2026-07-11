@@ -35,13 +35,28 @@ export default function HistoryPage() {
   const [restoringId, setRestoringId] = React.useState<string | null>(null)
   const [statusFilter, setStatusFilter] = React.useState<'all' | 'completed' | 'running' | 'failed'>('all')
   const [searchQuery, setSearchQuery] = React.useState('')
+  const [stats, setStats] = React.useState<any>(null)
+  const [health, setHealth] = React.useState<any>(null)
 
   const loadHistory = React.useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/history')
-      const data = await res.json()
+      const [histRes, statsRes, healthRes] = await Promise.all([
+        fetch('/api/history'),
+        fetch('/api/stats'),
+        fetch('/api/health'),
+      ])
+      const data = await histRes.json()
       setItems(data.items || [])
+      
+      if (statsRes.ok) {
+        const statsData = await statsRes.json()
+        setStats(statsData)
+      }
+      if (healthRes.ok) {
+        const healthData = await healthRes.json()
+        setHealth(healthData)
+      }
     } catch {
       toast.error('Failed to load past run history')
     } finally {
@@ -136,6 +151,39 @@ export default function HistoryPage() {
             visual entities, prompt calibrations, and generated questions into the main workspace.
           </p>
         </div>
+
+        {/* Stats & Health Cards */}
+        {stats && (
+          <div className="grid gap-4 grid-cols-2 md:grid-cols-4 mb-8">
+            <Card className="p-4 flex flex-col justify-between rounded-xl border border-border/50 bg-card/45">
+              <span className="text-[10px] font-mono uppercase text-muted-foreground">Total Ingestions</span>
+              <span className="text-xl font-black mt-1 text-foreground">{stats.runs?.total || 0}</span>
+            </Card>
+            <Card className="p-4 flex flex-col justify-between rounded-xl border border-border/50 bg-card/45">
+              <span className="text-[10px] font-mono uppercase text-muted-foreground">Success Rate</span>
+              <span className="text-xl font-black mt-1 text-emerald-500">
+                {Math.round((stats.runs?.successRate || 0) * 100)}%
+              </span>
+            </Card>
+            <Card className="p-4 flex flex-col justify-between rounded-xl border border-border/50 bg-card/45">
+              <span className="text-[10px] font-mono uppercase text-muted-foreground">Avg Duration</span>
+              <span className="text-xl font-black mt-1 text-foreground">
+                {stats.runs?.averageDurationMs 
+                  ? `${(stats.runs.averageDurationMs / 1000).toFixed(1)}s` 
+                  : 'N/A'}
+              </span>
+            </Card>
+            <Card className="p-4 flex flex-col justify-between rounded-xl border border-border/50 bg-card/45">
+              <span className="text-[10px] font-mono uppercase text-muted-foreground">System Health</span>
+              <div className="flex items-center gap-1.5 mt-1">
+                <span className={`size-2 rounded-full ${health?.ok ? 'bg-emerald-500 animate-pulse' : 'bg-destructive'}`} />
+                <span className="text-xs font-bold text-foreground">
+                  {health?.ok ? 'Online' : 'Offline'}
+                </span>
+              </div>
+            </Card>
+          </div>
+        )}
 
         {/* Search & Stats Header block */}
         {!loading && items.length > 0 && (

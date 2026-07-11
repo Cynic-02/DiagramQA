@@ -49,6 +49,8 @@ import { StageFrame, EmptyState, DataChip, KV } from './shared'
 import { AgentThinkingConsole } from './AgentThinkingConsole'
 import { MiniGraph } from './MiniGraph'
 import { CountUpText } from '@/hooks/use-count-up'
+import { TeacherWorkspace } from './TeacherWorkspace'
+import { StudentQuizView } from './StudentQuizView'
 import {
   ResultsFilterBar,
   applyFilters,
@@ -78,6 +80,76 @@ export function ResultsStage() {
   const runId = usePipelineStore((s) => s.runId)
   const [zoomOpen, setZoomOpen] = React.useState(false)
   const [scale, setScale] = React.useState(1)
+
+  const [folders, setFolders] = React.useState<any[]>([])
+  const [selectedFolderId, setSelectedFolderId] = React.useState<string>('')
+  const [newFolderName, setNewFolderName] = React.useState('')
+  const [creatingFolder, setCreatingFolder] = React.useState(false)
+
+  const fetchFolders = async () => {
+    try {
+      const res = await fetch('/api/folders')
+      if (!res.ok) throw new Error()
+      const data = await res.json()
+      setFolders(data.folders || [])
+    } catch (e) {
+      console.error('Failed to fetch folders')
+    }
+  }
+
+  React.useEffect(() => {
+    if (runId) {
+      fetchFolders()
+      fetch(`/api/runs/${runId}`)
+        .then(r => r.json())
+        .then((data) => {
+          if (data.folderId) {
+            setSelectedFolderId(data.folderId)
+          }
+        }).catch(() => undefined)
+    }
+  }, [runId])
+
+  const handleAssignFolder = async (folderId: string) => {
+    if (!runId) return
+    try {
+      const res = await fetch(`/api/runs/${runId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ folderId: folderId === 'none' ? null : folderId }),
+      })
+      if (!res.ok) throw new Error()
+      setSelectedFolderId(folderId === 'none' ? '' : folderId)
+      toast.success(folderId === 'none' ? 'Run unassigned from folder' : 'Run assigned to folder successfully')
+    } catch {
+      toast.error('Failed to assign folder')
+    }
+  }
+
+  const handleCreateFolder = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newFolderName.trim()) return
+    setCreatingFolder(true)
+    try {
+      const res = await fetch('/api/folders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newFolderName }),
+      })
+      if (!res.ok) throw new Error()
+      const data = await res.json()
+      toast.success(`Course folder "${newFolderName}" created!`)
+      setNewFolderName('')
+      await fetchFolders()
+      if (data.folder?.id) {
+        await handleAssignFolder(data.folder.id)
+      }
+    } catch {
+      toast.error('Could not create folder')
+    } finally {
+      setCreatingFolder(false)
+    }
+  }
 
   // workspace modes
   const [mode, setMode] = React.useState<'view' | 'review' | 'quiz'>('view')
@@ -338,151 +410,46 @@ export function ResultsStage() {
           </RevealOnScroll>
         )}
 
-        {/* Grid: QA list + sticky MiniGraph/stats */}
         <div className="grid gap-4 lg:grid-cols-[1fr_300px]">
           <div className="space-y-3">
             {mode === 'review' ? (
-              <div className="space-y-4">
-                {editedQA.length === 0 ? (
-                  <Card className="p-6 text-center text-muted-foreground text-xs">
-                    No questions in current bank.
-                  </Card>
-                ) : (
-                  editedQA.map((qa, i) => (
-                    <Card key={qa.id} className="p-5 border-2 border-border/50 bg-card/45 space-y-4 rounded-xl">
-                      <div className="flex items-center justify-between border-b border-border/30 pb-2">
-                        <span className="text-xs font-mono font-bold text-muted-foreground uppercase">
-                          Question {i + 1}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const updated = editedQA.filter((_, idx) => idx !== i)
-                            setEditedQA(updated)
-                          }}
-                          className="text-[11px] font-bold text-destructive hover:underline flex items-center gap-1"
-                        >
-                          <Trash2 className="size-3" /> Remove
-                        </button>
-                      </div>
-
-                      <div className="space-y-3">
-                        {/* Question Text */}
-                        <div className="space-y-1">
-                          <Label className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Question Text</Label>
-                          <Input
-                            type="text"
-                            value={qa.question}
-                            onChange={(e) => {
-                              const updated = [...editedQA]
-                              updated[i].question = e.target.value
-                              setEditedQA(updated)
-                            }}
-                            className="text-xs"
-                          />
-                        </div>
-
-                        {/* Options if MCQ */}
-                        {qa.questionType === 'mcq' && qa.options && (
-                          <div className="space-y-2">
-                            <Label className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Options</Label>
-                            {qa.options.map((opt, oIdx) => (
-                              <div key={oIdx} className="flex gap-2 items-center">
-                                <span className="font-mono text-xs font-black">{String.fromCharCode(65 + oIdx)}</span>
-                                <Input
-                                  type="text"
-                                  value={opt}
-                                  onChange={(e) => {
-                                    const updated = [...editedQA]
-                                    if (updated[i].options) {
-                                      updated[i].options![oIdx] = e.target.value
-                                      setEditedQA(updated)
-                                    }
-                                  }}
-                                  className="text-xs flex-1"
-                                />
-                                <input
-                                  type="radio"
-                                  name={`correct-option-${qa.id}`}
-                                  checked={oIdx === qa.correctOptionIndex}
-                                  onChange={() => {
-                                    const updated = [...editedQA]
-                                    updated[i].correctOptionIndex = oIdx
-                                    setEditedQA(updated)
-                                  }}
-                                  title="Mark as correct answer"
-                                  className="size-3 text-primary"
-                                />
-                              </div>
-                            ))}
-                          </div>
-                        )}
-
-                        {/* Correct Answer */}
-                        {!qa.options && (
-                          <div className="space-y-1">
-                            <Label className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Correct Answer</Label>
-                            <Input
-                              type="text"
-                              value={qa.answer}
-                              onChange={(e) => {
-                                const updated = [...editedQA]
-                                updated[i].answer = e.target.value
-                                setEditedQA(updated)
-                              }}
-                              className="text-xs"
-                            />
-                          </div>
-                        )}
-
-                        {/* Bloom Level */}
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-1">
-                            <Label className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Bloom Taxonomy</Label>
-                            <select
-                              value={qa.bloomLevel}
-                              onChange={(e) => {
-                                const updated = [...editedQA]
-                                updated[i].bloomLevel = e.target.value as FinalQAItem['bloomLevel']
-                                setEditedQA(updated)
-                              }}
-                              className="w-full h-9 rounded-md border border-border bg-card px-2 text-xs"
-                            >
-                              {(['Remember', 'Understand', 'Apply', 'Analyze', 'Evaluate', 'Create'] as const).map((l) => (
-                                <option key={l} value={l}>{l}</option>
-                              ))}
-                            </select>
-                          </div>
-                          <div className="space-y-1">
-                            <Label className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Difficulty Score</Label>
-                            <Input
-                              type="number"
-                              min="0"
-                              max="100"
-                              value={qa.score}
-                              onChange={(e) => {
-                                const updated = [...editedQA]
-                                updated[i].score = parseInt(e.target.value) || 0
-                                setEditedQA(updated)
-                              }}
-                              className="text-xs"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </Card>
-                  ))
-                )}
-              </div>
+              <TeacherWorkspace
+                runId={runId || ''}
+                questions={finalQA.map(q => ({
+                  id: q.id,
+                  runId: runId || '',
+                  bloomLevel: q.bloomLevel,
+                  type: q.questionType?.toUpperCase() === 'MCQ' ? 'MCQ' : 'SHORT',
+                  text: q.question,
+                  options: q.options || null,
+                  correctOptionIndex: q.correctOptionIndex || null,
+                  answer: q.answer,
+                  explanation: q.explanation || null,
+                  verificationScore: q.score ? Math.round(q.score * 100) : null,
+                  verificationVerdict: q.verification.toUpperCase(),
+                  isApproved: q.verification !== 'reject',
+                }))}
+                onQuestionsUpdate={(updatedQs) => {
+                  const mapped = updatedQs.map(q => ({
+                    id: q.id,
+                    question: q.text,
+                    answer: q.answer,
+                    bloomLevel: q.bloomLevel as any,
+                    cognitiveSkill: q.bloomLevel.toLowerCase(),
+                    verification: q.isApproved ? (q.verificationVerdict?.toLowerCase() as any || 'pass') : 'flagged',
+                    score: q.verificationScore ? q.verificationScore / 100 : 0.95,
+                    questionType: q.type.toLowerCase() as any,
+                    options: q.options || undefined,
+                    correctOptionIndex: q.correctOptionIndex || undefined,
+                    explanation: q.explanation || undefined,
+                  }))
+                  usePipelineStore.setState({ finalQA: mapped })
+                }}
+              />
             ) : mode === 'quiz' ? (
-              <StudentQuizPanel
+              <StudentQuizView
+                runId={runId || ''}
                 questions={finalQA}
-                currentIndex={currentQuizIndex}
-                onIndexChange={setCurrentQuizIndex}
-                answers={quizAnswers}
-                onAnswerUpdate={(idx, data) => setQuizAnswers({ ...quizAnswers, [idx]: data })}
-                onFinish={() => setQuizFinished(true)}
-                finished={quizFinished}
               />
             ) : (
               <div className="space-y-3">
@@ -530,6 +497,85 @@ export function ResultsStage() {
                 >
                   {finalQA.length} verified {finalQA.length === 1 ? 'item' : 'items'} · click to export
                 </button>
+              </div>
+
+              {/* Folder assignment */}
+              <div className="border-b border-border/40 pb-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Course Folder</h3>
+                  {selectedFolderId && (
+                    <span className="text-[9px] text-emerald-500 font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
+                      Assigned
+                    </span>
+                  )}
+                </div>
+                
+                <select
+                  value={selectedFolderId || 'none'}
+                  onChange={(e) => handleAssignFolder(e.target.value)}
+                  className="w-full h-8 rounded-md border border-border bg-card px-2 text-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+                >
+                  <option value="none">-- Select Course Folder --</option>
+                  {folders.map((f) => (
+                    <option key={f.id} value={f.id}>📁 {f.name}</option>
+                  ))}
+                </select>
+
+                <form onSubmit={handleCreateFolder} className="flex gap-1.5 pt-1">
+                  <Input
+                    type="text"
+                    placeholder="New Course Folder..."
+                    value={newFolderName}
+                    onChange={(e) => setNewFolderName(e.target.value)}
+                    className="h-7 text-[11px] flex-1"
+                  />
+                  <Button 
+                    type="submit" 
+                    disabled={creatingFolder || !newFolderName.trim()} 
+                    size="xs"
+                    className="h-7 px-2 font-bold"
+                  >
+                    {creatingFolder ? '...' : 'Create'}
+                  </Button>
+                </form>
+              </div>
+
+              <div className="border-b border-border/40 pb-4 space-y-2">
+                <h3 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Export Course Materials</h3>
+                <div className="grid grid-cols-2 gap-1.5">
+                  <Button 
+                    variant="outline" 
+                    size="xs" 
+                    onClick={() => window.open(`/api/runs/${runId}/export?format=csv`, '_blank')}
+                    className="text-[10px] font-bold h-7"
+                  >
+                    CSV File
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="xs" 
+                    onClick={() => window.open(`/api/runs/${runId}/export?format=moodle`, '_blank')}
+                    className="text-[10px] font-bold h-7"
+                  >
+                    Moodle XML
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="xs" 
+                    onClick={() => window.open(`/api/runs/${runId}/export?format=qti`, '_blank')}
+                    className="text-[10px] font-bold h-7"
+                  >
+                    Canvas QTI
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="xs" 
+                    onClick={() => window.print()}
+                    className="text-[10px] font-bold h-7"
+                  >
+                    Print Test
+                  </Button>
+                </div>
               </div>
 
               {diagramDataUrl && (
@@ -937,199 +983,3 @@ function ScoreRing({ score, pending }: { score: number; pending?: boolean }) {
   )
 }
 
-function StudentQuizPanel({
-  questions,
-  currentIndex,
-  onIndexChange,
-  answers,
-  onAnswerUpdate,
-  onFinish,
-  finished
-}: {
-  questions: FinalQAItem[]
-  currentIndex: number
-  onIndexChange: (idx: number) => void
-  answers: Record<number, { pickedOption: number | null; textAnswer: string; submitted: boolean }>
-  onAnswerUpdate: (idx: number, data: { pickedOption: number | null; textAnswer: string; submitted: boolean }) => void
-  onFinish: () => void
-  finished: boolean
-}) {
-  const currentQuestion = questions[currentIndex]
-  const currentAnswer = answers[currentIndex] || { pickedOption: null, textAnswer: '', submitted: false }
-  const isMcq = currentQuestion.questionType === 'mcq' && !!currentQuestion.options && currentQuestion.options.length > 0
-
-  const handlePickMCQ = (idx: number) => {
-    if (currentAnswer.submitted) return
-    onAnswerUpdate(currentIndex, { ...currentAnswer, pickedOption: idx })
-  }
-
-  const handleSubmitAnswer = () => {
-    onAnswerUpdate(currentIndex, { ...currentAnswer, submitted: true })
-  }
-
-  const correctCount = questions.reduce((sum, q, i) => {
-    const ans = answers[i]
-    if (!ans) return sum
-    if (q.questionType === 'mcq') {
-      return ans.pickedOption === q.correctOptionIndex ? sum + 1 : sum
-    } else {
-      return ans.submitted ? sum + 1 : sum
-    }
-  }, 0)
-
-  if (finished) {
-    return (
-      <Card className="brutal-block p-8 text-center max-w-xl mx-auto space-y-6 rounded-2xl">
-        <div className="inline-flex size-16 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/30">
-          <CheckCircle className="size-8" />
-        </div>
-        <div className="space-y-2">
-          <h2 className="text-xl font-black uppercase tracking-tight">Practice Unit Finished!</h2>
-          <p className="text-xs text-muted-foreground">
-            You have completed all {questions.length} questions in this diagram study unit.
-          </p>
-        </div>
-        <div className="border border-border/40 rounded-xl p-4 bg-muted/10 grid grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <div className="text-[10px] font-mono uppercase text-muted-foreground">Total Questions</div>
-            <div className="text-base font-black">{questions.length}</div>
-          </div>
-          <div className="space-y-1">
-            <div className="text-[10px] font-mono uppercase text-muted-foreground">Mastery Score</div>
-            <div className="text-base font-black text-emerald-500 animate-pulse">
-              {Math.round((correctCount / questions.length) * 100)}%
-            </div>
-          </div>
-        </div>
-        <div className="flex justify-center gap-3">
-          <Button variant="outline" size="sm" onClick={() => onIndexChange(0)}>
-            Restart Practice
-          </Button>
-        </div>
-      </Card>
-    )
-  }
-
-  return (
-    <Card className="brutal-block p-6 max-w-2xl mx-auto space-y-6 rounded-2xl">
-      <div className="flex items-center justify-between border-b border-border/30 pb-3">
-        <span className="text-xs font-mono font-bold text-muted-foreground uppercase">
-          Practice Unit · Q{currentIndex + 1} of {questions.length}
-        </span>
-        <div className="w-32 bg-muted h-1.5 rounded-full overflow-hidden">
-          <div 
-            className="bg-primary h-full transition-all duration-300"
-            style={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}
-          />
-        </div>
-      </div>
-
-      <div className="space-y-4">
-        <p className="text-base font-bold leading-relaxed">{currentQuestion.question}</p>
-
-        {isMcq ? (
-          <ul className="space-y-2">
-            {currentQuestion.options!.map((opt, i) => {
-              const isPicked = i === currentAnswer.pickedOption
-              const isCorrect = i === currentQuestion.correctOptionIndex
-              let btnCls = 'border-border bg-card hover:border-primary/50'
-              if (isPicked) btnCls = 'border-primary bg-primary/10 text-primary font-bold'
-              if (currentAnswer.submitted) {
-                if (isCorrect) btnCls = 'border-emerald-500 bg-emerald-500/10 text-emerald-500 font-bold'
-                else if (isPicked) btnCls = 'border-destructive bg-destructive/10 text-destructive'
-                else btnCls = 'border-border/30 opacity-60 bg-transparent'
-              }
-
-              return (
-                <li key={i}>
-                  <button
-                    type="button"
-                    disabled={currentAnswer.submitted}
-                    onClick={() => handlePickMCQ(i)}
-                    className={cn("flex w-full items-center gap-3 border-2 px-3 py-2.5 text-left text-xs transition-all rounded-xl", btnCls)}
-                  >
-                    <span className="font-mono font-black">{String.fromCharCode(65 + i)}</span>
-                    <span className="flex-1">{opt}</span>
-                    {currentAnswer.submitted && isCorrect && <Check className="size-4 text-emerald-500 shrink-0" />}
-                  </button>
-                </li>
-              )
-            })}
-          </ul>
-        ) : (
-          <div className="space-y-3">
-            <Label htmlFor="short-answer" className="text-xs font-mono uppercase text-muted-foreground">
-              Your Answer Explanation
-            </Label>
-            <textarea
-              id="short-answer"
-              disabled={currentAnswer.submitted}
-              value={currentAnswer.textAnswer}
-              onChange={(e) => onAnswerUpdate(currentIndex, { ...currentAnswer, textAnswer: e.target.value })}
-              className="w-full h-24 rounded-lg border border-border bg-card p-3 text-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
-              placeholder="Type your answer explanation here..."
-            />
-          </div>
-        )}
-      </div>
-
-      {currentAnswer.submitted && (
-        <motion.div
-          initial={{ opacity: 0, y: 5 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="border border-border/60 rounded-xl bg-muted/20 p-4 space-y-2.5"
-        >
-          <div className="text-[10px] font-mono uppercase text-muted-foreground font-bold">
-            Correct Answer
-          </div>
-          <p className="text-xs font-medium text-foreground">{currentQuestion.answer}</p>
-          <div className="space-y-1 pt-2 border-t border-border/30">
-            <div className="text-[9px] font-mono uppercase text-muted-foreground">Cognitive Target</div>
-            <p className="text-[10.5px] leading-relaxed text-muted-foreground">
-              This question evaluates your <strong>{currentQuestion.bloomLevel}</strong> capabilities, specifically testing your <strong>{currentQuestion.cognitiveSkill}</strong> skill relative to the diagram entities.
-            </p>
-          </div>
-        </motion.div>
-      )}
-
-      <div className="flex justify-between items-center pt-3 border-t border-border/30">
-        <Button
-          size="sm"
-          variant="outline"
-          type="button"
-          disabled={currentIndex === 0}
-          onClick={() => onIndexChange(currentIndex - 1)}
-        >
-          Previous
-        </Button>
-
-        {!currentAnswer.submitted ? (
-          <Button
-            size="sm"
-            type="button"
-            disabled={isMcq ? currentAnswer.pickedOption === null : !currentAnswer.textAnswer.trim()}
-            onClick={handleSubmitAnswer}
-          >
-            Submit Answer
-          </Button>
-        ) : currentIndex < questions.length - 1 ? (
-          <Button
-            size="sm"
-            type="button"
-            onClick={() => onIndexChange(currentIndex + 1)}
-          >
-            Next Question
-          </Button>
-        ) : (
-          <Button
-            size="sm"
-            type="button"
-            onClick={onFinish}
-          >
-            Finish Quiz
-          </Button>
-        )}
-      </div>
-    </Card>
-  )
-}

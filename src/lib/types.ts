@@ -215,6 +215,8 @@ export interface RunRecord {
   startedAt?: string
   completedAt?: string
   durationMs?: number
+  folderId?: string
+  questionsList?: any[]
   createdAt: string
 }
 

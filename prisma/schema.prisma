@@ -5,7 +5,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -61,6 +61,10 @@ model Run {
   startedAt    DateTime?
   completedAt  DateTime?
   durationMs   Int?
+  folderId     String?
+  folder       Folder?  @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  questionsList Question[]
+  studentAttempts StudentAttempt[]
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -69,6 +73,7 @@ model Run {
   @@index([userId])
   @@index([userId, createdAt])
   @@index([userId, status])
+  @@index([folderId])
 }
 
 model ChatMessage {
@@ -150,4 +155,43 @@ model UserApiKey {
   @@unique([userId, providerId])
   @@index([userId])
   @@index([userId, isCustom])
+}
+
+model Folder {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  runs      Run[]
+}
+
+model Question {
+  id                 String   @id @default(cuid())
+  runId              String
+  run                Run      @relation(fields: [runId], references: [id], onDelete: Cascade)
+  bloomLevel         String
+  type               String   // "MCQ", "SHORT", "TRUE_FALSE"
+  text               String
+  options            String?  // JSON stringified array for MCQ options
+  answer             String
+  explanation        String?
+  verificationScore  Int?
+  verificationVerdict String?
+  isApproved         Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([runId])
+}
+
+model StudentAttempt {
+  id         String   @id @default(cuid())
+  runId      String
+  run                Run      @relation(fields: [runId], references: [id], onDelete: Cascade)
+  score      Int
+  total      Int
+  answers    String   // JSON stringified map of questionId -> studentAnswer
+  createdAt  DateTime @default(now())
+
+  @@index([runId])
 }
