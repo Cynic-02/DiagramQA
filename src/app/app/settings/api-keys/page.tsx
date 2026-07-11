@@ -66,7 +66,7 @@ export default function ApiKeysSettingsPage() {
       </nav>
 
       <div className="relative z-10 mx-auto w-full max-w-4xl flex-1 p-6 md:p-8">
-        <div className="mb-8 space-y-1.5">
+        <div className="mb-6 space-y-1.5">
           <div className="flex items-center gap-2">
             <div className="flex size-9 items-center justify-center border border-primary/45 bg-primary/10 text-primary rounded-lg">
               <KeyRound className="size-5" />
@@ -82,6 +82,51 @@ export default function ApiKeysSettingsPage() {
             use them.
           </p>
         </div>
+
+        {/* Step-by-Step API Key Integration Guide */}
+        <Card className="brutal-block mb-8 p-5 bg-primary/5 border-primary/20 space-y-4">
+          <h2 className="text-sm font-bold flex items-center gap-2 text-primary">
+            <ShieldCheck className="size-4" />
+            Step-by-Step API Setup Guide
+          </h2>
+          
+          <div className="grid gap-6 md:grid-cols-2 text-xs leading-relaxed text-foreground/80">
+            <div className="space-y-3">
+              <div>
+                <p className="font-bold text-foreground">1. How many API keys are needed?</p>
+                <p className="text-muted-foreground text-[11px] mt-0.5">
+                  You only need **ONE** active API key for any of the vision-enabled providers below (e.g. OpenAI or Anthropic) to run the full pipeline smoothly.
+                </p>
+              </div>
+              
+              <div>
+                <p className="font-bold text-foreground">2. Where to get your API keys?</p>
+                <ul className="list-disc pl-4 mt-1 space-y-1 text-muted-foreground text-[11px]">
+                  <li><a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-primary underline hover:text-primary/80">OpenAI API Keys Page</a> (for GPT-4o / GPT-4o-mini)</li>
+                  <li><a href="https://console.anthropic.com/" target="_blank" rel="noopener noreferrer" className="text-primary underline hover:text-primary/80">Anthropic Console</a> (for Claude 3.5 Sonnet)</li>
+                  <li><a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer" className="text-primary underline hover:text-primary/80">Groq Developer Console</a> (for Llama models)</li>
+                  <li><a href="https://aistudio.google.com/" target="_blank" rel="noopener noreferrer" className="text-primary underline hover:text-primary/80">Google AI Studio Console</a> (for Gemini models)</li>
+                </ul>
+              </div>
+            </div>
+            
+            <div className="space-y-3">
+              <div>
+                <p className="font-bold text-foreground">3. How to add and verify keys?</p>
+                <p className="text-muted-foreground text-[11px] mt-0.5">
+                  Locate your provider card below, click **"Add your key"**, paste your API token, and click **"Save"**. You can click **"Test"** to immediately verify if the connection is active and working.
+                </p>
+              </div>
+              
+              <div>
+                <p className="font-bold text-foreground">4. Running the pipeline smoothly</p>
+                <p className="text-muted-foreground text-[11px] mt-0.5">
+                  Once a key is saved, navigate back to the <Link href="/app" className="text-primary underline font-bold">Console</Link>, upload your diagram, select your provider in the dropdown, and click **"Run pipeline"** to trigger the Vision agent pipeline.
+                </p>
+              </div>
+            </div>
+          </div>
+        </Card>
 
         {loading ? (
           <div className="flex h-40 items-center justify-center">

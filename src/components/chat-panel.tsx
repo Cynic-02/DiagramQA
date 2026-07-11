@@ -116,30 +116,21 @@ export function ChatPanel({ runId, open, onOpenChange }: ChatPanelProps) {
   const content = (
     <>
       {/* Floating Chat Trigger — larger, labeled, impossible to miss */}
-      <button
-        type="button"
-        onClick={() => onOpenChange(!open)}
-        className={cn(
-          "fixed bottom-6 right-6 z-[100] flex h-14 items-center gap-2 rounded-full border-2 border-border px-5 shadow-xl hover:scale-105 active:scale-95 transition-all cursor-pointer",
-          open ? "bg-card text-foreground" : "bg-primary text-primary-foreground"
-        )}
-        aria-label={open ? 'Close follow-up chat' : 'Ask a follow-up question about this diagram'}
-      >
-        {open ? (
-          <X className="size-5" />
-        ) : (
-          <>
-            <MessageSquare className="size-5" />
-            <span className="text-sm font-bold whitespace-nowrap">Ask a follow-up</span>
-          </>
-        )}
-        {!open && (
+      {!open && (
+        <button
+          type="button"
+          onClick={() => onOpenChange(true)}
+          className="fixed bottom-6 right-6 z-[100] flex h-14 items-center gap-2 rounded-full border-2 border-border bg-primary text-primary-foreground px-5 shadow-xl hover:scale-105 active:scale-95 transition-all cursor-pointer"
+          aria-label="Ask a follow-up question about this diagram"
+        >
+          <MessageSquare className="size-5" />
+          <span className="text-sm font-bold whitespace-nowrap">Ask a follow-up</span>
           <span className="absolute -top-1 -right-1 flex size-3.5">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-75"></span>
             <span className="relative inline-flex size-3.5 rounded-full border-2 border-card bg-accent"></span>
           </span>
-        )}
-      </button>
+        </button>
+      )}
 
       <AnimatePresence>
         {open && (
@@ -148,7 +139,7 @@ export function ChatPanel({ runId, open, onOpenChange }: ChatPanelProps) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 15, scale: 0.96 }}
             transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-            className="brutal-block !fixed bottom-[92px] right-6 z-[90] flex h-[min(540px,calc(100vh-7rem))] w-[min(400px,calc(100vw-2.5rem))] flex-col overflow-hidden bg-card"
+            className="brutal-block !fixed bottom-6 right-6 z-[90] flex h-[min(540px,calc(100vh-7rem))] w-[min(400px,calc(100vw-2.5rem))] flex-col overflow-hidden !bg-card !backdrop-filter-none"
           >
             {/* Header */}
             <div className="flex h-12 shrink-0 items-center justify-between border-b border-border/60 px-4">
