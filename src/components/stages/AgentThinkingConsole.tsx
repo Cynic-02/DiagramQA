@@ -22,7 +22,6 @@ import { usePipelineStore } from '@/lib/store'
 import type { StageId } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { ShaderIcon } from '@/components/shader-icons'
-import { useTheme } from 'next-themes'
 
 /* ------------------------------------------------------------------ */
 /* Per-agent config                                                    */
@@ -164,12 +163,10 @@ export function AgentThinkingConsole({
   label?: string
   className?: string
 }) {
-  const { theme } = useTheme()
-  const isMinimal = theme?.startsWith('minimal')
   const reduce = useReducedMotion()
   const cfg = CONFIG[stageId]
   const Icon = cfg.icon
-  const accent = isMinimal ? 'var(--primary)' : ACCENT_HEX[cfg.accent]
+  const accent = ACCENT_HEX[cfg.accent]
 
   // Live logs from the store. Once a real reasoning line for this stage
   // arrives, we stop the scripted placeholder animation and switch to
@@ -237,8 +234,8 @@ export function AgentThinkingConsole({
       )}
       style={{
         background: 'rgba(10,10,10,0.95)',
-        border: isMinimal ? '1px solid rgba(255,255,255,0.08)' : '2px solid rgba(255,255,255,0.1)',
-        boxShadow: isMinimal ? 'none' : '0 20px 50px rgba(0,0,0,0.5)',
+        border: '2px solid rgba(255,255,255,0.1)',
+        boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
       }}
       role="status"
       aria-live="polite"

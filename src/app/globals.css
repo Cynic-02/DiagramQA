@@ -1,7 +1,11 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
+/* Tailwind's `dark:` variant now tracks the data-theme attribute next-themes
+   applies (Neo-Brutal Aurora's mode layer), not a .dark class — the class
+   is never added anymore, so every existing dark: utility across the app
+   would silently stop matching if this still checked for .dark. */
+@custom-variant dark (&:is([data-theme="dark"] *));
 
 @theme inline {
   --color-background: var(--background);
@@ -188,117 +192,6 @@
   --sidebar-active-glow: 0 0 15px rgba(59, 164, 199, 0.18);
 }
 
-.minimal-light {
-  --radius: 6px;
-  --radius-pill: 6px;
-
-  --background: #e4e8f0;                 /* Rich Cool Slate Gray */
-  --foreground: #18181b;
-  --card: #ffffff;
-  --card-foreground: #18181b;
-  --popover: #ffffff;
-  --popover-foreground: #18181b;
-  --primary: #4f46e5;
-  --primary-foreground: #ffffff;
-  --secondary: #f4f4f5;
-  --secondary-foreground: #18181b;
-  --muted: #e2e8f0;
-  --muted-foreground: #71717a;
-  --accent: #4f46e5;
-  --accent-foreground: #ffffff;
-  --destructive: #ef4444;
-  --border: #e2e8f0;
-  --input: #e2e8f0;
-  --ring: #2e6f8e;
-
-  --bg-panel: #ffffff;
-  --bg-elevated: #ffffff;
-  --border-panel: #e4e8ef;
-  --border-strong: #cdd4e0;
-
-  --shadow-sm: 0 1px 2px rgba(24, 32, 51, 0.05);
-  --shadow-md: 0 1px 3px rgba(24, 32, 51, 0.06);
-  --shadow-lg: 0 4px 12px rgba(24, 32, 51, 0.07);
-  --shadow-red: none;
-
-  --text-primary: #182033;
-  --text-secondary: #6b7289;
-  --text-muted: #8b93a8;
-
-  --diagram-coral: #2e6f8e;
-  --diagram-sky: #6b7289;
-  --diagram-mint: #4a8f7a;
-  --diagram-gold: #8b93a8;
-  --diagram-line: #e4e8ef;
-  --diagram-node-bg: #ffffff;
-
-  --sidebar: #ffffff;
-  --sidebar-foreground: #182033;
-  --sidebar-primary: #2e6f8e;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #e4e8ef;
-  --sidebar-accent-foreground: #182033;
-  --sidebar-border: #dde2eb;
-  --sidebar-ring: #2e6f8e;
-  --accent-muted: rgba(46, 111, 142, 0.07);
-  --sidebar-active-glow: 0 0 15px rgba(46, 111, 142, 0.12);
-}
-
-.minimal-dark {
-  --radius: 6px;
-  --radius-pill: 6px;
-
-  --background: #131520;                 /* Premium Charcoal Midnight Blue */
-  --foreground: #fafafa;
-  --card: #1b1e2c;                       /* Premium Charcoal Indigo Card */
-  --card-foreground: #fafafa;
-  --popover: #1b1e2c;
-  --popover-foreground: #fafafa;
-  --primary: #818cf8;
-  --primary-foreground: #09090b;
-  --secondary: #27272a;
-  --secondary-foreground: #fafafa;
-  --muted: #1e202e;
-  --muted-foreground: #a1a1aa;
-  --accent: #818cf8;
-  --accent-foreground: #09090b;
-  --destructive: #ef4444;
-  --border: #222431;
-  --input: #222431;
-  --ring: #6baed4;
-
-  --bg-panel: #121720;
-  --bg-elevated: #1a1f2b;
-  --border-panel: #252b38;
-  --border-strong: #353d4f;
-
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.32);
-  --shadow-md: 0 1px 3px rgba(0, 0, 0, 0.34);
-  --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.36);
-  --shadow-red: none;
-
-  --text-primary: #edf0f6;
-  --text-secondary: #8b93a8;
-  --text-muted: #6b7289;
-
-  --diagram-coral: #6baed4;
-  --diagram-sky: #8b93a8;
-  --diagram-mint: #5bb896;
-  --diagram-gold: #8b93a8;
-  --diagram-line: #252b38;
-  --diagram-node-bg: #121720;
-
-  --sidebar: #131520;
-  --sidebar-foreground: #fafafa;
-  --sidebar-primary: #818cf8;
-  --sidebar-primary-foreground: #09090b;
-  --sidebar-accent: #1e202e;
-  --sidebar-accent-foreground: #fafafa;
-  --sidebar-border: #222431;
-  --sidebar-ring: #818cf8;
-  --accent-muted: rgba(107, 174, 212, 0.09);
-  --sidebar-active-glow: 0 0 15px rgba(107, 174, 212, 0.16);
-}
 
 @layer base {
   * {
@@ -312,7 +205,7 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: var(--font-dala-sans), sans-serif;
+    font-family: var(--font-space-grotesk), sans-serif;
     font-weight: 400;
     letter-spacing: -0.01em;
     -webkit-font-smoothing: antialiased;
@@ -320,21 +213,21 @@
     text-rendering: optimizeLegibility;
   }
   .dark body {
-    font-family: var(--font-dala-sans), sans-serif;
-    font-weight: 450; /* Slightly heavier weight for high contrast on dark background */
-    letter-spacing: normal;
+    font-family: var(--font-space-grotesk), sans-serif;
+    font-weight: 400;
+    letter-spacing: -0.01em;
   }
   h1, h2, h3, h4 {
-    font-family: var(--font-dala-sans), sans-serif;
-    font-weight: 600;
-    letter-spacing: -0.02em;
+    font-family: var(--font-space-grotesk), sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.01em;
     line-height: 1.2;
   }
   .dark h1, .dark h2, .dark h3, .dark h4 {
-    font-family: var(--font-dala-sans), sans-serif;
-    font-weight: 600;
-    letter-spacing: -0.03em;
-    line-height: 1.1;
+    font-family: var(--font-space-grotesk), sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
   }
   ::-webkit-scrollbar {
     width: 6px;
@@ -376,26 +269,26 @@
         panel looks like it's sitting a few mm above the page
      ---------------------------------------------------------------- */
   .brutal-block, .glass, .glass-strong, .glass-primary, .hw-panel {
-    background: var(--bg-panel);
-    backdrop-filter: blur(20px) saturate(160%);
-    -webkit-backdrop-filter: blur(20px) saturate(160%);
-    border: 1px solid var(--border-panel);
-    border-top-color: color-mix(in srgb, var(--foreground) 14%, var(--border-panel));
-    border-left-color: color-mix(in srgb, var(--foreground) 8%, var(--border-panel));
-    border-radius: var(--radius);
+    /* Neo-Brutal Aurora card recipe: a hard ink border + hard offset
+       shadow sit on top of a soft, blurred, glowing translucent fill.
+       The border/shadow are NEVER blurred; the fill/glow are NEVER
+       hardened — that's what keeps brutalism and aurora-glass reading
+       as one coherent style instead of two fighting each other. */
+    background: color-mix(in srgb, var(--bg, var(--background)) var(--card-fill-opacity, 35%), transparent);
+    backdrop-filter: blur(var(--blur-card, 22px)) saturate(var(--blur-saturate, 180%));
+    -webkit-backdrop-filter: blur(var(--blur-card, 22px)) saturate(var(--blur-saturate, 180%));
+    border: var(--border-w-card, 4px) solid var(--ink, var(--border-panel));
+    border-radius: var(--radius-card, var(--radius));
     box-shadow:
-      var(--shadow-md),
-      0 1px 0 0 color-mix(in srgb, var(--foreground) 6%, transparent) inset,
-      0 -1px 0 0 rgba(0, 0, 0, 0.05) inset;
+      var(--shadow-offset-card, 10px 10px 0) var(--ink, var(--border-strong)),
+      0 0 var(--glow-radius, 50px) color-mix(in srgb, var(--primary) var(--glow-opacity, 45%), transparent);
     position: relative;
     overflow: hidden;
     isolation: isolate;
-    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: transform var(--transition-fast, 0.12s ease);
   }
-  /* Specular sheen — a soft diagonal band of light across the upper
-     portion of the panel, like light grazing curved glass. Kept
-     low-opacity and non-interactive; it's the detail that separates
-     "blurred card" from "glass." */
+  /* Specular sheen — a faint diagonal band of light, kept subtle so the
+     hard ink border stays the dominant visual read. */
   .brutal-block::before, .glass::before, .glass-strong::before,
   .glass-primary::before, .hw-panel::before {
     content: '';
@@ -405,25 +298,18 @@
     pointer-events: none;
     background: linear-gradient(
       115deg,
-      color-mix(in srgb, var(--foreground) 10%, transparent) 0%,
+      color-mix(in srgb, var(--text, var(--foreground)) 8%, transparent) 0%,
       transparent 22%,
       transparent 78%,
-      color-mix(in srgb, var(--foreground) 4%, transparent) 100%
+      color-mix(in srgb, var(--text, var(--foreground)) 3%, transparent) 100%
     );
-    opacity: 0.5;
+    opacity: 0.4;
     mix-blend-mode: overlay;
   }
   .dark .brutal-block::before, .dark .glass::before, .dark .glass-strong::before,
   .dark .glass-primary::before, .dark .hw-panel::before {
-    background: linear-gradient(
-      115deg,
-      rgba(255, 255, 255, 0.09) 0%,
-      transparent 22%,
-      transparent 78%,
-      rgba(255, 255, 255, 0.03) 100%
-    );
     mix-blend-mode: soft-light;
-    opacity: 0.7;
+    opacity: 0.5;
   }
   /* Everything else in the panel renders above the sheen */
   .brutal-block > *, .glass > *, .glass-strong > *, .glass-primary > *, .hw-panel > * {
@@ -431,36 +317,33 @@
     z-index: 2;
   }
   .brutal-block:hover, .glass:hover, .hw-panel:hover {
-    border-color: var(--border-strong);
-    background: var(--bg-elevated);
-    transform: translateY(-2px);
+    transform: translate(var(--press-translate-x, -2px), var(--press-translate-y, -2px));
     box-shadow:
-      var(--shadow-lg),
-      0 0 20px color-mix(in srgb, var(--primary) 12%, transparent),
-      0 1px 0 0 color-mix(in srgb, var(--foreground) 8%, transparent) inset;
+      12px 12px 0 var(--ink, var(--border-strong)),
+      0 0 var(--glow-radius, 50px) color-mix(in srgb, var(--primary) 55%, transparent);
   }
   .brutal-block-sm {
-    background: var(--bg-elevated);
-    backdrop-filter: blur(14px) saturate(150%);
-    -webkit-backdrop-filter: blur(14px) saturate(150%);
-    border: 1px solid var(--border-panel);
-    border-top-color: color-mix(in srgb, var(--foreground) 12%, var(--border-panel));
-    border-radius: 12px;
-    box-shadow: var(--shadow-sm), 0 1px 0 0 color-mix(in srgb, var(--foreground) 5%, transparent) inset;
+    background: color-mix(in srgb, var(--bg, var(--background)) 45%, transparent);
+    backdrop-filter: blur(16px) saturate(var(--blur-saturate, 180%));
+    -webkit-backdrop-filter: blur(16px) saturate(var(--blur-saturate, 180%));
+    border: var(--border-w-btn, 3px) solid var(--ink, var(--border-panel));
+    border-radius: var(--radius-btn, 10px);
+    box-shadow:
+      var(--shadow-offset-btn, 5px 5px 0) var(--ink, var(--border-strong)),
+      0 0 30px color-mix(in srgb, var(--primary) 30%, transparent);
     position: relative;
     overflow: hidden;
-    transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+    transition: transform var(--transition-fast, 0.12s ease);
   }
   .brutal-block-lg {
-    background: var(--bg-panel);
-    backdrop-filter: blur(28px) saturate(165%);
-    -webkit-backdrop-filter: blur(28px) saturate(165%);
-    border: 1px solid var(--border-panel);
-    border-top-color: color-mix(in srgb, var(--foreground) 14%, var(--border-panel));
-    border-radius: var(--radius);
+    background: color-mix(in srgb, var(--bg, var(--background)) var(--card-fill-opacity, 35%), transparent);
+    backdrop-filter: blur(28px) saturate(var(--blur-saturate, 180%));
+    -webkit-backdrop-filter: blur(28px) saturate(var(--blur-saturate, 180%));
+    border: var(--border-w-card, 4px) solid var(--ink, var(--border-panel));
+    border-radius: var(--radius-card, var(--radius));
     box-shadow:
-      var(--shadow-lg),
-      0 1px 0 0 color-mix(in srgb, var(--foreground) 7%, transparent) inset;
+      14px 14px 0 var(--ink, var(--border-strong)),
+      0 0 60px color-mix(in srgb, var(--primary) 45%, transparent);
     position: relative;
     overflow: hidden;
   }
@@ -472,14 +355,13 @@
     pointer-events: none;
     background: linear-gradient(
       120deg,
-      color-mix(in srgb, var(--foreground) 9%, transparent) 0%,
+      color-mix(in srgb, var(--text, var(--foreground)) 7%, transparent) 0%,
       transparent 30%
     );
-    opacity: 0.6;
+    opacity: 0.5;
     mix-blend-mode: overlay;
   }
   .dark .brutal-block-lg::before {
-    background: linear-gradient(120deg, rgba(255, 255, 255, 0.08) 0%, transparent 30%);
     mix-blend-mode: soft-light;
   }
   .brutal-block-lg > * {
@@ -487,13 +369,13 @@
     z-index: 2;
   }
   .brutal-interactive {
-    transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+    transition: transform var(--transition-fast, 0.12s ease);
   }
   .brutal-interactive:hover {
-    transform: translateY(-2px);
+    transform: translate(-2px, -2px);
   }
   .glow-accent, .glow-soft {
-    box-shadow: var(--shadow-red);
+    box-shadow: 0 0 var(--glow-radius, 50px) color-mix(in srgb, var(--primary) var(--glow-opacity, 45%), transparent);
   }
 
   /* Frosted app chrome (top bars, sticky headers, floating rails) —
@@ -508,6 +390,18 @@
 
   .text-balance { text-wrap: balance; }
   .text-pretty { text-wrap: pretty; }
+
+  /* One handwritten accent per screen, max — a kicker/tagline above a
+     hero heading or a sticky-note style annotation. Never body text,
+     buttons, or more than one line (per the Neo-Brutal Aurora spec). */
+  .handwritten-accent {
+    font-family: var(--font-caveat), cursive;
+    font-weight: 700;
+    font-size: 1.4em;
+    color: var(--primary);
+    transform: rotate(-2deg);
+    display: inline-block;
+  }
 
   /* Solid accent-color text. */
   .text-gradient, .text-gradient-cool {
@@ -564,21 +458,30 @@
   /* Ambient background orbs */
   .hw-orb-1 {
     position: absolute; top: -8%; left: -5%;
-    width: 600px; height: 600px; border-radius: 50%;
-    background: radial-gradient(circle, color-mix(in srgb, var(--diagram-coral) 20%, transparent) 0%, transparent 70%);
-    pointer-events: none; animation: hw-blob 9s infinite;
+    width: var(--blob-size, 260px); height: var(--blob-size, 260px); border-radius: 50%;
+    background: var(--primary);
+    filter: blur(var(--blob-blur, 60px));
+    opacity: var(--blob-opacity, .55);
+    pointer-events: none; animation: hw-blob 16s ease-in-out infinite;
   }
   .hw-orb-2 {
     position: absolute; top: 30%; right: -10%;
-    width: 480px; height: 480px; border-radius: 50%;
-    background: radial-gradient(circle, color-mix(in srgb, var(--diagram-sky) 18%, transparent) 0%, transparent 70%);
-    pointer-events: none; animation: hw-blob 11s infinite 3s;
+    width: var(--blob-size, 240px); height: var(--blob-size, 240px); border-radius: 50%;
+    background: var(--accent);
+    filter: blur(var(--blob-blur, 60px));
+    opacity: var(--blob-opacity, .55);
+    pointer-events: none; animation: hw-blob 18s ease-in-out infinite 3s;
   }
   .hw-orb-3 {
     position: absolute; bottom: -10%; left: 28%;
-    width: 360px; height: 360px; border-radius: 50%;
-    background: radial-gradient(circle, color-mix(in srgb, var(--diagram-mint) 15%, transparent) 0%, transparent 70%);
-    pointer-events: none; animation: hw-blob 13s infinite 6s;
+    width: var(--blob-size, 220px); height: var(--blob-size, 220px); border-radius: 50%;
+    background: var(--secondary);
+    filter: blur(var(--blob-blur, 60px));
+    opacity: var(--blob-opacity, .55);
+    pointer-events: none; animation: hw-blob 14s ease-in-out infinite 6s;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hw-orb-1, .hw-orb-2, .hw-orb-3 { animation: none; }
   }
 
   /* Diagonal accent stripe */
@@ -714,76 +617,479 @@
 
 
 /* ============================================================
-   STRUCTURED MINIMAL THEME OVERRIDES
+   NEO-BRUTAL AURORA — structural design tokens (theme-independent,
+   never change per palette/mode) + the 8-palette two-layer color
+   system (4 light, 4 dark), each block re-mapping the site's existing
+   semantic variables (--background, --foreground, --card, --primary,
+   etc.) so every component already built against those names re-colors
+   automatically — nothing below needed touching a single component.
    ============================================================ */
-.minimal-light .bg-hero-void,
-.minimal-dark .bg-hero-void {
-  background: var(--background) !important;
+
+:root {
+  --radius-card: 18px;
+  --radius-badge: 8px;
+  --radius-badge2: 10px;
+  --radius-btn: 10px;
+  --radius-input: 10px;
+
+  --border-w-card: 4px;
+  --border-w-badge: 2px;
+  --border-w-btn: 3px;
+  --border-w-input: 3px;
+  --border-w-switch: 3px;
+
+  --shadow-offset-card: 10px 10px 0;
+  --shadow-offset-badge: 3px 3px 0;
+  --shadow-offset-btn: 5px 5px 0;
+  --shadow-offset-btn-hover: 2px 2px 0;
+  --shadow-offset-chip: 3px 3px 0;
+
+  --blur-card: 22px;
+  --blur-saturate: 180%;
+  --glow-radius: 50px;
+  --glow-opacity: 45%;
+  --card-fill-opacity: 35%;
+
+  --blob-blur: 60px;
+  --blob-opacity: .55;
+
+  --press-translate-x: 3px;
+  --press-translate-y: 3px;
+  --transition-fast: .12s ease;
 }
 
-.minimal-light h1, .minimal-light h2, .minimal-light h3, .minimal-light h4,
-.minimal-dark h1, .minimal-dark h2, .minimal-dark h3, .minimal-dark h4 {
-  font-family: var(--font-dala-sans), sans-serif !important;
-  font-weight: 600 !important;
-  letter-spacing: -0.01em !important;
-  text-transform: none !important;
+/* ---- Light palettes ---- */
+
+[data-theme="light"][data-palette="candy_pop"] {
+  --bg: #fdf2f8; --surface: #ffffff; --primary: #ff5ca8; --secondary: #a78bfa;
+  --accent: #14b8a6; --text: #2d1b30; --muted: #b98cae; --ink: #1a0f1c;
+
+  --background: var(--bg);
+  --foreground: var(--text);
+  --card: var(--surface);
+  --card-foreground: var(--text);
+  --popover: var(--surface);
+  --popover-foreground: var(--text);
+  --primary-foreground: #ffffff;
+  --secondary-foreground: #ffffff;
+  --muted-foreground: var(--muted);
+  --accent-foreground: #ffffff;
+  --destructive: #ef4444;
+  --border: var(--ink);
+  --input: var(--ink);
+  --ring: var(--primary);
+
+  --chart-1: var(--primary); --chart-2: var(--secondary); --chart-3: var(--accent);
+  --chart-4: color-mix(in srgb, var(--primary) 60%, var(--accent));
+  --chart-5: color-mix(in srgb, var(--secondary) 60%, var(--primary));
+
+  --sidebar: var(--surface); --sidebar-foreground: var(--text);
+  --sidebar-primary: var(--primary); --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: color-mix(in srgb, var(--ink) 6%, transparent);
+  --sidebar-accent-foreground: var(--text);
+  --sidebar-border: var(--ink); --sidebar-ring: var(--primary);
+
+  --text-primary: var(--text);
+  --text-secondary: var(--muted);
+  --text-muted: color-mix(in srgb, var(--muted) 75%, transparent);
+
+  --shadow-sm: 0 2px 8px color-mix(in srgb, var(--ink) 12%, transparent);
+  --shadow-md: 0 4px 20px color-mix(in srgb, var(--ink) 16%, transparent);
+  --shadow-lg: 0 10px 30px color-mix(in srgb, var(--ink) 20%, transparent);
+  --shadow-red: 0 0 var(--glow-radius) color-mix(in srgb, var(--primary) var(--glow-opacity), transparent);
+
+  --bg-panel: color-mix(in srgb, var(--bg) var(--card-fill-opacity), transparent);
+  --bg-elevated: color-mix(in srgb, var(--bg) 55%, transparent);
+  --border-panel: var(--ink);
+  --border-strong: var(--ink);
+  --accent-muted: color-mix(in srgb, var(--accent) 10%, transparent);
+
+  --diagram-coral: var(--secondary);
+  --diagram-sky: var(--accent);
+  --diagram-mint: var(--primary);
+  --diagram-gold: var(--accent);
+  --diagram-line: color-mix(in srgb, var(--ink) 20%, transparent);
+  --diagram-node-bg: var(--surface);
+  --sidebar-active-glow: 0 0 15px color-mix(in srgb, var(--primary) 18%, transparent);
 }
 
-.minimal-light body, .minimal-dark body {
-  font-family: var(--font-dala-sans), sans-serif !important;
-  font-weight: 400 !important;
-  letter-spacing: normal !important;
+[data-theme="light"][data-palette="terracotta_earth"] {
+  --bg: #f4ede4; --surface: #fffaf3; --primary: #c1633b; --secondary: #7d8f69;
+  --accent: #d9a441; --text: #3a2b22; --muted: #a08a76; --ink: #2a1c14;
+
+  --background: var(--bg);
+  --foreground: var(--text);
+  --card: var(--surface);
+  --card-foreground: var(--text);
+  --popover: var(--surface);
+  --popover-foreground: var(--text);
+  --primary-foreground: #ffffff;
+  --secondary-foreground: #ffffff;
+  --muted-foreground: var(--muted);
+  --accent-foreground: var(--ink);
+  --destructive: #ef4444;
+  --border: var(--ink);
+  --input: var(--ink);
+  --ring: var(--primary);
+
+  --chart-1: var(--primary); --chart-2: var(--secondary); --chart-3: var(--accent);
+  --chart-4: color-mix(in srgb, var(--primary) 60%, var(--accent));
+  --chart-5: color-mix(in srgb, var(--secondary) 60%, var(--primary));
+
+  --sidebar: var(--surface); --sidebar-foreground: var(--text);
+  --sidebar-primary: var(--primary); --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: color-mix(in srgb, var(--ink) 6%, transparent);
+  --sidebar-accent-foreground: var(--text);
+  --sidebar-border: var(--ink); --sidebar-ring: var(--primary);
+
+  --text-primary: var(--text);
+  --text-secondary: var(--muted);
+  --text-muted: color-mix(in srgb, var(--muted) 75%, transparent);
+
+  --shadow-sm: 0 2px 8px color-mix(in srgb, var(--ink) 12%, transparent);
+  --shadow-md: 0 4px 20px color-mix(in srgb, var(--ink) 16%, transparent);
+  --shadow-lg: 0 10px 30px color-mix(in srgb, var(--ink) 20%, transparent);
+  --shadow-red: 0 0 var(--glow-radius) color-mix(in srgb, var(--primary) var(--glow-opacity), transparent);
+
+  --bg-panel: color-mix(in srgb, var(--bg) var(--card-fill-opacity), transparent);
+  --bg-elevated: color-mix(in srgb, var(--bg) 55%, transparent);
+  --border-panel: var(--ink);
+  --border-strong: var(--ink);
+  --accent-muted: color-mix(in srgb, var(--accent) 10%, transparent);
+
+  --diagram-coral: var(--secondary);
+  --diagram-sky: var(--accent);
+  --diagram-mint: var(--primary);
+  --diagram-gold: var(--accent);
+  --diagram-line: color-mix(in srgb, var(--ink) 20%, transparent);
+  --diagram-node-bg: var(--surface);
+  --sidebar-active-glow: 0 0 15px color-mix(in srgb, var(--primary) 18%, transparent);
 }
 
-/* Override spring animations with fast standard transitions and no scale */
-.minimal-light .spring-transition,
-.minimal-dark .spring-transition,
-.minimal-light .brutal-block,
-.minimal-dark .brutal-block,
-.minimal-light .glass,
-.minimal-dark .glass,
-.minimal-light .hw-panel,
-.minimal-dark .hw-panel {
-  transition: all 0.18s ease-in-out !important;
-  transform: none !important;
-  box-shadow: var(--shadow-sm) !important;
+[data-theme="light"][data-palette="cotton_candy"] {
+  --bg: #fdf4fb; --surface: #ffffff; --primary: #ff9ecb; --secondary: #a8d8ff;
+  --accent: #c8b6ff; --text: #3a2a3f; --muted: #c9a8c4; --ink: #2a1a2f;
+
+  --background: var(--bg);
+  --foreground: var(--text);
+  --card: var(--surface);
+  --card-foreground: var(--text);
+  --popover: var(--surface);
+  --popover-foreground: var(--text);
+  --primary-foreground: var(--ink);
+  --secondary-foreground: var(--ink);
+  --muted-foreground: var(--muted);
+  --accent-foreground: var(--ink);
+  --destructive: #ef4444;
+  --border: var(--ink);
+  --input: var(--ink);
+  --ring: var(--primary);
+
+  --chart-1: var(--primary); --chart-2: var(--secondary); --chart-3: var(--accent);
+  --chart-4: color-mix(in srgb, var(--primary) 60%, var(--accent));
+  --chart-5: color-mix(in srgb, var(--secondary) 60%, var(--primary));
+
+  --sidebar: var(--surface); --sidebar-foreground: var(--text);
+  --sidebar-primary: var(--primary); --sidebar-primary-foreground: var(--ink);
+  --sidebar-accent: color-mix(in srgb, var(--ink) 6%, transparent);
+  --sidebar-accent-foreground: var(--text);
+  --sidebar-border: var(--ink); --sidebar-ring: var(--primary);
+
+  --text-primary: var(--text);
+  --text-secondary: var(--muted);
+  --text-muted: color-mix(in srgb, var(--muted) 75%, transparent);
+
+  --shadow-sm: 0 2px 8px color-mix(in srgb, var(--ink) 12%, transparent);
+  --shadow-md: 0 4px 20px color-mix(in srgb, var(--ink) 16%, transparent);
+  --shadow-lg: 0 10px 30px color-mix(in srgb, var(--ink) 20%, transparent);
+  --shadow-red: 0 0 var(--glow-radius) color-mix(in srgb, var(--primary) var(--glow-opacity), transparent);
+
+  --bg-panel: color-mix(in srgb, var(--bg) var(--card-fill-opacity), transparent);
+  --bg-elevated: color-mix(in srgb, var(--bg) 55%, transparent);
+  --border-panel: var(--ink);
+  --border-strong: var(--ink);
+  --accent-muted: color-mix(in srgb, var(--accent) 10%, transparent);
+
+  --diagram-coral: var(--secondary);
+  --diagram-sky: var(--accent);
+  --diagram-mint: var(--primary);
+  --diagram-gold: var(--accent);
+  --diagram-line: color-mix(in srgb, var(--ink) 20%, transparent);
+  --diagram-node-bg: var(--surface);
+  --sidebar-active-glow: 0 0 15px color-mix(in srgb, var(--primary) 18%, transparent);
 }
 
-.minimal-light .brutal-interactive:hover,
-.minimal-dark .brutal-interactive:hover,
-.minimal-light .brutal-block:hover,
-.minimal-dark .brutal-block:hover,
-.minimal-light .glass:hover,
-.minimal-dark .glass:hover,
-.minimal-light .hw-panel:hover,
-.minimal-dark .hw-panel:hover {
-  transform: none !important;
-  box-shadow: var(--shadow-md) !important;
-  border-color: var(--border-strong) !important;
+[data-theme="light"][data-palette="lavender_haze"] {
+  --bg: #f4efff; --surface: #ffffff; --primary: #a78bfa; --secondary: #cb9bfb;
+  --accent: #f0abfc; --text: #3a2e5c; --muted: #9a8ec0; --ink: #0a0a0a;
+
+  --background: var(--bg);
+  --foreground: var(--text);
+  --card: var(--surface);
+  --card-foreground: var(--text);
+  --popover: var(--surface);
+  --popover-foreground: var(--text);
+  --primary-foreground: var(--ink);
+  --secondary-foreground: var(--ink);
+  --muted-foreground: var(--muted);
+  --accent-foreground: var(--ink);
+  --destructive: #ef4444;
+  --border: var(--ink);
+  --input: var(--ink);
+  --ring: var(--primary);
+
+  --chart-1: var(--primary); --chart-2: var(--secondary); --chart-3: var(--accent);
+  --chart-4: color-mix(in srgb, var(--primary) 60%, var(--accent));
+  --chart-5: color-mix(in srgb, var(--secondary) 60%, var(--primary));
+
+  --sidebar: var(--surface); --sidebar-foreground: var(--text);
+  --sidebar-primary: var(--primary); --sidebar-primary-foreground: var(--ink);
+  --sidebar-accent: color-mix(in srgb, var(--ink) 6%, transparent);
+  --sidebar-accent-foreground: var(--text);
+  --sidebar-border: var(--ink); --sidebar-ring: var(--primary);
+
+  --text-primary: var(--text);
+  --text-secondary: var(--muted);
+  --text-muted: color-mix(in srgb, var(--muted) 75%, transparent);
+
+  --shadow-sm: 0 2px 8px color-mix(in srgb, var(--ink) 12%, transparent);
+  --shadow-md: 0 4px 20px color-mix(in srgb, var(--ink) 16%, transparent);
+  --shadow-lg: 0 10px 30px color-mix(in srgb, var(--ink) 20%, transparent);
+  --shadow-red: 0 0 var(--glow-radius) color-mix(in srgb, var(--primary) var(--glow-opacity), transparent);
+
+  --bg-panel: color-mix(in srgb, var(--bg) var(--card-fill-opacity), transparent);
+  --bg-elevated: color-mix(in srgb, var(--bg) 55%, transparent);
+  --border-panel: var(--ink);
+  --border-strong: var(--ink);
+  --accent-muted: color-mix(in srgb, var(--accent) 10%, transparent);
+
+  --diagram-coral: var(--secondary);
+  --diagram-sky: var(--accent);
+  --diagram-mint: var(--primary);
+  --diagram-gold: var(--accent);
+  --diagram-line: color-mix(in srgb, var(--ink) 20%, transparent);
+  --diagram-node-bg: var(--surface);
+  --sidebar-active-glow: 0 0 15px color-mix(in srgb, var(--primary) 18%, transparent);
 }
 
-/* Minimal themes are flat by design — kill the specular sheen and
-   two-tone glass edge from the Cognitive Atlas glass recipe. */
-.minimal-light .brutal-block::before, .minimal-dark .brutal-block::before,
-.minimal-light .glass::before, .minimal-dark .glass::before,
-.minimal-light .glass-strong::before, .minimal-dark .glass-strong::before,
-.minimal-light .glass-primary::before, .minimal-dark .glass-primary::before,
-.minimal-light .hw-panel::before, .minimal-dark .hw-panel::before,
-.minimal-light .brutal-block-lg::before, .minimal-dark .brutal-block-lg::before {
-  display: none !important;
-}
-.minimal-light .brutal-block, .minimal-dark .brutal-block,
-.minimal-light .glass, .minimal-dark .glass,
-.minimal-light .hw-panel, .minimal-dark .hw-panel,
-.minimal-light .brutal-block-lg, .minimal-dark .brutal-block-lg {
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  border-top-color: var(--border-panel) !important;
-  border-left-color: var(--border-panel) !important;
+/* ---- Dark palettes ---- */
+
+[data-theme="dark"][data-palette="sunset_pop"] {
+  --bg: #1c1310; --surface: #2a1e19; --primary: #ff6b4a; --secondary: #ffb84a;
+  --accent: #ffe066; --text: #fff3ea; --muted: #c9a894; --ink: #160c08;
+
+  --background: var(--bg);
+  --foreground: var(--text);
+  --card: var(--surface);
+  --card-foreground: var(--text);
+  --popover: var(--surface);
+  --popover-foreground: var(--text);
+  --primary-foreground: var(--ink);
+  --secondary-foreground: var(--ink);
+  --muted-foreground: var(--muted);
+  --accent-foreground: var(--ink);
+  --destructive: #e05a5a;
+  --border: var(--ink);
+  --input: var(--ink);
+  --ring: var(--primary);
+
+  --chart-1: var(--primary); --chart-2: var(--secondary); --chart-3: var(--accent);
+  --chart-4: color-mix(in srgb, var(--primary) 60%, var(--accent));
+  --chart-5: color-mix(in srgb, var(--secondary) 60%, var(--primary));
+
+  --sidebar: var(--surface); --sidebar-foreground: var(--text);
+  --sidebar-primary: var(--primary); --sidebar-primary-foreground: var(--ink);
+  --sidebar-accent: color-mix(in srgb, white 6%, transparent);
+  --sidebar-accent-foreground: var(--text);
+  --sidebar-border: var(--ink); --sidebar-ring: var(--primary);
+
+  --text-primary: var(--text);
+  --text-secondary: var(--muted);
+  --text-muted: color-mix(in srgb, var(--muted) 75%, transparent);
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 8px 30px rgba(0, 0, 0, 0.42);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.55);
+  --shadow-red: 0 0 var(--glow-radius) color-mix(in srgb, var(--primary) var(--glow-opacity), transparent);
+
+  --bg-panel: color-mix(in srgb, var(--bg) var(--card-fill-opacity), transparent);
+  --bg-elevated: color-mix(in srgb, var(--bg) 60%, transparent);
+  --border-panel: var(--ink);
+  --border-strong: var(--ink);
+  --accent-muted: color-mix(in srgb, var(--accent) 10%, transparent);
+
+  --diagram-coral: var(--secondary);
+  --diagram-sky: var(--accent);
+  --diagram-mint: var(--primary);
+  --diagram-gold: var(--accent);
+  --diagram-line: color-mix(in srgb, var(--primary) 22%, transparent);
+  --diagram-node-bg: var(--surface);
+  --sidebar-active-glow: 0 0 15px color-mix(in srgb, var(--primary) 22%, transparent);
 }
 
-/* Disable background gradients/borders from the other theme */
-.minimal-light ::selection,
-.minimal-dark ::selection {
-  background: color-mix(in srgb, var(--primary) 22%, transparent);
+[data-theme="dark"][data-palette="royal_purple"] {
+  --bg: #160a29; --surface: #22113f; --primary: #a855f7; --secondary: #d19086;
+  --accent: #facc15; --text: #efe6ff; --muted: #9077bd; --ink: #0d0618;
+
+  --background: var(--bg);
+  --foreground: var(--text);
+  --card: var(--surface);
+  --card-foreground: var(--text);
+  --popover: var(--surface);
+  --popover-foreground: var(--text);
+  --primary-foreground: #ffffff;
+  --secondary-foreground: var(--ink);
+  --muted-foreground: var(--muted);
+  --accent-foreground: var(--ink);
+  --destructive: #e05a5a;
+  --border: var(--ink);
+  --input: var(--ink);
+  --ring: var(--primary);
+
+  --chart-1: var(--primary); --chart-2: var(--secondary); --chart-3: var(--accent);
+  --chart-4: color-mix(in srgb, var(--primary) 60%, var(--accent));
+  --chart-5: color-mix(in srgb, var(--secondary) 60%, var(--primary));
+
+  --sidebar: var(--surface); --sidebar-foreground: var(--text);
+  --sidebar-primary: var(--primary); --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: color-mix(in srgb, white 6%, transparent);
+  --sidebar-accent-foreground: var(--text);
+  --sidebar-border: var(--ink); --sidebar-ring: var(--primary);
+
+  --text-primary: var(--text);
+  --text-secondary: var(--muted);
+  --text-muted: color-mix(in srgb, var(--muted) 75%, transparent);
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 8px 30px rgba(0, 0, 0, 0.42);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.55);
+  --shadow-red: 0 0 var(--glow-radius) color-mix(in srgb, var(--primary) var(--glow-opacity), transparent);
+
+  --bg-panel: color-mix(in srgb, var(--bg) var(--card-fill-opacity), transparent);
+  --bg-elevated: color-mix(in srgb, var(--bg) 60%, transparent);
+  --border-panel: var(--ink);
+  --border-strong: var(--ink);
+  --accent-muted: color-mix(in srgb, var(--accent) 10%, transparent);
+
+  --diagram-coral: var(--secondary);
+  --diagram-sky: var(--accent);
+  --diagram-mint: var(--primary);
+  --diagram-gold: var(--accent);
+  --diagram-line: color-mix(in srgb, var(--primary) 22%, transparent);
+  --diagram-node-bg: var(--surface);
+  --sidebar-active-glow: 0 0 15px color-mix(in srgb, var(--primary) 22%, transparent);
+}
+
+[data-theme="dark"][data-palette="ocean_teal"] {
+  --bg: #012a30; --surface: #013a44; --primary: #00b4a6; --secondary: #7fa074;
+  --accent: #ff8c42; --text: #e0f7fa; --muted: #5fa0aa; --ink: #00191c;
+
+  --background: var(--bg);
+  --foreground: var(--text);
+  --card: var(--surface);
+  --card-foreground: var(--text);
+  --popover: var(--surface);
+  --popover-foreground: var(--text);
+  --primary-foreground: #ffffff;
+  --secondary-foreground: var(--ink);
+  --muted-foreground: var(--muted);
+  --accent-foreground: var(--ink);
+  --destructive: #e05a5a;
+  --border: var(--ink);
+  --input: var(--ink);
+  --ring: var(--primary);
+
+  --chart-1: var(--primary); --chart-2: var(--secondary); --chart-3: var(--accent);
+  --chart-4: color-mix(in srgb, var(--primary) 60%, var(--accent));
+  --chart-5: color-mix(in srgb, var(--secondary) 60%, var(--primary));
+
+  --sidebar: var(--surface); --sidebar-foreground: var(--text);
+  --sidebar-primary: var(--primary); --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: color-mix(in srgb, white 6%, transparent);
+  --sidebar-accent-foreground: var(--text);
+  --sidebar-border: var(--ink); --sidebar-ring: var(--primary);
+
+  --text-primary: var(--text);
+  --text-secondary: var(--muted);
+  --text-muted: color-mix(in srgb, var(--muted) 75%, transparent);
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 8px 30px rgba(0, 0, 0, 0.42);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.55);
+  --shadow-red: 0 0 var(--glow-radius) color-mix(in srgb, var(--primary) var(--glow-opacity), transparent);
+
+  --bg-panel: color-mix(in srgb, var(--bg) var(--card-fill-opacity), transparent);
+  --bg-elevated: color-mix(in srgb, var(--bg) 60%, transparent);
+  --border-panel: var(--ink);
+  --border-strong: var(--ink);
+  --accent-muted: color-mix(in srgb, var(--accent) 10%, transparent);
+
+  --diagram-coral: var(--secondary);
+  --diagram-sky: var(--accent);
+  --diagram-mint: var(--primary);
+  --diagram-gold: var(--accent);
+  --diagram-line: color-mix(in srgb, var(--primary) 22%, transparent);
+  --diagram-node-bg: var(--surface);
+  --sidebar-active-glow: 0 0 15px color-mix(in srgb, var(--primary) 22%, transparent);
+}
+
+[data-theme="dark"][data-palette="fire_and_ice"] {
+  --bg: #0a0f1a; --surface: #111a2b; --primary: #00d4ff; --secondary: #7f8c7f;
+  --accent: #ff4500; --text: #e8f1ff; --muted: #5d7390; --ink: #06090f;
+
+  --background: var(--bg);
+  --foreground: var(--text);
+  --card: var(--surface);
+  --card-foreground: var(--text);
+  --popover: var(--surface);
+  --popover-foreground: var(--text);
+  --primary-foreground: var(--ink);
+  --secondary-foreground: #ffffff;
+  --muted-foreground: var(--muted);
+  --accent-foreground: #ffffff;
+  --destructive: #e05a5a;
+  --border: var(--ink);
+  --input: var(--ink);
+  --ring: var(--primary);
+
+  --chart-1: var(--primary); --chart-2: var(--secondary); --chart-3: var(--accent);
+  --chart-4: color-mix(in srgb, var(--primary) 60%, var(--accent));
+  --chart-5: color-mix(in srgb, var(--secondary) 60%, var(--primary));
+
+  --sidebar: var(--surface); --sidebar-foreground: var(--text);
+  --sidebar-primary: var(--primary); --sidebar-primary-foreground: var(--ink);
+  --sidebar-accent: color-mix(in srgb, white 6%, transparent);
+  --sidebar-accent-foreground: var(--text);
+  --sidebar-border: var(--ink); --sidebar-ring: var(--primary);
+
+  --text-primary: var(--text);
+  --text-secondary: var(--muted);
+  --text-muted: color-mix(in srgb, var(--muted) 75%, transparent);
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 8px 30px rgba(0, 0, 0, 0.42);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.55);
+  --shadow-red: 0 0 var(--glow-radius) color-mix(in srgb, var(--primary) var(--glow-opacity), transparent);
+
+  --bg-panel: color-mix(in srgb, var(--bg) var(--card-fill-opacity), transparent);
+  --bg-elevated: color-mix(in srgb, var(--bg) 60%, transparent);
+  --border-panel: var(--ink);
+  --border-strong: var(--ink);
+  --accent-muted: color-mix(in srgb, var(--accent) 10%, transparent);
+
+  --diagram-coral: var(--secondary);
+  --diagram-sky: var(--accent);
+  --diagram-mint: var(--primary);
+  --diagram-gold: var(--accent);
+  --diagram-line: color-mix(in srgb, var(--primary) 22%, transparent);
+  --diagram-node-bg: var(--surface);
+  --sidebar-active-glow: 0 0 15px color-mix(in srgb, var(--primary) 22%, transparent);
+}
+
+/* Background wash + drifting blobs, driven by whichever palette is
+   active — every mode/palette combination gets the same treatment,
+   just re-tinted via --primary/--accent/--secondary. */
+body {
+  background:
+    radial-gradient(circle at 22% 18%, color-mix(in srgb, var(--primary) 22%, var(--bg, var(--background))) 0%, var(--bg, var(--background)) 55%);
 }

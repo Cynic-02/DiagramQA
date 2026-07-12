@@ -2,12 +2,20 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
+/**
+ * Neo-Brutal Aurora card recipe: 4px ink border, 18px radius, a hard
+ * 10px offset ink shadow stacked with a soft colored glow, on a
+ * translucent blurred+saturated fill — the same recipe as the
+ * .brutal-block utility in globals.css, applied here so anything using
+ * the shadcn Card primitive directly gets it too.
+ */
 function Card({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card"
       className={cn(
-        "bg-card text-card-foreground flex flex-col gap-4 rounded-[var(--radius)] border border-border/70 shadow-sm",
+        "text-card-foreground flex flex-col gap-4 rounded-[var(--radius-card,18px)] border-[length:var(--border-w-card,4px)] border-[var(--ink)] shadow-[10px_10px_0_var(--ink),0_0_50px_color-mix(in_srgb,var(--primary)_45%,transparent)]",
+        "bg-[color-mix(in_srgb,var(--bg,var(--background))_35%,transparent)] [backdrop-filter:blur(var(--blur-card,22px))_saturate(var(--blur-saturate,180%))]",
         className
       )}
       {...props}

@@ -22,7 +22,6 @@
 
 import * as React from 'react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
-import { useTheme } from 'next-themes'
 import { BLOOM_LEVELS } from '@/lib/types'
 import type { BloomLevel } from '@/lib/types'
 import { BLOOM_META } from '@/lib/bloom'
@@ -102,8 +101,6 @@ export interface BloomWheelProps {
 }
 
 export function BloomWheel({ value, onChange, className }: BloomWheelProps) {
-  const { theme } = useTheme()
-  const isMinimal = theme?.startsWith('minimal')
   const reduce = useReducedMotion() ?? false
   const selectedIndex = Math.max(0, BLOOM_LEVELS.indexOf(value))
   const selectedAngle = selectedIndex * SEG
@@ -186,7 +183,7 @@ export function BloomWheel({ value, onChange, className }: BloomWheelProps) {
           const centerAngle = i * SEG
           const d = annularSector(CX, CY, INNER_R, OUTER_R, startAngle, endAngle)
           const selected = i === selectedIndex
-          const fill = selected ? (isMinimal ? 'var(--primary)' : meta.hue) : 'var(--muted)'
+          const fill = selected ? meta.hue : 'var(--muted)'
           const stroke = 'var(--border)'
           const labelPos = polar(
             CX,
@@ -272,7 +269,7 @@ export function BloomWheel({ value, onChange, className }: BloomWheelProps) {
         >
           <polygon
             points={`${CX},${CY - OUTER_R - 2} ${CX - 6},${CY - OUTER_R - 16} ${CX + 6},${CY - OUTER_R - 16}`}
-            fill={isMinimal ? 'var(--primary)' : selectedMeta.hue}
+            fill={selectedMeta.hue}
             stroke="var(--border)"
             strokeWidth={2}
           />
@@ -293,7 +290,7 @@ export function BloomWheel({ value, onChange, className }: BloomWheelProps) {
             >
               <span
                 className="size-2.5 rounded-full border border-border"
-                style={{ backgroundColor: isMinimal ? 'var(--primary)' : selectedMeta.hue }}
+                style={{ backgroundColor: selectedMeta.hue }}
                 aria-hidden
               />
               <span className="text-base font-semibold leading-tight text-foreground">

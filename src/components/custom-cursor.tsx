@@ -1,8 +1,7 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion, useMotionValue, useSpring } from 'framer-motion'
-import { useTheme } from 'next-themes'
 
 /**
  * CustomCursor — a premium two-part cursor: a small dot that tracks instantly
@@ -13,7 +12,6 @@ import { useTheme } from 'next-themes'
  * Arc). Subtle but immediately elevates the perceived quality.
  */
 export function CustomCursor() {
-  const { theme } = useTheme()
   const [enabled] = useState(() => {
     if (typeof window === 'undefined') return false
     const isTouch = window.matchMedia('(pointer: coarse)').matches
@@ -29,7 +27,7 @@ export function CustomCursor() {
   const ringY = useSpring(dotY, { stiffness: 350, damping: 28, mass: 0.4 })
 
   useEffect(() => {
-    if (!enabled || theme?.startsWith('minimal')) return
+    if (!enabled) return
 
     const dotMove = (e: PointerEvent) => {
       dotX.set(e.clientX)
@@ -59,9 +57,9 @@ export function CustomCursor() {
       window.removeEventListener('pointerup', up)
       document.documentElement.style.cursor = ''
     }
-  }, [dotX, dotY, enabled, theme])
+  }, [dotX, dotY, enabled])
 
-  if (!enabled || theme?.startsWith('minimal')) return null
+  if (!enabled) return null
 
   return (
     <>

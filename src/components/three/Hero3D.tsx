@@ -41,7 +41,7 @@ const AGENTS = [
 export default function Hero3D({ onEnterConsole }: Hero3DProps) {
   const heroRef = useRef<HTMLElement>(null)
   const prefersReducedMotion = useReducedMotion() ?? false
-  const { theme, resolvedTheme } = useTheme()
+  const { resolvedTheme } = useTheme()
 
   /* -------------------- Scroll wiring -------------------- */
 
@@ -69,8 +69,6 @@ export default function Hero3D({ onEnterConsole }: Hero3DProps) {
 
   const entranceDelay = (d: number) => (prefersReducedMotion ? 0 : d)
 
-  const isMinimal = theme?.startsWith('minimal')
-
   /* -------------------- Render -------------------- */
 
   return (
@@ -80,18 +78,16 @@ export default function Hero3D({ onEnterConsole }: Hero3DProps) {
       aria-label="DiagramMind hero"
       className="relative min-h-screen w-full overflow-hidden"
     >
-      {!isMinimal && (
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 z-0"
-          style={{
-            maskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 75%, rgba(0,0,0,0) 100%)',
-            WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 75%, rgba(0,0,0,0) 100%)',
-          }}
-        >
-          <BlueprintScene theme={resolvedTheme === 'light' ? 'light' : 'dark'} className="h-full w-full" />
-        </div>
-      )}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 z-0"
+        style={{
+          maskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 75%, rgba(0,0,0,0) 100%)',
+          WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 75%, rgba(0,0,0,0) 100%)',
+        }}
+      >
+        <BlueprintScene theme={resolvedTheme === 'light' ? 'light' : 'dark'} className="h-full w-full" />
+      </div>
 
       {/* Layer 4: content overlay */}
       <motion.div
@@ -152,6 +148,11 @@ export default function Hero3D({ onEnterConsole }: Hero3DProps) {
               }}
               className="max-w-3xl"
             >
+              {/* One handwritten accent for this screen, per the Neo-Brutal
+                  Aurora spec — a small tilted kicker above the headline. */}
+              <span className="handwritten-accent mb-1 block">
+                actually verified, not just generated
+              </span>
               {prefersReducedMotion ? (
                 <h1 className="text-balance text-4xl font-black uppercase leading-[0.95] tracking-tight text-foreground sm:text-5xl lg:text-7xl">
                   Turn any diagram into a{' '}

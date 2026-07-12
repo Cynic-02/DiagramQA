@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
-import { Playfair_Display, JetBrains_Mono, Inter } from "next/font/google";
+import { Playfair_Display, JetBrains_Mono, Inter, Space_Grotesk, Caveat } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
+import { PaletteProvider } from "@/components/palette-provider";
 import { PageTransition } from "@/components/PageTransition";
 
 // Two coherent design systems, one per theme, per explicit direction:
@@ -47,6 +48,24 @@ const geistMono = monadMono
 const bricolage = monadSerif
 const archivoBlack = dalaSans
 
+// Neo-Brutal Aurora design system: Space Grotesk is the one font used
+// everywhere (body, headings, buttons, nav) across every palette/mode.
+// Caveat is reserved for a single handwritten accent per screen (a
+// kicker/tagline above a hero heading) — never body text or buttons.
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-space-grotesk",
+  subsets: ["latin"],
+  display: "swap",
+  weight: ["400", "500", "600", "700"],
+});
+
+const caveat = Caveat({
+  variable: "--font-caveat",
+  subsets: ["latin"],
+  display: "swap",
+  weight: ["700"],
+});
+
 export const metadata: Metadata = {
   title: "DiagramMind — Diagram Question Generation",
   description:
@@ -69,6 +88,7 @@ export const metadata: Metadata = {
 import { CustomCursor } from "@/components/custom-cursor";
 import { CursorSpotlight } from "@/components/cursor-spotlight";
 import { HapticFeedbackInitializer } from "@/components/haptic-feedback-initializer";
+import { AuroraBlobs } from "@/components/AuroraBlobs";
 
 export default function RootLayout({
   children,
@@ -78,17 +98,20 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${bricolage.variable} ${archivoBlack.variable} antialiased bg-background text-foreground min-h-screen`}
+        className={`${geistSans.variable} ${geistMono.variable} ${bricolage.variable} ${archivoBlack.variable} ${spaceGrotesk.variable} ${caveat.variable} antialiased bg-background text-foreground min-h-screen`}
       >
         <ThemeProvider>
-          {/* Film grain texture */}
-          <div className="grain-overlay" aria-hidden />
-          <CustomCursor />
-          <CursorSpotlight />
-          <HapticFeedbackInitializer />
-          <PageTransition>{children}</PageTransition>
-          <Toaster />
-          <SonnerToaster position="bottom-right" />
+          <PaletteProvider>
+            {/* Film grain texture */}
+            <div className="grain-overlay" aria-hidden />
+            <AuroraBlobs />
+            <CustomCursor />
+            <CursorSpotlight />
+            <HapticFeedbackInitializer />
+            <PageTransition>{children}</PageTransition>
+            <Toaster />
+            <SonnerToaster position="bottom-right" />
+          </PaletteProvider>
         </ThemeProvider>
       </body>
     </html>

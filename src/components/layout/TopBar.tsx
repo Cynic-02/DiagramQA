@@ -11,6 +11,7 @@ import { BLOOM_META } from '@/lib/bloom'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { PaletteSwitcher } from '@/components/palette-switcher'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 
 interface TopBarProps {
@@ -171,6 +172,7 @@ export function TopBar({ onOpenMobileSidebar }: TopBarProps) {
           <Link href="/app/settings/account"><User className="size-3" /><span className="hidden lg:inline">Profile</span></Link>
         </Button>
         <ThemeToggle />
+        <PaletteSwitcher className="hidden sm:flex" />
         <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs" onClick={handleLogout}>
           <LogOut className="size-3" /><span className="hidden lg:inline">Sign out</span>
         </Button>
