@@ -35,11 +35,28 @@ import { Renderer, Camera, Geometry, Program, Mesh } from 'ogl'
                       sampling the image's alpha channel on an
                       offscreen canvas. This is literally the site's
                       own mark, not an invented shape.
+     - "network"   — a hub-and-spoke knowledge-graph glyph, standing
+                      in for the extraction/graph stage.
+     - "brain"     — a rounded, lobed silhouette with a short stem,
+                      for the cognition/Bloom's-taxonomy section.
      - "checkmark" — a simple two-segment glyph standing in for
                       "verified question set", the product's core
                       value prop.
      - "scatter"   — fully dispersed, matching the reference's
                       mid-scroll ambient state.
+
+   Tuned to avoid two failure modes the first pass had: the forming
+   layer was far too dense/bright/opaque for its spread, reading as a
+   blown-out glow rather than a legible shape, and a 15deg camera FOV
+   meant almost nothing reached the edges of a wide viewport even
+   with a generous ambient spread. Both layers are now sized/spread/
+   opacity-tuned against a much wider 40deg FOV, and the fragment
+   shader's brightening term was cut down since it was pushing colors
+   toward white at high particle density.
+
+   Also adds cursor-reactive camera parallax (a lerped position
+   offset, matching the reference's own technique) - previously there
+   was no pointer tracking at all.
    ============================================================ */
 
 const hexToRgb = (hex: string): [number, number, number] => {
@@ -149,7 +166,7 @@ const POINT_FRAGMENT = /* glsl */ `
     float minBary = min(u, min(v, w));
     if (minBary > uEdgeThickness) discard;
 
-    vec3 glow = vColor + 0.16 * sin(ruv.yxx + uTime + vRandom.y * 6.28);
+    vec3 glow = vColor + 0.05 * sin(ruv.yxx + uTime + vRandom.y * 6.28);
     gl_FragColor = vec4(glow, uOpacity);
   }
 `
@@ -240,6 +257,52 @@ function makeNetworkPositions(count: number): Float32Array {
   return arr
 }
 
+/** A recognizable brain silhouette — a rounded, lobed mass (outline +
+ *  interior fill) with a short stem hanging below, per explicit
+ *  direction to bring this shape back. Fits "DiagramMind" thematically
+ *  (cognition, Bloom's taxonomy) so it isn't just a borrowed motif. */
+function makeBrainPositions(count: number): Float32Array {
+  const arr = new Float32Array(count * 3)
+  const radiusAt = (theta: number) => {
+    let r = 0.55
+    r += 0.05 * Math.sin(theta * 3 + 0.4)
+    r += 0.035 * Math.sin(theta * 5 + 1.1)
+    r += 0.025 * Math.sin(theta * 8 + 2.0)
+    return r
+  }
+  const outlineShare = Math.floor(count * 0.5)
+  const fillShare = Math.floor(count * 0.38)
+  const stemShare = count - outlineShare - fillShare
+  let idx = 0
+  for (let i = 0; i < outlineShare; i++) {
+    const theta = (i / outlineShare) * Math.PI * 2
+    const r = radiusAt(theta)
+    const x = Math.cos(theta) * r
+    const y = Math.sin(theta) * r * 0.85 + 0.08
+    const z = (Math.random() - 0.5) * 0.25
+    arr.set([x, y, z], idx * 3)
+    idx++
+  }
+  for (let i = 0; i < fillShare; i++) {
+    const theta = Math.random() * Math.PI * 2
+    const rMax = radiusAt(theta)
+    const r = rMax * Math.sqrt(Math.random()) * 0.9
+    const x = Math.cos(theta) * r
+    const y = Math.sin(theta) * r * 0.85 + 0.08
+    const z = (Math.random() - 0.5) * 0.25
+    arr.set([x, y, z], idx * 3)
+    idx++
+  }
+  for (let i = 0; i < stemShare; i++) {
+    const t = Math.random()
+    const x = (Math.random() - 0.5) * 0.06
+    const y = -0.34 - t * 0.22
+    const z = (Math.random() - 0.5) * 0.2
+    arr.set([x, y, z], idx * 3)
+    idx++
+  }
+  return arr
+}
 
 /** Traces /logo-mark.png's alpha silhouette into `count` particle
  *  positions. Falls back to a scatter if the image or canvas read fails
@@ -294,21 +357,24 @@ function sampleLogoPositions(count: number): Promise<Float32Array> {
   })
 }
 
-type ShapeName = 'logo' | 'network' | 'checkmark' | 'scatter'
+type ShapeName = 'logo' | 'network' | 'brain' | 'checkmark' | 'scatter'
 
 /** Scroll-progress checkpoints (0..1 across total page height) and the
  *  shape the forming layer should be coalesced into at each one — a
  *  loose narrative of the product's own pipeline: brand mark, then the
- *  diagram resolves into a knowledge graph (Features section), then a
+ *  diagram resolves into a knowledge graph (Features section), a brain
+ *  (the "Six agents, one pipeline" / cognition section), then a
  *  verified checkmark (CTA), scattering back out and returning to the
  *  mark at the footer. */
 const KEYFRAMES: { at: number; shape: ShapeName }[] = [
   { at: 0.0, shape: 'logo' },
-  { at: 0.16, shape: 'scatter' },
-  { at: 0.38, shape: 'network' },
-  { at: 0.6, shape: 'scatter' },
-  { at: 0.78, shape: 'checkmark' },
-  { at: 0.92, shape: 'scatter' },
+  { at: 0.13, shape: 'scatter' },
+  { at: 0.3, shape: 'network' },
+  { at: 0.45, shape: 'scatter' },
+  { at: 0.58, shape: 'brain' },
+  { at: 0.72, shape: 'scatter' },
+  { at: 0.85, shape: 'checkmark' },
+  { at: 0.94, shape: 'scatter' },
   { at: 1.0, shape: 'logo' },
 ]
 
@@ -325,9 +391,9 @@ export interface SiteConstellationProps {
 export default function SiteConstellation({
   className,
   formingCount = 900,
-  ambientCount = 300,
-  formingSpread = 7,
-  ambientSpread = 17,
+  ambientCount = 550,
+  formingSpread = 15,
+  ambientSpread = 30,
   cameraDistance = 20,
   pixelRatio,
 }: SiteConstellationProps) {
@@ -350,7 +416,7 @@ export default function SiteConstellation({
     container.appendChild(gl.canvas)
     gl.clearColor(0, 0, 0, 0)
 
-    const camera = new Camera(gl, { fov: 15 })
+    const camera = new Camera(gl, { fov: 40 })
     camera.position.set(0, 0, cameraDistance)
 
     const resize = () => {
@@ -387,10 +453,10 @@ export default function SiteConstellation({
       uniforms: {
         uTime: { value: 0 },
         uSpread: { value: ambientSpread },
-        uBaseSize: { value: 16 * dpr },
+        uBaseSize: { value: 13 * dpr },
         uSizeRandomness: { value: 1 },
         uEdgeThickness: { value: 0.3 },
-        uOpacity: { value: 0.26 },
+        uOpacity: { value: 0.4 },
         uWobble: { value: 0.4 },
       },
       transparent: true,
@@ -403,6 +469,7 @@ export default function SiteConstellation({
       scatter: makeScatterPositions(formingCount),
       checkmark: makeCheckmarkPositions(formingCount),
       network: makeNetworkPositions(formingCount),
+      brain: makeBrainPositions(formingCount),
     }
     const { colors: formingColors, randoms: formingRandoms } = buildColorsRandoms(formingCount)
     const formingPositions = new Float32Array(shapeCache.scatter!)
@@ -417,10 +484,10 @@ export default function SiteConstellation({
       uniforms: {
         uTime: { value: 0 },
         uSpread: { value: formingSpread },
-        uBaseSize: { value: 28 * dpr },
+        uBaseSize: { value: 14 * dpr },
         uSizeRandomness: { value: 1 },
         uEdgeThickness: { value: 0.22 },
-        uOpacity: { value: 0.95 },
+        uOpacity: { value: 0.62 },
         uWobble: { value: 0.1 },
       },
       transparent: true,
@@ -476,6 +543,18 @@ export default function SiteConstellation({
       renderer.render({ scene: formingMesh, camera, clear: false })
     }
 
+    /* ---- mouse parallax — the reference's camera tracks the cursor;
+       this is the same trick, just a lerped position offset (no
+       lookAt dependency, so it can't fight the shape-forming rotation
+       already applied to the forming mesh). ---- */
+    const pointer = { x: 0, y: 0 }
+    const smoothedPointer = { x: 0, y: 0 }
+    const onPointerMove = (e: PointerEvent) => {
+      pointer.x = (e.clientX / window.innerWidth) * 2 - 1
+      pointer.y = -(e.clientY / window.innerHeight) * 2 + 1
+    }
+    window.addEventListener('pointermove', onPointerMove, { passive: true })
+
     let animationFrameId: number
     if (reduceMotion) {
       applyBlend()
@@ -495,6 +574,11 @@ export default function SiteConstellation({
         ambientMesh.rotation.z += 0.00025
         formingMesh.rotation.y = Math.sin(elapsed * 0.00011) * 0.1
 
+        smoothedPointer.x += (pointer.x - smoothedPointer.x) * 0.045
+        smoothedPointer.y += (pointer.y - smoothedPointer.y) * 0.045
+        camera.position.x = smoothedPointer.x * 2.4
+        camera.position.y = smoothedPointer.y * 1.6
+
         applyBlend()
         render()
       }
@@ -505,6 +589,7 @@ export default function SiteConstellation({
       disposed = true
       window.removeEventListener('resize', resize)
       window.removeEventListener('scroll', updateScroll)
+      window.removeEventListener('pointermove', onPointerMove)
       if (animationFrameId) cancelAnimationFrame(animationFrameId)
       if (container.contains(gl.canvas)) {
         container.removeChild(gl.canvas)
