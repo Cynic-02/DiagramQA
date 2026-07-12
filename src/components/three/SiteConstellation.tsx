@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { useTheme } from 'next-themes'
 import { Renderer, Camera, Geometry, Program, Mesh } from 'ogl'
 
 /* ============================================================
@@ -166,7 +165,7 @@ const POINT_FRAGMENT = /* glsl */ `
     float minBary = min(u, min(v, w));
     if (minBary > uEdgeThickness) discard;
 
-    vec3 glow = vColor + 0.05 * sin(ruv.yxx + uTime + vRandom.y * 6.28);
+    vec3 glow = vColor + 0.02 * sin(ruv.yxx + uTime + vRandom.y * 6.28);
     gl_FragColor = vec4(glow, uOpacity);
   }
 `
@@ -390,15 +389,14 @@ export interface SiteConstellationProps {
 
 export default function SiteConstellation({
   className,
-  formingCount = 900,
-  ambientCount = 550,
-  formingSpread = 15,
-  ambientSpread = 30,
+  formingCount = 480,
+  ambientCount = 650,
+  formingSpread = 22,
+  ambientSpread = 32,
   cameraDistance = 20,
   pixelRatio,
 }: SiteConstellationProps) {
   const containerRef = useRef<HTMLDivElement>(null)
-  const { resolvedTheme } = useTheme()
 
   useEffect(() => {
     const container = containerRef.current
@@ -406,7 +404,7 @@ export default function SiteConstellation({
     let disposed = false
 
     const dpr = pixelRatio ?? Math.min(window.devicePixelRatio || 1, 2)
-    const palette = readPalette()
+    let palette = readPalette()
     const reduceMotion =
       typeof window !== 'undefined' &&
       window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
@@ -437,6 +435,20 @@ export default function SiteConstellation({
         randoms.set([Math.random(), Math.random(), Math.random(), Math.random()], i * 4)
       }
       return { colors, randoms }
+    }
+
+    /** Regenerates just the color attribute for a layer from whatever
+        `palette` currently holds — used on theme/palette changes so we
+        never need to tear down and rebuild the whole WebGL scene (which
+        previously restarted the async logo trace and caused it to never
+        settle). */
+    const regenerateColorsInto = (count: number): Float32Array => {
+      const colors = new Float32Array(count * 3)
+      for (let i = 0; i < count; i++) {
+        const col = hexToRgb(palette[Math.floor(Math.random() * palette.length)])
+        colors.set(col, i * 3)
+      }
+      return colors
     }
 
     /* ---- ambient layer: constant wide scatter, never morphs ---- */
@@ -484,16 +496,43 @@ export default function SiteConstellation({
       uniforms: {
         uTime: { value: 0 },
         uSpread: { value: formingSpread },
-        uBaseSize: { value: 14 * dpr },
+        uBaseSize: { value: 9 * dpr },
         uSizeRandomness: { value: 1 },
-        uEdgeThickness: { value: 0.22 },
-        uOpacity: { value: 0.62 },
+        uEdgeThickness: { value: 0.16 },
+        uOpacity: { value: 0.4 },
         uWobble: { value: 0.1 },
       },
       transparent: true,
       depthTest: false,
     })
     const formingMesh = new Mesh(gl, { mode: gl.POINTS, geometry: formingGeometry, program: formingProgram })
+
+    /** Re-reads the palette and re-colors both layers in place, without
+        tearing down the WebGL context or restarting the async logo
+        trace — triggered by a MutationObserver on the theme/palette
+        attributes rather than a React dependency (which previously
+        caused a remount right after hydration resolved the theme,
+        leaving the logo shape stuck on its scatter fallback). */
+    const refreshColors = () => {
+      palette = readPalette()
+      const newAmbientColors = regenerateColorsInto(ambientCount)
+      const ambientColorAttr = ambientGeometry.attributes.color
+      if (ambientColorAttr?.data) {
+        (ambientColorAttr.data as Float32Array).set(newAmbientColors)
+        ambientColorAttr.needsUpdate = true
+      }
+      const newFormingColors = regenerateColorsInto(formingCount)
+      const formingColorAttr = formingGeometry.attributes.color
+      if (formingColorAttr?.data) {
+        (formingColorAttr.data as Float32Array).set(newFormingColors)
+        formingColorAttr.needsUpdate = true
+      }
+    }
+    const themeObserver = new MutationObserver(refreshColors)
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme', 'data-palette'],
+    })
 
     sampleLogoPositions(formingCount).then((arr) => {
       if (!disposed) shapeCache.logo = arr
@@ -587,6 +626,7 @@ export default function SiteConstellation({
 
     return () => {
       disposed = true
+      themeObserver.disconnect()
       window.removeEventListener('resize', resize)
       window.removeEventListener('scroll', updateScroll)
       window.removeEventListener('pointermove', onPointerMove)
@@ -596,7 +636,6 @@ export default function SiteConstellation({
       }
     }
   }, [
-    resolvedTheme,
     formingCount,
     ambientCount,
     formingSpread,
