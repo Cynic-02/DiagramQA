@@ -403,6 +403,41 @@
     display: inline-block;
   }
 
+  /* Palette swatch picker — Layer 2 of the theme system. Always visible
+     (never buried in a settings page), showing the 4 palettes valid for
+     whichever mode is currently active. This CSS was missing entirely
+     until now, which is why the picker rendered as invisible near-zero-
+     size buttons instead of a row of colored circles. */
+  .palette-picker {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px;
+    background: color-mix(in srgb, var(--bg, var(--background)) var(--card-fill-opacity, 35%), transparent);
+    -webkit-backdrop-filter: blur(var(--blur-card, 22px)) saturate(var(--blur-saturate, 180%));
+    backdrop-filter: blur(var(--blur-card, 22px)) saturate(var(--blur-saturate, 180%));
+    border: var(--border-w-btn, 3px) solid var(--ink);
+    border-radius: var(--radius-pill, 9999px);
+    width: fit-content;
+  }
+  .palette-swatch {
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    border: var(--border-w-badge, 2px) solid var(--ink);
+    padding: 0;
+    cursor: pointer;
+    transition: transform var(--transition-fast, 0.12s ease), box-shadow var(--transition-fast, 0.12s ease);
+  }
+  .palette-swatch:hover {
+    transform: translateY(-2px);
+  }
+  .palette-swatch.active {
+    box-shadow: 2px 2px 0 var(--ink);
+    transform: translateY(-2px);
+  }
+
   /* Solid accent-color text. */
   .text-gradient, .text-gradient-cool {
     background: linear-gradient(135deg, var(--primary), var(--secondary));
