@@ -15,11 +15,12 @@ import { useTheme } from 'next-themes'
  * target the exact combination.
  */
 
-export type LightPalette = 'candy_pop' | 'terracotta_earth' | 'cotton_candy' | 'lavender_haze'
+export type LightPalette = 'monad' | 'candy_pop' | 'terracotta_earth' | 'cotton_candy' | 'lavender_haze'
 export type DarkPalette = 'sunset_pop' | 'royal_purple' | 'ocean_teal' | 'fire_and_ice'
 export type PaletteKey = LightPalette | DarkPalette
 
 export const LIGHT_PALETTES: LightPalette[] = [
+  'monad',
   'candy_pop',
   'terracotta_earth',
   'cotton_candy',
@@ -32,12 +33,13 @@ export const DARK_PALETTES: DarkPalette[] = [
   'fire_and_ice',
 ]
 
-const DEFAULTS = { light: 'candy_pop' as PaletteKey, dark: 'sunset_pop' as PaletteKey }
+const DEFAULTS = { light: 'monad' as PaletteKey, dark: 'sunset_pop' as PaletteKey }
 
 /** Human labels + swatch dot color for each palette, used by the
     swatch picker UI — kept separate from the CSS custom properties
     since JS can't read a non-active [data-palette] block's variables. */
 export const PALETTE_META: Record<PaletteKey, { label: string; swatch: string }> = {
+  monad: { label: 'Monad (Original)', swatch: '#2b59d1' },
   candy_pop: { label: 'Candy Pop', swatch: '#ff5ca8' },
   terracotta_earth: { label: 'Terracotta Earth', swatch: '#c1633b' },
   cotton_candy: { label: 'Cotton Candy', swatch: '#ff9ecb' },

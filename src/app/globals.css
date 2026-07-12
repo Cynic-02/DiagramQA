@@ -701,6 +701,63 @@
 
 /* ---- Light palettes ---- */
 
+/* Monad — the site's own original brand palette (Cognitive Atlas
+   "Monad" theme, predating the 8-palette system), folded back in as a
+   proper selectable option and made the light-mode default rather than
+   left out entirely. */
+[data-theme="light"][data-palette="monad"] {
+  --bg: #e8e2d5; --surface: #ffffff; --primary: #2b59d1; --secondary: #df6448;
+  --accent: #fbbf24; --text: #221f1e; --muted: #665f5a; --ink: #221f1e;
+
+  --background: var(--bg);
+  --foreground: var(--text);
+  --card: var(--surface);
+  --card-foreground: var(--text);
+  --popover: var(--surface);
+  --popover-foreground: var(--text);
+  --primary-foreground: #ffffff;
+  --secondary-foreground: #ffffff;
+  --muted-foreground: var(--muted);
+  --accent-foreground: var(--ink);
+  --destructive: #ef4444;
+  --border: var(--ink);
+  --input: var(--ink);
+  --ring: var(--primary);
+
+  --chart-1: var(--primary); --chart-2: var(--secondary); --chart-3: var(--accent);
+  --chart-4: color-mix(in srgb, var(--primary) 60%, var(--accent));
+  --chart-5: color-mix(in srgb, var(--secondary) 60%, var(--primary));
+
+  --sidebar: var(--surface); --sidebar-foreground: var(--text);
+  --sidebar-primary: var(--primary); --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: color-mix(in srgb, var(--ink) 6%, transparent);
+  --sidebar-accent-foreground: var(--text);
+  --sidebar-border: var(--ink); --sidebar-ring: var(--primary);
+
+  --text-primary: var(--text);
+  --text-secondary: var(--muted);
+  --text-muted: color-mix(in srgb, var(--muted) 75%, transparent);
+
+  --shadow-sm: 0 2px 8px color-mix(in srgb, var(--ink) 12%, transparent);
+  --shadow-md: 0 4px 20px color-mix(in srgb, var(--ink) 16%, transparent);
+  --shadow-lg: 0 10px 30px color-mix(in srgb, var(--ink) 20%, transparent);
+  --shadow-red: 0 0 var(--glow-radius) color-mix(in srgb, var(--primary) var(--glow-opacity), transparent);
+
+  --bg-panel: color-mix(in srgb, var(--bg) var(--card-fill-opacity), transparent);
+  --bg-elevated: color-mix(in srgb, var(--bg) 55%, transparent);
+  --border-panel: var(--ink);
+  --border-strong: var(--ink);
+  --accent-muted: color-mix(in srgb, var(--accent) 10%, transparent);
+
+  --diagram-coral: var(--secondary);
+  --diagram-sky: var(--accent);
+  --diagram-mint: var(--primary);
+  --diagram-gold: var(--accent);
+  --diagram-line: color-mix(in srgb, var(--ink) 20%, transparent);
+  --diagram-node-bg: var(--surface);
+  --sidebar-active-glow: 0 0 15px color-mix(in srgb, var(--primary) 18%, transparent);
+}
+
 [data-theme="light"][data-palette="candy_pop"] {
   --bg: #fdf2f8; --surface: #ffffff; --primary: #ff5ca8; --secondary: #a78bfa;
   --accent: #14b8a6; --text: #2d1b30; --muted: #b98cae; --ink: #1a0f1c;
