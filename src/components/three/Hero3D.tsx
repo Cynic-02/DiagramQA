@@ -1,7 +1,6 @@
 'use client'
 
 import { useRef } from 'react'
-import { useTheme } from 'next-themes'
 import {
   motion,
   useScroll,
@@ -15,7 +14,6 @@ import RotatingText from '@/components/reactbits/RotatingText'
 import DecryptedText from '@/components/reactbits/DecryptedText'
 import { ShaderLogo } from '@/components/shader-icons'
 import { LiveConversionCard } from '@/components/LiveConversionCard'
-import BlueprintScene from '@/components/three/BlueprintScene'
 import { MagneticButton } from '@/components/magnetic-button'
 
 /* ------------------------------------------------------------------ */
@@ -41,7 +39,6 @@ const AGENTS = [
 export default function Hero3D({ onEnterConsole }: Hero3DProps) {
   const heroRef = useRef<HTMLElement>(null)
   const prefersReducedMotion = useReducedMotion() ?? false
-  const { resolvedTheme } = useTheme()
 
   /* -------------------- Scroll wiring -------------------- */
 
@@ -78,17 +75,6 @@ export default function Hero3D({ onEnterConsole }: Hero3DProps) {
       aria-label="DiagramMind hero"
       className="relative min-h-screen w-full overflow-hidden"
     >
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 z-0"
-        style={{
-          maskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 75%, rgba(0,0,0,0) 100%)',
-          WebkitMaskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 75%, rgba(0,0,0,0) 100%)',
-        }}
-      >
-        <BlueprintScene theme={resolvedTheme === 'light' ? 'light' : 'dark'} className="h-full w-full" />
-      </div>
-
       {/* Layer 4: content overlay */}
       <motion.div
         className="relative z-10 mx-auto flex min-h-screen max-w-7xl flex-col px-6 py-10 sm:px-10 sm:py-14 lg:py-16"

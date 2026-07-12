@@ -201,6 +201,46 @@ function makeCheckmarkPositions(count: number): Float32Array {
   return arr
 }
 
+/** A hub-and-spoke knowledge-graph glyph — a center node radiating out
+ *  to five satellite nodes, standing in for "extraction / the diagram
+ *  turned into a structured graph" (the pipeline's second stage).
+ *  Particles cluster densely at each node and thin out along the
+ *  connecting edges, so it reads as a graph rather than a blob. */
+function makeNetworkPositions(count: number): Float32Array {
+  const arr = new Float32Array(count * 3)
+  const hub: [number, number] = [0, 0]
+  const satellites: [number, number][] = [
+    [-0.55, 0.35],
+    [0.15, 0.58],
+    [0.58, 0.08],
+    [0.28, -0.52],
+    [-0.4, -0.4],
+  ]
+  const allNodes = [hub, ...satellites]
+  const nodeShare = Math.floor(count * 0.52)
+  const edgeShare = count - nodeShare
+
+  for (let i = 0; i < nodeShare; i++) {
+    const [nx, ny] = allNodes[i % allNodes.length]
+    const angle = Math.random() * Math.PI * 2
+    const r = Math.random() * 0.065
+    const x = nx + Math.cos(angle) * r
+    const y = ny + Math.sin(angle) * r
+    const z = (Math.random() - 0.5) * 0.3
+    arr.set([x, y, z], i * 3)
+  }
+  for (let i = 0; i < edgeShare; i++) {
+    const [sx, sy] = satellites[i % satellites.length]
+    const t = Math.random()
+    const x = hub[0] + (sx - hub[0]) * t + (Math.random() - 0.5) * 0.035
+    const y = hub[1] + (sy - hub[1]) * t + (Math.random() - 0.5) * 0.035
+    const z = (Math.random() - 0.5) * 0.3
+    arr.set([x, y, z], (nodeShare + i) * 3)
+  }
+  return arr
+}
+
+
 /** Traces /logo-mark.png's alpha silhouette into `count` particle
  *  positions. Falls back to a scatter if the image or canvas read fails
  *  for any reason (e.g. unsupported browser API). */
@@ -254,16 +294,22 @@ function sampleLogoPositions(count: number): Promise<Float32Array> {
   })
 }
 
-type ShapeName = 'logo' | 'checkmark' | 'scatter'
+type ShapeName = 'logo' | 'network' | 'checkmark' | 'scatter'
 
 /** Scroll-progress checkpoints (0..1 across total page height) and the
- *  shape the forming layer should be coalesced into at each one. */
+ *  shape the forming layer should be coalesced into at each one — a
+ *  loose narrative of the product's own pipeline: brand mark, then the
+ *  diagram resolves into a knowledge graph (Features section), then a
+ *  verified checkmark (CTA), scattering back out and returning to the
+ *  mark at the footer. */
 const KEYFRAMES: { at: number; shape: ShapeName }[] = [
   { at: 0.0, shape: 'logo' },
-  { at: 0.2, shape: 'scatter' },
-  { at: 0.55, shape: 'checkmark' },
-  { at: 0.82, shape: 'scatter' },
-  { at: 1.0, shape: 'scatter' },
+  { at: 0.16, shape: 'scatter' },
+  { at: 0.38, shape: 'network' },
+  { at: 0.6, shape: 'scatter' },
+  { at: 0.78, shape: 'checkmark' },
+  { at: 0.92, shape: 'scatter' },
+  { at: 1.0, shape: 'logo' },
 ]
 
 export interface SiteConstellationProps {
@@ -356,6 +402,7 @@ export default function SiteConstellation({
     const shapeCache: Partial<Record<ShapeName, Float32Array>> = {
       scatter: makeScatterPositions(formingCount),
       checkmark: makeCheckmarkPositions(formingCount),
+      network: makeNetworkPositions(formingCount),
     }
     const { colors: formingColors, randoms: formingRandoms } = buildColorsRandoms(formingCount)
     const formingPositions = new Float32Array(shapeCache.scatter!)
@@ -407,7 +454,11 @@ export default function SiteConstellation({
         }
       }
       const span = b.at - a.at
-      const localT = span > 0 ? (p - a.at) / span : 0
+      const rawT = span > 0 ? (p - a.at) / span : 0
+      // Smoothstep easing on the blend itself — the reference's morphs
+      // ease in/out rather than moving at constant speed, which is a
+      // large part of why they read as "buttery" rather than mechanical.
+      const localT = rawT * rawT * (3 - 2 * rawT)
       const arrA = shapeCache[a.shape] ?? shapeCache.scatter!
       const arrB = shapeCache[b.shape] ?? shapeCache.scatter!
       for (let i = 0; i < formingCount * 3; i++) {

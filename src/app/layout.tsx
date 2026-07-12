@@ -89,6 +89,7 @@ import { CustomCursor } from "@/components/custom-cursor";
 import { CursorSpotlight } from "@/components/cursor-spotlight";
 import { HapticFeedbackInitializer } from "@/components/haptic-feedback-initializer";
 import { AuroraBlobs } from "@/components/AuroraBlobs";
+import { SmoothScrollProvider } from "@/components/SmoothScrollProvider";
 
 export default function RootLayout({
   children,
@@ -102,15 +103,17 @@ export default function RootLayout({
       >
         <ThemeProvider>
           <PaletteProvider>
-            {/* Film grain texture */}
-            <div className="grain-overlay" aria-hidden />
-            <AuroraBlobs />
-            <CustomCursor />
-            <CursorSpotlight />
-            <HapticFeedbackInitializer />
-            <PageTransition>{children}</PageTransition>
-            <Toaster />
-            <SonnerToaster position="bottom-right" />
+            <SmoothScrollProvider>
+              {/* Film grain texture */}
+              <div className="grain-overlay" aria-hidden />
+              <AuroraBlobs />
+              <CustomCursor />
+              <CursorSpotlight />
+              <HapticFeedbackInitializer />
+              <PageTransition>{children}</PageTransition>
+              <Toaster />
+              <SonnerToaster position="bottom-right" />
+            </SmoothScrollProvider>
           </PaletteProvider>
         </ThemeProvider>
       </body>
