@@ -64,6 +64,17 @@ export async function POST(req: NextRequest) {
     if (!safeDataUrl.startsWith('data:image/')) {
       return NextResponse.json({ error: 'dataUrl must be an image data URL' }, { status: 400 })
     }
+    // Defense in depth: the client already caps uploads well under Vercel's
+    // hard 4.5MB request-body ceiling, but that check is bypassable by
+    // anyone calling this API directly. Reject oversized payloads here too,
+    // with a clear message, rather than let a request this large either
+    // hit the platform's own raw 413 or bloat the database indefinitely.
+    if (safeDataUrl.length > 4_200_000) {
+      return NextResponse.json(
+        { error: 'Diagram is too large. Please use an image under ~2.5MB.' },
+        { status: 413 }
+      )
+    }
 
     const normalizedProvider = provider?.trim() || null
     if (normalizedProvider?.startsWith(CUSTOM_PROVIDER_PREFIX)) {

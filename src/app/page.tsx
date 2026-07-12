@@ -43,9 +43,10 @@ const Hero3D = dynamic(() => import('@/components/three/Hero3D'), {
 
 const Strands = dynamic(() => import('@/components/reactbits/Strands'), { ssr: false })
 
-const ParticleMorphScene = dynamic(() => import('@/components/three/ParticleMorphScene'), {
-  ssr: false,
-})
+// Hidden for now (not deleted) — see ParticleMorphScene usage below.
+// const ParticleMorphScene = dynamic(() => import('@/components/three/ParticleMorphScene'), {
+//   ssr: false,
+// })
 
 /* ------------------------------------------------------------------ */
 /* Data                                                                */
@@ -235,7 +236,8 @@ export default function LandingPage() {
           CTA, then back to the mark at the footer. Colors are read live
           from the active palette's own tokens. */}
       <div className="pointer-events-none fixed inset-0 z-0" aria-hidden>
-        <ParticleMorphScene />
+        {/* HIDDEN FOR NOW — re-enable by uncommenting. Not deleted. */}
+        {/* <ParticleMorphScene /> */}
       </div>
 
       <ScrollProgress />

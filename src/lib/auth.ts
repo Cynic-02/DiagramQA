@@ -1,4 +1,4 @@
-import { cookies } from 'next/headers'
+import { cookies, headers as nextHeaders } from 'next/headers'
 import jwt from 'jsonwebtoken'
 import { getServerSession } from 'next-auth'
 import { db } from '@/lib/db'
@@ -16,13 +16,18 @@ export interface SessionUser {
   name: string | null
 }
 
-/** Create a signed JWT and set it in an httpOnly cookie. */
-export async function createSession(user: SessionUser) {
-  const token = jwt.sign(
+/** Sign a JWT and return the token string (does NOT set a cookie). */
+export function signToken(user: SessionUser): string {
+  return jwt.sign(
     { sub: user.id, email: user.email, name: user.name },
     SECRET,
     { expiresIn: '7d' }
   )
+}
+
+/** Create a signed JWT, set it in an httpOnly cookie, and return the raw token. */
+export async function createSession(user: SessionUser): Promise<string> {
+  const token = signToken(user)
   const store = await cookies()
   store.set(SESSION_COOKIE, token, {
     httpOnly: true,
@@ -31,6 +36,7 @@ export async function createSession(user: SessionUser) {
     path: '/',
     maxAge: 60 * 60 * 24 * 7, // 7 days
   })
+  return token
 }
 
 /** Clear the session cookie. */
@@ -40,38 +46,84 @@ export async function destroySession() {
 }
 
 /**
- * Read + verify the session from EITHER the custom JWT cookie OR the
- * NextAuth session cookie (so Google/OAuth logins are recognised by the
- * same `getSession()` consumers — `/api/auth/me`, server components, etc.).
- *
- * Order: try the bespoke JWT first (cheaper — no NextAuth round-trip);
- * fall back to `getServerSession(authOptions)` which decodes the
- * NextAuth JWT cookie and re-runs the `session()` callback.
+ * Verify a raw JWT string. Returns the payload or null if invalid/expired.
+ * Used internally and by mobile Bearer-token auth.
  */
-export async function getSession(): Promise<SessionUser | null> {
-  // 1. Custom JWT cookie
+export function verifyJwt(token: string): { sub: string; email: string; name: string | null } | null {
   try {
-    const store = await cookies()
-    const token = store.get(SESSION_COOKIE)?.value
-    if (token) {
-      const payload = jwt.verify(token, SECRET) as {
-        sub: string
-        email: string
-        name: string | null
-      }
+    return jwt.verify(token, SECRET) as { sub: string; email: string; name: string | null }
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Read + verify the session from (in priority order):
+ *  1. `Authorization: Bearer <token>` header — used by the React Native
+ *     mobile app, which cannot access HttpOnly cookies.
+ *  2. The custom JWT cookie `ar2-session` — used by the web app.
+ *  3. The NextAuth session cookie — used by Google OAuth logins.
+ *
+ * Pass the incoming `Request` object to enable Bearer-token auth for mobile.
+ * All existing callers that pass no argument continue to work unchanged.
+ */
+export async function getSession(req?: Request | { headers: { get(name: string): string | null } }): Promise<SessionUser | null> {
+  // ── 1. Bearer token (React Native mobile client) ──────────────────────
+  const authHeader = req
+    ? (req.headers.get?.('authorization') ?? req.headers.get?.('Authorization'))
+    : null
+
+  if (authHeader?.startsWith('Bearer ')) {
+    const raw = authHeader.slice(7).trim()
+    const payload = verifyJwt(raw)
+    if (payload) {
       const user = await db.user.findUnique({
         where: { id: payload.sub },
         select: { id: true, email: true, name: true },
       })
-      if (user) {
-        return { id: user.id, email: user.email, name: user.name }
+      if (user) return { id: user.id, email: user.email, name: user.name }
+    }
+  }
+
+  // ── 2. Try Bearer via Next.js request headers store (server components) ──
+  // This covers API routes that call getSession() without forwarding req.
+  try {
+    const store = await nextHeaders()
+    const h = store.get('authorization') ?? store.get('Authorization') ?? ''
+    if (h.startsWith('Bearer ')) {
+      const raw = h.slice(7).trim()
+      const payload = verifyJwt(raw)
+      if (payload) {
+        const user = await db.user.findUnique({
+          where: { id: payload.sub },
+          select: { id: true, email: true, name: true },
+        })
+        if (user) return { id: user.id, email: user.email, name: user.name }
+      }
+    }
+  } catch {
+    // headers() may throw outside of a request context — safe to ignore
+  }
+
+  // ── 3. Custom JWT cookie (web browser) ───────────────────────────────
+  try {
+    const store = await cookies()
+    const token = store.get(SESSION_COOKIE)?.value
+    if (token) {
+      const payload = verifyJwt(token)
+      if (payload) {
+        const user = await db.user.findUnique({
+          where: { id: payload.sub },
+          select: { id: true, email: true, name: true },
+        })
+        if (user) return { id: user.id, email: user.email, name: user.name }
       }
     }
   } catch {
     // ignore — fall through to NextAuth
   }
 
-  // 2. NextAuth session cookie (Google / Credentials via NextAuth)
+  // ── 4. NextAuth session cookie (Google / OAuth) ───────────────────────
   try {
     const session = await getServerSession(authOptions)
     const email = session?.user?.email
@@ -80,9 +132,7 @@ export async function getSession(): Promise<SessionUser | null> {
         where: { email: email.toLowerCase() },
         select: { id: true, email: true, name: true },
       })
-      if (user) {
-        return { id: user.id, email: user.email, name: user.name }
-      }
+      if (user) return { id: user.id, email: user.email, name: user.name }
     }
   } catch {
     // ignore
@@ -94,19 +144,8 @@ export async function getSession(): Promise<SessionUser | null> {
 /**
  * For middleware (edge) — only verifies the JWT, no DB lookup.
  * Checks BOTH the custom JWT cookie and the NextAuth JWT cookie.
- * The NextAuth cookie is decoded + signature-verified using
- * `next-auth/jwt`'s `decode` (edge-compatible, no DB).
  */
 export function getSessionFromToken(token: string | undefined): SessionUser | null {
   if (!token) return null
-  try {
-    const payload = jwt.verify(token, SECRET) as {
-      sub: string
-      email: string
-      name: string | null
-    }
-    return { id: payload.sub, email: payload.email, name: payload.name }
-  } catch {
-    return null
-  }
+  return verifyJwt(token) ? { id: (verifyJwt(token) as any).sub, email: (verifyJwt(token) as any).email, name: (verifyJwt(token) as any).name } : null
 }

@@ -47,10 +47,11 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    await createSession({ id: user.id, email: user.email, name: user.name })
+    const token = await createSession({ id: user.id, email: user.email, name: user.name })
 
     return NextResponse.json({
       user: { id: user.id, email: user.email, name: user.name },
+      token, // returned for mobile clients (Bearer auth)
     })
   } catch (err) {
     console.error('[register]', err)

@@ -95,7 +95,7 @@ export default function ApiKeysSettingsPage() {
               <div>
                 <p className="font-bold text-foreground">1. How many API keys are needed?</p>
                 <p className="text-muted-foreground text-[11px] mt-0.5">
-                  You only need **ONE** active API key for any of the vision-enabled providers below (e.g. OpenAI or Anthropic) to run the full pipeline smoothly.
+                  Just **ONE**. Add a key for OpenAI, Anthropic, Gemini, GLM, Qwen, or OpenRouter — every one of those can read the diagram image, so the whole pipeline (all agents) runs on that single key automatically. You never pick a provider or model yourself; the console does that for you.
                 </p>
               </div>
               
@@ -103,10 +103,12 @@ export default function ApiKeysSettingsPage() {
                 <p className="font-bold text-foreground">2. Where to get your API keys?</p>
                 <ul className="list-disc pl-4 mt-1 space-y-1 text-muted-foreground text-[11px]">
                   <li><a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-primary underline hover:text-primary/80">OpenAI API Keys Page</a> (for GPT-4o / GPT-4o-mini)</li>
-                  <li><a href="https://console.anthropic.com/" target="_blank" rel="noopener noreferrer" className="text-primary underline hover:text-primary/80">Anthropic Console</a> (for Claude 3.5 Sonnet)</li>
-                  <li><a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer" className="text-primary underline hover:text-primary/80">Groq Developer Console</a> (for Llama models)</li>
+                  <li><a href="https://console.anthropic.com/" target="_blank" rel="noopener noreferrer" className="text-primary underline hover:text-primary/80">Anthropic Console</a> (for Claude Sonnet)</li>
                   <li><a href="https://aistudio.google.com/" target="_blank" rel="noopener noreferrer" className="text-primary underline hover:text-primary/80">Google AI Studio Console</a> (for Gemini models)</li>
                 </ul>
+                <p className="text-muted-foreground text-[11px] mt-1">
+                  Groq and Kimi keys work for text-only steps but can&apos;t read images, so on their own they can&apos;t run the diagram-extraction step — pair them with one of the providers above, or just use one of the above by itself.
+                </p>
               </div>
             </div>
             
@@ -114,14 +116,14 @@ export default function ApiKeysSettingsPage() {
               <div>
                 <p className="font-bold text-foreground">3. How to add and verify keys?</p>
                 <p className="text-muted-foreground text-[11px] mt-0.5">
-                  Locate your provider card below, click **"Add your key"**, paste your API token, and click **"Save"**. You can click **"Test"** to immediately verify if the connection is active and working.
+                  Locate your provider card below, click **"Add your key"**, paste your API token, and click **"Save"**. Leave the model field blank — we use a sensible default. You can click **"Test"** to immediately verify the connection works.
                 </p>
               </div>
               
               <div>
                 <p className="font-bold text-foreground">4. Running the pipeline smoothly</p>
                 <p className="text-muted-foreground text-[11px] mt-0.5">
-                  Once a key is saved, navigate back to the <Link href="/app" className="text-primary underline font-bold">Console</Link>, upload your diagram, select your provider in the dropdown, and click **"Run pipeline"** to trigger the Vision agent pipeline.
+                  Once a key is saved, navigate back to the <Link href="/app" className="text-primary underline font-bold">Console</Link>, upload your diagram, and click **"Run pipeline"**. Every agent in the pipeline uses your saved key automatically — no provider or model selection needed.
                 </p>
               </div>
             </div>
@@ -358,7 +360,7 @@ function BuiltInProviderCard({
           <Input
             value={model}
             onChange={(e) => setModel(e.target.value)}
-            placeholder={`Model override (default: ${provider.defaultModel})`}
+            placeholder={`Model override — optional, leave blank (default: ${provider.defaultModel})`}
             className="h-9 text-xs"
           />
           <div className="flex items-center gap-2">

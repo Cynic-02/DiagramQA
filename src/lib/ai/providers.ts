@@ -227,6 +227,30 @@ function splitKeys(value: string): string[] {
     .filter(Boolean)
 }
 
+/**
+ * Cleans up a user-supplied model id before it's used in a request.
+ * Handles the most common paste mistakes so a user never has to get the
+ * exact format right by hand:
+ *  - surrounding whitespace or quotes
+ *  - a leading "models/" or "tunedModels/" resource prefix copied from
+ *    Google's docs (our own Gemini calls already prepend "/models/" to the
+ *    URL, so a caller-supplied prefix would double up into
+ *    ".../models/models/gemini-..." and trigger Google's
+ *    "unexpected model name format" error)
+ * Returns undefined for empty input so `sanitizeModelId(x) || fallback`
+ * cleanly falls through to the provider's default model.
+ */
+function sanitizeModelId(raw: string | null | undefined): string | undefined {
+  if (!raw) return undefined
+  let m = raw.trim()
+  if (!m) return undefined
+  if ((m.startsWith('"') && m.endsWith('"')) || (m.startsWith("'") && m.endsWith("'"))) {
+    m = m.slice(1, -1).trim()
+  }
+  m = m.replace(/^(models|tunedModels)\//i, '').trim()
+  return m || undefined
+}
+
 function chatCompletionsUrl(baseURL: string): string {
   const url = new URL(baseURL.trim().replace(/\/+$/, ''))
   const path = url.pathname.replace(/\/+$/, '')
@@ -292,7 +316,7 @@ async function resolveProviderKeys(
   if (options.apiKeyOverride) {
     const keys = splitKeys(options.apiKeyOverride)
     if (keys.length > 0) {
-      return { keys, model: options.model || provider.defaultModel }
+      return { keys, model: sanitizeModelId(options.model) || provider.defaultModel }
     }
   }
 
@@ -310,7 +334,13 @@ async function resolveProviderKeys(
         }).catch(() => undefined)
         const keys = splitKeys(decryptSecret(row.apiKey))
         if (keys.length > 0) {
-          return { keys, model: options.model || row.model || provider.defaultModel }
+          return {
+            keys,
+            model:
+              sanitizeModelId(options.model) ||
+              sanitizeModelId(row.model) ||
+              provider.defaultModel,
+          }
         }
       }
     } catch {
@@ -319,7 +349,10 @@ async function resolveProviderKeys(
   }
 
   if (await userMayUseBuiltInKeys(options.userId)) {
-    return { keys: getEnvKeysForProvider(provider), model: options.model || provider.defaultModel }
+    return {
+      keys: getEnvKeysForProvider(provider),
+      model: sanitizeModelId(options.model) || provider.defaultModel,
+    }
   }
 
   throw new Error(
@@ -458,6 +491,11 @@ export async function chat(
   }
 
   const available = await getAvailableProvidersForUser(options.userId)
+  // A message with an image (diagram extraction) can only be served by a
+  // vision-capable provider — including a non-vision one in the pool means
+  // it either gets picked and fails outright, or wastes a fallback attempt.
+  const hasImage = messages.some((m) => m.image)
+  const candidates = hasImage ? available.filter((p) => p.supportsVision) : available
 
   let preferred: ProviderConfig | null
   if (options.provider) {
@@ -468,18 +506,23 @@ export async function chat(
     // default — otherwise a non-allow-listed user with no explicit choice
     // would be handed an env-only provider they can't actually use.
     preferred =
-      available.find((p) => p.id === 'gemini') ??
-      available.find((p) => p.id === 'glm') ??
-      available[0] ??
+      candidates.find((p) => p.id === 'gemini') ??
+      candidates.find((p) => p.id === 'glm') ??
+      candidates[0] ??
       null
   }
   if (!preferred) {
+    if (hasImage && available.length > 0) {
+      throw new Error(
+        'This step needs a vision-capable provider to read the diagram. Add a key for OpenAI, Anthropic Claude, Gemini, GLM, Qwen, or OpenRouter in Settings → API Keys.'
+      )
+    }
     throw new Error(
       'No AI providers configured for your account. Add your own API key in Settings → API Keys.'
     )
   }
 
-  const chain = [preferred, ...available.filter((p) => p.id !== preferred!.id)]
+  const chain = [preferred, ...candidates.filter((p) => p.id !== preferred!.id)]
 
   const attempts: FallbackAttempt[] = []
   for (const provider of chain) {
@@ -515,7 +558,10 @@ export async function* streamChat(
         where: { id: customId, userId: options.userId, isCustom: true },
       })
       if (row) {
-        yield { provider: `custom:${row.label || customId}`, model: options.model || row.model || 'custom' }
+        yield {
+          provider: `custom:${row.label || customId}`,
+          model: sanitizeModelId(options.model) || sanitizeModelId(row.model) || 'custom',
+        }
       }
     } catch {
       yield { provider: options.provider, model: options.model || 'custom' }
@@ -525,6 +571,8 @@ export async function* streamChat(
   }
 
   const available = await getAvailableProvidersForUser(options.userId)
+  const hasImage = messages.some((m) => m.image)
+  const candidates = hasImage ? available.filter((p) => p.supportsVision) : available
 
   let preferred: ProviderConfig | null
   if (options.provider) {
@@ -532,23 +580,28 @@ export async function* streamChat(
     if (!preferred) throw new Error(`Unknown AI provider "${options.provider}"`)
   } else {
     preferred =
-      available.find((p) => p.id === 'gemini') ??
-      available.find((p) => p.id === 'glm') ??
-      available[0] ??
+      candidates.find((p) => p.id === 'gemini') ??
+      candidates.find((p) => p.id === 'glm') ??
+      candidates[0] ??
       null
   }
   if (!preferred) {
+    if (hasImage && available.length > 0) {
+      throw new Error(
+        'This step needs a vision-capable provider to read the diagram. Add a key for OpenAI, Anthropic Claude, Gemini, GLM, Qwen, or OpenRouter in Settings → API Keys.'
+      )
+    }
     throw new Error(
       'No AI providers configured for your account. Add your own API key in Settings → API Keys.'
     )
   }
 
-  const chain = [preferred, ...available.filter((p) => p.id !== preferred!.id)]
+  const chain = [preferred, ...candidates.filter((p) => p.id !== preferred!.id)]
 
   const attempts: FallbackAttempt[] = []
   for (const provider of chain) {
     try {
-      yield { provider: provider.id, model: options.model || provider.defaultModel }
+      yield { provider: provider.id, model: sanitizeModelId(options.model) || provider.defaultModel }
       yield* streamProvider(provider, messages, options)
       return
     } catch (err) {
@@ -582,7 +635,8 @@ export async function testProviderConnection(options: {
   ]
 
   if (options.custom) {
-    const model = options.custom.model || options.model || 'gpt-3.5-turbo'
+    const model =
+      sanitizeModelId(options.custom.model) || sanitizeModelId(options.model) || 'gpt-3.5-turbo'
     return postChatCompletions(
       options.custom.label || 'Custom provider',
       options.custom.baseURL,
@@ -890,7 +944,7 @@ async function callCustomProvider(
   options: ChatOptions
 ): Promise<ChatResult> {
   const row = await loadCustomProvider(options.userId, customId)
-  const model = options.model || row.model || 'gpt-3.5-turbo'
+  const model = sanitizeModelId(options.model) || sanitizeModelId(row.model) || 'gpt-3.5-turbo'
   const keys = splitKeys(decryptSecret(row.apiKey))
   return postChatCompletions(
     row.label || 'Custom provider',
@@ -928,7 +982,7 @@ async function* streamCustomProvider(
   options: ChatOptions
 ): AsyncGenerator<StreamChunk> {
   const row = await loadCustomProvider(options.userId, customId)
-  const model = options.model || row.model || 'gpt-3.5-turbo'
+  const model = sanitizeModelId(options.model) || sanitizeModelId(row.model) || 'gpt-3.5-turbo'
   const keys = splitKeys(decryptSecret(row.apiKey))
   yield* streamChatCompletions(row.label || 'Custom provider', row.baseURL!, keys, model, messages, options, {
     supportsVision: true,

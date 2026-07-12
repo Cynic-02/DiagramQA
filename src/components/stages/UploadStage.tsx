@@ -121,7 +121,12 @@ function rasteriseIfNeeded(dataUrl: string, filename: string): Promise<{ dataUrl
 }
 
 const ACCEPTED = '.png,.jpg,.jpeg,.webp,.svg'
-const MAX_BYTES = 5 * 1024 * 1024 // 5 MB
+// Base64-encoding inflates raw bytes by ~4/3, and the encoded string then
+// rides inside a JSON body to POST /api/runs — which on Vercel has a hard
+// 4.5MB request-body ceiling enforced by the platform itself (returns a
+// raw, uncaught 413 before the request even reaches our route handler).
+// 2.5MB raw comfortably clears that after inflation, with real headroom.
+const MAX_BYTES = 2.5 * 1024 * 1024 // 2.5 MB
 
 /* ------------------------------------------------------------------ */
 /* Component                                                          */
@@ -173,7 +178,7 @@ export function UploadStage() {
   const handleFile = React.useCallback((file: File) => {
     if (file.size > MAX_BYTES) {
       toast.error('File too large', {
-        description: 'Please use a file under 5 MB.',
+        description: 'Please use a file under 2.5 MB.',
       })
       return
     }
