@@ -43,7 +43,7 @@ const Hero3D = dynamic(() => import('@/components/three/Hero3D'), {
 
 const Strands = dynamic(() => import('@/components/reactbits/Strands'), { ssr: false })
 
-const SiteConstellation = dynamic(() => import('@/components/three/SiteConstellation'), {
+const ParticleMorphScene = dynamic(() => import('@/components/three/ParticleMorphScene'), {
   ssr: false,
 })
 
@@ -228,14 +228,14 @@ export default function LandingPage() {
 
   return (
     <div className="relative flex min-h-screen flex-col bg-hero-void">
-      {/* Page-fixed particle constellation — one continuous field behind
-          every section, reshaping as the page scrolls: brand mark at the
-          top, dispersing through the middle, resolving into a knowledge-
-          graph glyph at Features, a verified checkmark at the CTA, then
-          back to the mark at the footer. Colors are read live from the
-          active palette's own tokens. */}
+      {/* Page-fixed particle field — real 3D instanced particles (not
+          flat sprites) that reshape as the page scrolls: brand mark at
+          the top, dispersing through the middle, resolving into a
+          knowledge-graph glyph at Features, a verified checkmark at the
+          CTA, then back to the mark at the footer. Colors are read live
+          from the active palette's own tokens. */}
       <div className="pointer-events-none fixed inset-0 z-0" aria-hidden>
-        <SiteConstellation />
+        <ParticleMorphScene />
       </div>
 
       <ScrollProgress />
