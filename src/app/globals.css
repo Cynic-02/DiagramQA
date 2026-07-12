@@ -306,8 +306,8 @@
     opacity: 0.4;
     mix-blend-mode: overlay;
   }
-  .dark .brutal-block::before, .dark .glass::before, .dark .glass-strong::before,
-  .dark .glass-primary::before, .dark .hw-panel::before {
+  [data-theme="dark"] .brutal-block::before, [data-theme="dark"] .glass::before, [data-theme="dark"] .glass-strong::before,
+  [data-theme="dark"] .glass-primary::before, [data-theme="dark"] .hw-panel::before {
     mix-blend-mode: soft-light;
     opacity: 0.5;
   }
@@ -320,7 +320,7 @@
     transform: translate(var(--press-translate-x, -2px), var(--press-translate-y, -2px));
     box-shadow:
       12px 12px 0 var(--ink, var(--border-strong)),
-      0 0 var(--glow-radius, 50px) color-mix(in srgb, var(--primary) 55%, transparent);
+      0 0 var(--glow-radius, 34px) color-mix(in srgb, var(--primary) 32%, transparent);
   }
   .brutal-block-sm {
     background: color-mix(in srgb, var(--bg, var(--background)) 45%, transparent);
@@ -330,7 +330,7 @@
     border-radius: var(--radius-btn, 10px);
     box-shadow:
       var(--shadow-offset-btn, 5px 5px 0) var(--ink, var(--border-strong)),
-      0 0 30px color-mix(in srgb, var(--primary) 30%, transparent);
+      0 0 20px color-mix(in srgb, var(--primary) 16%, transparent);
     position: relative;
     overflow: hidden;
     transition: transform var(--transition-fast, 0.12s ease);
@@ -343,7 +343,7 @@
     border-radius: var(--radius-card, var(--radius));
     box-shadow:
       14px 14px 0 var(--ink, var(--border-strong)),
-      0 0 60px color-mix(in srgb, var(--primary) 45%, transparent);
+      0 0 42px color-mix(in srgb, var(--primary) 26%, transparent);
     position: relative;
     overflow: hidden;
   }
@@ -361,7 +361,7 @@
     opacity: 0.5;
     mix-blend-mode: overlay;
   }
-  .dark .brutal-block-lg::before {
+  [data-theme="dark"] .brutal-block-lg::before {
     mix-blend-mode: soft-light;
   }
   .brutal-block-lg > * {
@@ -417,7 +417,7 @@
     background-image: linear-gradient(to right, rgba(128, 128, 128, 0.04) 1px, transparent 1px),
                       linear-gradient(to bottom, rgba(128, 128, 128, 0.04) 1px, transparent 1px);
   }
-  .dark .grid-faint {
+  [data-theme="dark"] .grid-faint {
     background-image: linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
                       linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
   }
@@ -496,11 +496,17 @@
     pointer-events: none;
   }
 
+  /* Palette-aware vignette: lightens toward the center, darkens toward
+     the edge, relative to whatever --bg the active palette defines —
+     replaces two hardcoded hex-gradient variants that were only ever
+     swapped via the (now-retired) .dark class and had silently frozen
+     on the light variant since the mode switch moved to data-theme. */
   .bg-hero-void {
-    background: radial-gradient(120% 120% at 50% 22%, #faf9f6 0%, #ebe8e1 100%);
-  }
-  .dark .bg-hero-void {
-    background: radial-gradient(120% 120% at 50% 22%, #151a24 0%, #0a0d14 100%);
+    background: radial-gradient(
+      120% 120% at 50% 22%,
+      color-mix(in srgb, var(--bg, var(--background)) 92%, white) 0%,
+      color-mix(in srgb, var(--bg, var(--background)) 90%, black) 100%
+    );
   }
 }
 
@@ -646,8 +652,8 @@
 
   --blur-card: 22px;
   --blur-saturate: 180%;
-  --glow-radius: 50px;
-  --glow-opacity: 45%;
+  --glow-radius: 34px;
+  --glow-opacity: 22%;
   --card-fill-opacity: 35%;
 
   --blob-blur: 60px;

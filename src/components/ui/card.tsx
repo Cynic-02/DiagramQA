@@ -14,7 +14,7 @@ function Card({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="card"
       className={cn(
-        "text-card-foreground flex flex-col gap-4 rounded-[var(--radius-card,18px)] border-[length:var(--border-w-card,4px)] border-[var(--ink)] shadow-[10px_10px_0_var(--ink),0_0_50px_color-mix(in_srgb,var(--primary)_45%,transparent)]",
+        "text-card-foreground flex flex-col gap-4 rounded-[var(--radius-card,18px)] border-[length:var(--border-w-card,4px)] border-[var(--ink)] shadow-[10px_10px_0_var(--ink),0_0_var(--glow-radius,34px)_color-mix(in_srgb,var(--primary)_var(--glow-opacity,22%),transparent)]",
         "bg-[color-mix(in_srgb,var(--bg,var(--background))_35%,transparent)] [backdrop-filter:blur(var(--blur-card,22px))_saturate(var(--blur-saturate,180%))]",
         className
       )}

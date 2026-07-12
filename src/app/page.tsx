@@ -18,6 +18,7 @@ import {
 
 import { ScrollProgress } from '@/components/scroll-progress'
 import { ThemeToggle } from '@/components/theme-toggle'
+import { PaletteSwitcher } from '@/components/palette-switcher'
 import {
   RevealOnScroll,
   StaggerContainer,
@@ -225,8 +226,9 @@ export default function LandingPage() {
     <div className="relative flex min-h-screen flex-col bg-hero-void">
       <ScrollProgress />
 
-      {/* Floating theme toggle — visible immediately on landing */}
-      <div className="fixed right-4 top-4 z-[100]">
+      {/* Floating theme + palette controls — visible immediately on landing */}
+      <div className="fixed right-4 top-4 z-[100] flex items-center gap-2">
+        <PaletteSwitcher />
         <ThemeToggle />
       </div>
 
