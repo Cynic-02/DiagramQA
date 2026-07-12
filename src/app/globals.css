@@ -319,7 +319,7 @@
   .brutal-block:hover, .glass:hover, .hw-panel:hover {
     transform: translate(var(--press-translate-x, -2px), var(--press-translate-y, -2px));
     box-shadow:
-      12px 12px 0 var(--ink, var(--border-strong)),
+      7px 7px 0 var(--ink, var(--border-strong)),
       0 0 var(--glow-radius, 34px) color-mix(in srgb, var(--primary) 32%, transparent);
   }
   .brutal-block-sm {
@@ -339,10 +339,10 @@
     background: color-mix(in srgb, var(--bg, var(--background)) var(--card-fill-opacity, 35%), transparent);
     backdrop-filter: blur(28px) saturate(var(--blur-saturate, 180%));
     -webkit-backdrop-filter: blur(28px) saturate(var(--blur-saturate, 180%));
-    border: var(--border-w-card, 4px) solid var(--ink, var(--border-panel));
+    border: var(--border-w-card, 2px) solid var(--ink, var(--border-panel));
     border-radius: var(--radius-card, var(--radius));
     box-shadow:
-      14px 14px 0 var(--ink, var(--border-strong)),
+      7px 7px 0 var(--ink, var(--border-strong)),
       0 0 42px color-mix(in srgb, var(--primary) 26%, transparent);
     position: relative;
     overflow: hidden;
@@ -673,17 +673,17 @@
   --radius-btn: 10px;
   --radius-input: 10px;
 
-  --border-w-card: 4px;
-  --border-w-badge: 2px;
-  --border-w-btn: 3px;
-  --border-w-input: 3px;
-  --border-w-switch: 3px;
+  --border-w-card: 2px;
+  --border-w-badge: 1.5px;
+  --border-w-btn: 2px;
+  --border-w-input: 2px;
+  --border-w-switch: 2px;
 
-  --shadow-offset-card: 10px 10px 0;
-  --shadow-offset-badge: 3px 3px 0;
-  --shadow-offset-btn: 5px 5px 0;
-  --shadow-offset-btn-hover: 2px 2px 0;
-  --shadow-offset-chip: 3px 3px 0;
+  --shadow-offset-card: 5px 5px 0;
+  --shadow-offset-badge: 2px 2px 0;
+  --shadow-offset-btn: 3px 3px 0;
+  --shadow-offset-btn-hover: 1px 1px 0;
+  --shadow-offset-chip: 2px 2px 0;
 
   --blur-card: 22px;
   --blur-saturate: 180%;

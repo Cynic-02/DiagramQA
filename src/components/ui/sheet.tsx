@@ -58,16 +58,16 @@ function SheetContent({
       <SheetPrimitive.Content
         data-slot="sheet-content"
         className={cn(
-          "data-[state=open]:animate-in data-[state=closed]:animate-out fixed z-50 flex flex-col gap-4 shadow-[10px_10px_0_var(--ink)] transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500",
+          "data-[state=open]:animate-in data-[state=closed]:animate-out fixed z-50 flex flex-col gap-4 shadow-[var(--shadow-offset-card,5px_5px_0)_var(--ink)] transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500",
           "bg-[color-mix(in_srgb,var(--bg,var(--background))_55%,transparent)] [backdrop-filter:blur(var(--blur-card,22px))_saturate(var(--blur-saturate,180%))]",
           side === "right" &&
-            "data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right inset-y-0 right-0 h-full w-3/4 border-l-[length:var(--border-w-card,4px)] border-[var(--ink)] sm:max-w-sm",
+            "data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right inset-y-0 right-0 h-full w-3/4 border-l-[length:var(--border-w-card,2px)] border-[var(--ink)] sm:max-w-sm",
           side === "left" &&
-            "data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left inset-y-0 left-0 h-full w-3/4 border-r-[length:var(--border-w-card,4px)] border-[var(--ink)] sm:max-w-sm",
+            "data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left inset-y-0 left-0 h-full w-3/4 border-r-[length:var(--border-w-card,2px)] border-[var(--ink)] sm:max-w-sm",
           side === "top" &&
-            "data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top inset-x-0 top-0 h-auto border-b-[length:var(--border-w-card,4px)] border-[var(--ink)]",
+            "data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top inset-x-0 top-0 h-auto border-b-[length:var(--border-w-card,2px)] border-[var(--ink)]",
           side === "bottom" &&
-            "data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom inset-x-0 bottom-0 h-auto border-t-[length:var(--border-w-card,4px)] border-[var(--ink)]",
+            "data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom inset-x-0 bottom-0 h-auto border-t-[length:var(--border-w-card,2px)] border-[var(--ink)]",
           className
         )}
         {...props}

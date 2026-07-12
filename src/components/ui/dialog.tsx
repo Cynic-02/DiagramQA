@@ -60,7 +60,7 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-[var(--radius-card,18px)] border-[length:var(--border-w-card,4px)] border-[var(--ink)] p-6 shadow-[10px_10px_0_var(--ink),0_0_var(--glow-radius,34px)_color-mix(in_srgb,var(--primary)_var(--glow-opacity,22%),transparent)] duration-200 sm:max-w-lg",
+          "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-[var(--radius-card,18px)] border-[length:var(--border-w-card,2px)] border-[var(--ink)] p-6 shadow-[var(--shadow-offset-card,5px_5px_0)_var(--ink),0_0_var(--glow-radius,34px)_color-mix(in_srgb,var(--primary)_var(--glow-opacity,22%),transparent)] duration-200 sm:max-w-lg",
           "bg-[color-mix(in_srgb,var(--bg,var(--background))_55%,transparent)] [backdrop-filter:blur(var(--blur-card,22px))_saturate(var(--blur-saturate,180%))]",
           className
         )}

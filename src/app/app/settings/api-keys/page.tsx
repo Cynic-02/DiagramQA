@@ -65,7 +65,7 @@ export default function ApiKeysSettingsPage() {
         <ThemeToggle />
       </nav>
 
-      <div className="relative z-10 mx-auto w-full max-w-4xl flex-1 p-6 md:p-8">
+      <div className="relative z-10 mx-auto w-full max-w-6xl flex-1 p-6 md:p-8">
         <div className="mb-6 space-y-1.5">
           <div className="flex items-center gap-2">
             <div className="flex size-9 items-center justify-center border border-primary/45 bg-primary/10 text-primary rounded-lg">
@@ -145,7 +145,7 @@ export default function ApiKeysSettingsPage() {
                 quota. Without one, runs fall back to the platform&apos;s key
                 (if configured) when you pick this provider.
               </p>
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {builtIn.map((p) => (
                   <BuiltInProviderCard key={p.id} provider={p} onSaved={load} />
                 ))}
@@ -187,7 +187,7 @@ export default function ApiKeysSettingsPage() {
                   </p>
                 </Card>
               ) : (
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {custom.map((p) => (
                     <CustomProviderCard key={p.id} provider={p} onSaved={load} onDeleted={load} />
                   ))}

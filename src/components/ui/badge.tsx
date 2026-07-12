@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils"
  * offsets, scaled down from the button's 5px and the card's 10px.
  */
 const badgeVariants = cva(
-  "inline-flex items-center justify-center rounded-[var(--radius-badge,8px)] border-[length:var(--border-w-badge,2px)] border-[var(--ink)] px-2 py-0.5 text-xs font-bold w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-visible:ring-primary/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive transition-[color,box-shadow] overflow-hidden shadow-[3px_3px_0_var(--ink)]",
+  "inline-flex items-center justify-center rounded-[var(--radius-badge,8px)] border-[length:var(--border-w-badge,1.5px)] border-[var(--ink)] px-2 py-0.5 text-xs font-bold w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-visible:ring-primary/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive transition-[color,box-shadow] overflow-hidden shadow-[var(--shadow-offset-badge,2px_2px_0)_var(--ink)]",
   {
     variants: {
       variant: {
