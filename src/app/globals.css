@@ -707,7 +707,8 @@
    left out entirely. */
 [data-theme="light"][data-palette="monad"] {
   --bg: #e8e2d5; --surface: #ffffff; --primary: #2b59d1; --secondary: #df6448;
-  --accent: #fbbf24; --text: #221f1e; --muted: #665f5a; --ink: #221f1e;
+  --accent: #fbbf24; --text: #221f1e; --muted-text: #665f5a; --ink: #221f1e;
+  --muted: color-mix(in srgb, var(--ink) 6%, transparent);
 
   --background: var(--bg);
   --foreground: var(--text);
@@ -716,8 +717,8 @@
   --popover: var(--surface);
   --popover-foreground: var(--text);
   --primary-foreground: #ffffff;
-  --secondary-foreground: #ffffff;
-  --muted-foreground: var(--muted);
+  --secondary-foreground: var(--ink);
+  --muted-foreground: var(--muted-text);
   --accent-foreground: var(--ink);
   --destructive: #ef4444;
   --border: var(--ink);
@@ -735,8 +736,8 @@
   --sidebar-border: var(--ink); --sidebar-ring: var(--primary);
 
   --text-primary: var(--text);
-  --text-secondary: var(--muted);
-  --text-muted: color-mix(in srgb, var(--muted) 75%, transparent);
+  --text-secondary: var(--muted-text);
+  --text-muted: color-mix(in srgb, var(--muted-text) 75%, transparent);
 
   --shadow-sm: 0 2px 8px color-mix(in srgb, var(--ink) 12%, transparent);
   --shadow-md: 0 4px 20px color-mix(in srgb, var(--ink) 16%, transparent);
@@ -760,7 +761,8 @@
 
 [data-theme="light"][data-palette="candy_pop"] {
   --bg: #fdf2f8; --surface: #ffffff; --primary: #ff5ca8; --secondary: #a78bfa;
-  --accent: #14b8a6; --text: #2d1b30; --muted: #b98cae; --ink: #1a0f1c;
+  --accent: #14b8a6; --text: #2d1b30; --muted-text: #8f5f80; --ink: #1a0f1c;
+  --muted: color-mix(in srgb, var(--ink) 6%, transparent);
 
   --background: var(--bg);
   --foreground: var(--text);
@@ -768,10 +770,10 @@
   --card-foreground: var(--text);
   --popover: var(--surface);
   --popover-foreground: var(--text);
-  --primary-foreground: #ffffff;
-  --secondary-foreground: #ffffff;
-  --muted-foreground: var(--muted);
-  --accent-foreground: #ffffff;
+  --primary-foreground: var(--ink);
+  --secondary-foreground: var(--ink);
+  --muted-foreground: var(--muted-text);
+  --accent-foreground: var(--ink);
   --destructive: #ef4444;
   --border: var(--ink);
   --input: var(--ink);
@@ -782,14 +784,14 @@
   --chart-5: color-mix(in srgb, var(--secondary) 60%, var(--primary));
 
   --sidebar: var(--surface); --sidebar-foreground: var(--text);
-  --sidebar-primary: var(--primary); --sidebar-primary-foreground: #ffffff;
+  --sidebar-primary: var(--primary); --sidebar-primary-foreground: var(--ink);
   --sidebar-accent: color-mix(in srgb, var(--ink) 6%, transparent);
   --sidebar-accent-foreground: var(--text);
   --sidebar-border: var(--ink); --sidebar-ring: var(--primary);
 
   --text-primary: var(--text);
-  --text-secondary: var(--muted);
-  --text-muted: color-mix(in srgb, var(--muted) 75%, transparent);
+  --text-secondary: var(--muted-text);
+  --text-muted: color-mix(in srgb, var(--muted-text) 75%, transparent);
 
   --shadow-sm: 0 2px 8px color-mix(in srgb, var(--ink) 12%, transparent);
   --shadow-md: 0 4px 20px color-mix(in srgb, var(--ink) 16%, transparent);
@@ -812,8 +814,9 @@
 }
 
 [data-theme="light"][data-palette="terracotta_earth"] {
-  --bg: #f4ede4; --surface: #fffaf3; --primary: #c1633b; --secondary: #7d8f69;
-  --accent: #d9a441; --text: #3a2b22; --muted: #a08a76; --ink: #2a1c14;
+  --bg: #f4ede4; --surface: #fffaf3; --primary: #ad5330; --secondary: #7d8f69;
+  --accent: #d9a441; --text: #3a2b22; --muted-text: #7d6650; --ink: #2a1c14;
+  --muted: color-mix(in srgb, var(--ink) 6%, transparent);
 
   --background: var(--bg);
   --foreground: var(--text);
@@ -822,8 +825,8 @@
   --popover: var(--surface);
   --popover-foreground: var(--text);
   --primary-foreground: #ffffff;
-  --secondary-foreground: #ffffff;
-  --muted-foreground: var(--muted);
+  --secondary-foreground: var(--ink);
+  --muted-foreground: var(--muted-text);
   --accent-foreground: var(--ink);
   --destructive: #ef4444;
   --border: var(--ink);
@@ -841,8 +844,8 @@
   --sidebar-border: var(--ink); --sidebar-ring: var(--primary);
 
   --text-primary: var(--text);
-  --text-secondary: var(--muted);
-  --text-muted: color-mix(in srgb, var(--muted) 75%, transparent);
+  --text-secondary: var(--muted-text);
+  --text-muted: color-mix(in srgb, var(--muted-text) 75%, transparent);
 
   --shadow-sm: 0 2px 8px color-mix(in srgb, var(--ink) 12%, transparent);
   --shadow-md: 0 4px 20px color-mix(in srgb, var(--ink) 16%, transparent);
@@ -866,7 +869,8 @@
 
 [data-theme="light"][data-palette="cotton_candy"] {
   --bg: #fdf4fb; --surface: #ffffff; --primary: #ff9ecb; --secondary: #a8d8ff;
-  --accent: #c8b6ff; --text: #3a2a3f; --muted: #c9a8c4; --ink: #2a1a2f;
+  --accent: #c8b6ff; --text: #3a2a3f; --muted-text: #875e82; --ink: #2a1a2f;
+  --muted: color-mix(in srgb, var(--ink) 6%, transparent);
 
   --background: var(--bg);
   --foreground: var(--text);
@@ -876,7 +880,7 @@
   --popover-foreground: var(--text);
   --primary-foreground: var(--ink);
   --secondary-foreground: var(--ink);
-  --muted-foreground: var(--muted);
+  --muted-foreground: var(--muted-text);
   --accent-foreground: var(--ink);
   --destructive: #ef4444;
   --border: var(--ink);
@@ -894,8 +898,8 @@
   --sidebar-border: var(--ink); --sidebar-ring: var(--primary);
 
   --text-primary: var(--text);
-  --text-secondary: var(--muted);
-  --text-muted: color-mix(in srgb, var(--muted) 75%, transparent);
+  --text-secondary: var(--muted-text);
+  --text-muted: color-mix(in srgb, var(--muted-text) 75%, transparent);
 
   --shadow-sm: 0 2px 8px color-mix(in srgb, var(--ink) 12%, transparent);
   --shadow-md: 0 4px 20px color-mix(in srgb, var(--ink) 16%, transparent);
@@ -919,7 +923,8 @@
 
 [data-theme="light"][data-palette="lavender_haze"] {
   --bg: #f4efff; --surface: #ffffff; --primary: #a78bfa; --secondary: #cb9bfb;
-  --accent: #f0abfc; --text: #3a2e5c; --muted: #9a8ec0; --ink: #0a0a0a;
+  --accent: #f0abfc; --text: #3a2e5c; --muted-text: #6f6294; --ink: #0a0a0a;
+  --muted: color-mix(in srgb, var(--ink) 6%, transparent);
 
   --background: var(--bg);
   --foreground: var(--text);
@@ -929,7 +934,7 @@
   --popover-foreground: var(--text);
   --primary-foreground: var(--ink);
   --secondary-foreground: var(--ink);
-  --muted-foreground: var(--muted);
+  --muted-foreground: var(--muted-text);
   --accent-foreground: var(--ink);
   --destructive: #ef4444;
   --border: var(--ink);
@@ -947,8 +952,8 @@
   --sidebar-border: var(--ink); --sidebar-ring: var(--primary);
 
   --text-primary: var(--text);
-  --text-secondary: var(--muted);
-  --text-muted: color-mix(in srgb, var(--muted) 75%, transparent);
+  --text-secondary: var(--muted-text);
+  --text-muted: color-mix(in srgb, var(--muted-text) 75%, transparent);
 
   --shadow-sm: 0 2px 8px color-mix(in srgb, var(--ink) 12%, transparent);
   --shadow-md: 0 4px 20px color-mix(in srgb, var(--ink) 16%, transparent);
@@ -974,7 +979,8 @@
 
 [data-theme="dark"][data-palette="sunset_pop"] {
   --bg: #1c1310; --surface: #2a1e19; --primary: #ff6b4a; --secondary: #ffb84a;
-  --accent: #ffe066; --text: #fff3ea; --muted: #c9a894; --ink: #160c08;
+  --accent: #ffe066; --text: #fff3ea; --muted-text: #c9a894; --ink: #160c08;
+  --muted: color-mix(in srgb, white 6%, transparent);
 
   --background: var(--bg);
   --foreground: var(--text);
@@ -984,7 +990,7 @@
   --popover-foreground: var(--text);
   --primary-foreground: var(--ink);
   --secondary-foreground: var(--ink);
-  --muted-foreground: var(--muted);
+  --muted-foreground: var(--muted-text);
   --accent-foreground: var(--ink);
   --destructive: #e05a5a;
   --border: var(--ink);
@@ -1002,8 +1008,8 @@
   --sidebar-border: var(--ink); --sidebar-ring: var(--primary);
 
   --text-primary: var(--text);
-  --text-secondary: var(--muted);
-  --text-muted: color-mix(in srgb, var(--muted) 75%, transparent);
+  --text-secondary: var(--muted-text);
+  --text-muted: color-mix(in srgb, var(--muted-text) 75%, transparent);
 
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.35);
   --shadow-md: 0 8px 30px rgba(0, 0, 0, 0.42);
@@ -1027,7 +1033,8 @@
 
 [data-theme="dark"][data-palette="royal_purple"] {
   --bg: #160a29; --surface: #22113f; --primary: #a855f7; --secondary: #d19086;
-  --accent: #facc15; --text: #efe6ff; --muted: #9077bd; --ink: #0d0618;
+  --accent: #facc15; --text: #efe6ff; --muted-text: #9077bd; --ink: #0d0618;
+  --muted: color-mix(in srgb, white 6%, transparent);
 
   --background: var(--bg);
   --foreground: var(--text);
@@ -1035,9 +1042,9 @@
   --card-foreground: var(--text);
   --popover: var(--surface);
   --popover-foreground: var(--text);
-  --primary-foreground: #ffffff;
+  --primary-foreground: var(--ink);
   --secondary-foreground: var(--ink);
-  --muted-foreground: var(--muted);
+  --muted-foreground: var(--muted-text);
   --accent-foreground: var(--ink);
   --destructive: #e05a5a;
   --border: var(--ink);
@@ -1049,14 +1056,14 @@
   --chart-5: color-mix(in srgb, var(--secondary) 60%, var(--primary));
 
   --sidebar: var(--surface); --sidebar-foreground: var(--text);
-  --sidebar-primary: var(--primary); --sidebar-primary-foreground: #ffffff;
+  --sidebar-primary: var(--primary); --sidebar-primary-foreground: var(--ink);
   --sidebar-accent: color-mix(in srgb, white 6%, transparent);
   --sidebar-accent-foreground: var(--text);
   --sidebar-border: var(--ink); --sidebar-ring: var(--primary);
 
   --text-primary: var(--text);
-  --text-secondary: var(--muted);
-  --text-muted: color-mix(in srgb, var(--muted) 75%, transparent);
+  --text-secondary: var(--muted-text);
+  --text-muted: color-mix(in srgb, var(--muted-text) 75%, transparent);
 
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.35);
   --shadow-md: 0 8px 30px rgba(0, 0, 0, 0.42);
@@ -1080,7 +1087,8 @@
 
 [data-theme="dark"][data-palette="ocean_teal"] {
   --bg: #012a30; --surface: #013a44; --primary: #00b4a6; --secondary: #7fa074;
-  --accent: #ff8c42; --text: #e0f7fa; --muted: #5fa0aa; --ink: #00191c;
+  --accent: #ff8c42; --text: #e0f7fa; --muted-text: #6bacb5; --ink: #00191c;
+  --muted: color-mix(in srgb, white 6%, transparent);
 
   --background: var(--bg);
   --foreground: var(--text);
@@ -1088,9 +1096,9 @@
   --card-foreground: var(--text);
   --popover: var(--surface);
   --popover-foreground: var(--text);
-  --primary-foreground: #ffffff;
+  --primary-foreground: var(--ink);
   --secondary-foreground: var(--ink);
-  --muted-foreground: var(--muted);
+  --muted-foreground: var(--muted-text);
   --accent-foreground: var(--ink);
   --destructive: #e05a5a;
   --border: var(--ink);
@@ -1102,14 +1110,14 @@
   --chart-5: color-mix(in srgb, var(--secondary) 60%, var(--primary));
 
   --sidebar: var(--surface); --sidebar-foreground: var(--text);
-  --sidebar-primary: var(--primary); --sidebar-primary-foreground: #ffffff;
+  --sidebar-primary: var(--primary); --sidebar-primary-foreground: var(--ink);
   --sidebar-accent: color-mix(in srgb, white 6%, transparent);
   --sidebar-accent-foreground: var(--text);
   --sidebar-border: var(--ink); --sidebar-ring: var(--primary);
 
   --text-primary: var(--text);
-  --text-secondary: var(--muted);
-  --text-muted: color-mix(in srgb, var(--muted) 75%, transparent);
+  --text-secondary: var(--muted-text);
+  --text-muted: color-mix(in srgb, var(--muted-text) 75%, transparent);
 
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.35);
   --shadow-md: 0 8px 30px rgba(0, 0, 0, 0.42);
@@ -1133,7 +1141,8 @@
 
 [data-theme="dark"][data-palette="fire_and_ice"] {
   --bg: #0a0f1a; --surface: #111a2b; --primary: #00d4ff; --secondary: #7f8c7f;
-  --accent: #ff4500; --text: #e8f1ff; --muted: #5d7390; --ink: #06090f;
+  --accent: #ff4500; --text: #e8f1ff; --muted-text: #7f93ac; --ink: #06090f;
+  --muted: color-mix(in srgb, white 6%, transparent);
 
   --background: var(--bg);
   --foreground: var(--text);
@@ -1142,9 +1151,9 @@
   --popover: var(--surface);
   --popover-foreground: var(--text);
   --primary-foreground: var(--ink);
-  --secondary-foreground: #ffffff;
-  --muted-foreground: var(--muted);
-  --accent-foreground: #ffffff;
+  --secondary-foreground: var(--ink);
+  --muted-foreground: var(--muted-text);
+  --accent-foreground: var(--ink);
   --destructive: #e05a5a;
   --border: var(--ink);
   --input: var(--ink);
@@ -1161,8 +1170,8 @@
   --sidebar-border: var(--ink); --sidebar-ring: var(--primary);
 
   --text-primary: var(--text);
-  --text-secondary: var(--muted);
-  --text-muted: color-mix(in srgb, var(--muted) 75%, transparent);
+  --text-secondary: var(--muted-text);
+  --text-muted: color-mix(in srgb, var(--muted-text) 75%, transparent);
 
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.35);
   --shadow-md: 0 8px 30px rgba(0, 0, 0, 0.42);
