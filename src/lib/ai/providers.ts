@@ -1216,8 +1216,17 @@ async function* streamClaude(
     body: JSON.stringify(body),
   })
   if (!res.ok || !res.body) {
-    const errText = res.body ? '' : await res.text().catch(() => '')
-    throw new Error(`${provider.label} stream error ${res.status}: ${errText.slice(0, 200)}`)
+    // Always read the actual response body for the real error text (this
+    // was previously backwards — `res.body ? '' : ...` meant the text was
+    // read ONLY when there was NO body, i.e. essentially never, since a
+    // real HTTP error response almost always has one. Every provider
+    // failure surfaced as a blank "stream error 400: " with nothing
+    // after the colon, no matter what actually went wrong — wrong API
+    // key, disabled API, wrong model, quota, anything. res.text() safely
+    // resolves to '' on a genuinely empty/absent body, so there's no
+    // downside to always attempting it.)
+    const errText = await res.text().catch(() => '')
+    throw new Error(`${provider.label} stream error ${res.status}: ${errText.slice(0, 300)}`)
   }
 
   const reader = res.body.getReader()
@@ -1403,8 +1412,11 @@ async function* streamGemini(
       continue
     }
     if (!res.ok || !res.body) {
-      const errText = res.body ? '' : await res.text().catch(() => '')
-      const err = new Error(`${provider.label} stream error ${res.status}: ${errText.slice(0, 200)}`)
+      // Same fix as streamClaude above — always actually read the body
+      // for the real error text instead of the inverted `res.body ? '' : ...`
+      // that discarded it whenever a body was present (i.e. almost always).
+      const errText = await res.text().catch(() => '')
+      const err = new Error(`${provider.label} stream error ${res.status}: ${errText.slice(0, 300)}`)
       if ((res.status === 429 || isQuotaExhaustedError(err)) && i < keys.length - 1) {
         lastError = err
         continue
