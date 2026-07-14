@@ -130,9 +130,12 @@ export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
     label: 'Qwen (Alibaba)',
     apiKeyEnv: 'DASHSCOPE_API_KEY',
     baseURL: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
-    // DashScope's compatible-mode endpoint supports enable_thinking for
-    // Qwen3-based snapshots of qwen-plus, returning reasoning_content.
-    defaultModel: 'qwen-plus',
+    // Must be a "-vl-" (vision-language) model, NOT plain "qwen-plus" —
+    // qwen-plus is text-only and silently can't see the diagram image
+    // despite this provider being marked supportsVision below. qwen-vl-plus
+    // handles both text-only and vision requests fine, so it's safe to use
+    // for every pipeline stage, not just extraction.
+    defaultModel: 'qwen-vl-plus',
     supportsVision: true,
     supportsReasoning: true,
   },
@@ -1097,6 +1100,35 @@ async function* streamChatCompletions(
 
 /* ---- Claude (Anthropic Messages API) ---- */
 
+/** Splits a `data:<mime>;base64,<payload>` string into Anthropic's shape. */
+function parseDataUrlImage(dataUrl: string): { mediaType: string; data: string } {
+  const match = /^data:([^;]+);base64,(.+)$/.exec(dataUrl)
+  return match ? { mediaType: match[1], data: match[2] } : { mediaType: 'image/png', data: dataUrl }
+}
+
+/**
+ * Anthropic's Messages API takes image + text as separate content blocks,
+ * not a plain string — a message with an attached image MUST be converted
+ * to this shape or Claude never receives the image at all and silently
+ * answers as if it were text-only (this was the actual bug behind the
+ * diagram-extraction agent producing garbage/hallucinated output whenever
+ * Claude was the active provider: the image was being dropped on the floor
+ * before the request ever left the server).
+ */
+function toClaudeMessage(m: ChatMessage): { role: string; content: unknown } {
+  if (m.image) {
+    const { mediaType, data } = parseDataUrlImage(m.image)
+    return {
+      role: m.role,
+      content: [
+        { type: 'image', source: { type: 'base64', media_type: mediaType, data } },
+        { type: 'text', text: m.content },
+      ],
+    }
+  }
+  return { role: m.role, content: m.content }
+}
+
 async function callClaude(
   provider: ProviderConfig,
   messages: ChatMessage[],
@@ -1109,7 +1141,7 @@ async function callClaude(
   const system = messages.filter((m) => m.role === 'system').map((m) => m.content).join('\n')
   const conv = messages
     .filter((m) => m.role !== 'system')
-    .map((m) => ({ role: m.role, content: m.content }))
+    .map(toClaudeMessage)
 
   const body: Record<string, unknown> = {
     model,
@@ -1161,7 +1193,7 @@ async function* streamClaude(
   const system = messages.filter((m) => m.role === 'system').map((m) => m.content).join('\n')
   const conv = messages
     .filter((m) => m.role !== 'system')
-    .map((m) => ({ role: m.role, content: m.content }))
+    .map(toClaudeMessage)
 
   const body: Record<string, unknown> = {
     model,

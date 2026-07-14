@@ -128,7 +128,15 @@ export async function GET(
             run.finalQA ? JSON.parse(run.finalQA) : []
           )
         } else {
-          emitStage('extraction', 'error', run.errorMessage ?? 'Pipeline previously failed')
+          // Older failed runs (from before failedStage existed) won't
+          // have this set — 'extraction' remains a reasonable fallback
+          // for those, but any run that fails from now on reports the
+          // stage it actually failed at.
+          const validStages: StageId[] = ['extraction', 'generation', 'answering', 'verification', 'results']
+          const stage = validStages.includes(run.failedStage as StageId)
+            ? (run.failedStage as StageId)
+            : 'extraction'
+          emitStage(stage, 'error', run.errorMessage ?? 'Pipeline previously failed')
         }
         controller.close()
         return
@@ -141,6 +149,13 @@ export async function GET(
       const userId = run.userId ?? undefined
       const questionCount = run.questionCount ?? 4
       const mcqOnly = run.mcqOnly === true
+
+      // Tracks which stage is actually in flight so a failure can be
+      // attributed correctly. Previously the catch block always reported
+      // errors against 'extraction' regardless of which stage actually
+      // threw — if verification failed, the UI would misleadingly show
+      // extraction as the broken stage.
+      let currentStage: StageId = 'extraction'
 
       emitLog(
         'extraction',
@@ -158,6 +173,7 @@ export async function GET(
           emitLog('extraction', 'info', 'Loaded diagram extraction from cache')
           emitStage('extraction', 'done', 'Diagram parsed (cached)', extraction)
         } else {
+          currentStage = 'extraction'
           emitStage('extraction', 'running', 'Vision agent parsing diagram…')
           extraction = await runExtraction(
             imageDataUrl,
@@ -189,6 +205,7 @@ export async function GET(
           emitLog('generation', 'info', `Loaded ${questions.length} generated questions from cache`)
           emitStage('generation', 'done', `${questions.length} questions generated (cached)`, questions)
         } else {
+          currentStage = 'generation'
           emitStage('generation', 'running', `Generating ${bloomLevel}-level questions…`)
           questions = await runGeneration(
             extraction,
@@ -220,6 +237,7 @@ export async function GET(
           emitLog('answering', 'info', `Loaded ${answers.length} independent answers from cache`)
           emitStage('answering', 'done', `${answers.length} answers produced (cached)`, answers)
         } else {
+          currentStage = 'answering'
           emitStage('answering', 'running', 'Answering independently from the diagram…')
           answers = await runAnswering(
             extraction,
@@ -251,6 +269,7 @@ export async function GET(
           const vStatus: StageStatus = rejected.length > 0 ? 'flagged' : 'done'
           emitStage('verification', vStatus, 'Verification complete (cached)', verdicts)
         } else {
+          currentStage = 'verification'
           emitStage('verification', 'running', 'Verifying Q&A pairs…')
           verdicts = await runVerification(
             extraction,
@@ -279,6 +298,7 @@ export async function GET(
         }
 
         /* ---- Curation / Results ---- */
+        currentStage = 'results'
         emitLog('results', 'info', 'Curating verified question set…')
         const finalQA: FinalQAItem[] = curateFinalQA(questions, answers, verdicts)
         // Small beat so the UI can show the "curating" state, matching
@@ -323,20 +343,21 @@ export async function GET(
         emitLog('results', 'success', `Pipeline complete — ${finalQA.length} curated Q&A items`)
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Unknown pipeline error'
-        console.error(`[pipeline ${runId}] failed:`, err)
+        console.error(`[pipeline ${runId}] failed at ${currentStage}:`, err)
         await db.run
           .update({
             where: { id: runId },
             data: {
               status: 'failed',
               errorMessage: message,
+              failedStage: currentStage,
               completedAt: new Date(),
               durationMs: run.startedAt ? Date.now() - run.startedAt.getTime() : null,
             },
           })
           .catch((dbErr) => console.error(`[pipeline ${runId}] failed to persist error:`, dbErr))
-        emitLog('extraction', 'error', `Pipeline failed: ${message}`)
-        emitStage('extraction', 'error', message)
+        emitLog(currentStage, 'error', `Pipeline failed: ${message}`)
+        emitStage(currentStage, 'error', message)
       } finally {
         controller.close()
       }

@@ -58,6 +58,11 @@ model Run {
   verification String?
   finalQA      String?
   errorMessage String?
+  /// Which pipeline stage was actually in flight when the run failed
+  /// (extraction/generation/answering/verification/results). Used so a
+  /// reconnecting client sees the error attributed to the right stage
+  /// instead of always defaulting to "extraction".
+  failedStage  String?
   startedAt    DateTime?
   completedAt  DateTime?
   durationMs   Int?

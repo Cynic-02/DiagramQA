@@ -119,6 +119,51 @@ async function streamAgentCall(
   return { content, reasoning: reasoningLines, provider, model }
 }
 
+/**
+ * Calls the model and parses its response as JSON, retrying the whole
+ * call (not just the parse) up to `maxAttempts` times if the response
+ * isn't valid JSON.
+ *
+ * This is the single biggest reliability gap the pipeline had: every
+ * stage calls extractJson() on a fresh, non-deterministic model
+ * response, and a model occasionally wraps its JSON in stray prose,
+ * truncates mid-object, or otherwise returns something extractJson
+ * can't parse — a normal, expected failure mode for LLM output, not an
+ * exceptional one. Previously any single malformed response failed the
+ * ENTIRE run outright with no recovery, even though simply asking the
+ * model again almost always succeeds (it's a stochastic resample, not
+ * a repeat of the same broken output). Now it retries in place and
+ * only fails the stage (and therefore the run) if every attempt in a
+ * row comes back unparseable.
+ */
+async function callAndParseJson<T>(
+  messages: ChatMessage[],
+  options: ChatOptions,
+  emit: Emit,
+  maxAttempts = 3
+): Promise<{ parsed: T; result: Awaited<ReturnType<typeof streamAgentCall>> }> {
+  let lastError: unknown
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const result = await streamAgentCall(messages, options, emit)
+    try {
+      const parsed = extractJson<T>(result.content)
+      return { parsed, result }
+    } catch (err) {
+      lastError = err
+      const reason = err instanceof Error ? err.message : 'invalid JSON'
+      if (attempt < maxAttempts) {
+        emit(
+          'warn',
+          `Model response wasn't valid JSON (${reason}) — retrying (${attempt}/${maxAttempts - 1})…`
+        )
+      }
+    }
+  }
+  throw lastError instanceof Error
+    ? lastError
+    : new Error('Model did not return valid JSON after retries')
+}
+
 /* ------------------------------------------------------------------ */
 /* 1. Extraction Agent (Vision)                                        */
 /* ------------------------------------------------------------------ */
@@ -139,7 +184,7 @@ export async function runExtraction(
     if (override) prompt = override.prompt
   }
 
-  const result = await streamAgentCall(
+  const { parsed } = await callAndParseJson<ExtractionOutput>(
     [
       { role: 'system', content: 'Output only raw JSON.' },
       { role: 'user', content: prompt, image: dataUrl },
@@ -147,9 +192,6 @@ export async function runExtraction(
     { reasoning: true, provider: providerId, userId },
     emit
   )
-
-  const raw = result.content
-  const parsed = extractJson<ExtractionOutput>(raw)
 
   // Normalise + guard
   const entities = (parsed.entities ?? []).slice(0, 18).map((e, i) => ({
@@ -250,7 +292,7 @@ Every question MUST be a multiple-choice question with EXACTLY 4 options.
     .replaceAll('{{JSON_SHAPE}}', jsonShape)
     .replaceAll('{{ID_EXAMPLES}}', `${idExamples}${count > 4 ? ', … up to q' + count : ''}`)
 
-  const response = await streamAgentCall(
+  const { parsed } = await callAndParseJson<GeneratedQuestion[]>(
     [
       { role: 'system', content: 'Output only a raw JSON array.' },
       { role: 'user', content: prompt },
@@ -259,8 +301,6 @@ Every question MUST be a multiple-choice question with EXACTLY 4 options.
     emit
   )
 
-  const raw = response.content
-  const parsed = extractJson<GeneratedQuestion[]>(raw)
 
   const valid = new Set(extraction.entities.map((e) => e.id))
   const questions = (Array.isArray(parsed) ? parsed : [])
@@ -360,7 +400,7 @@ option's text as your "answer".`
     .replaceAll('{{MCQ_INSTRUCTIONS}}', mcqInstructions)
     .replaceAll('{{MCQ_OPTION}}', hasMcq ? ', "selectedOptionIndex": 0' : '')
 
-  const response = await streamAgentCall(
+  const { parsed } = await callAndParseJson<GeneratedAnswer[]>(
     [
       { role: 'system', content: 'Output only a raw JSON array.' },
       { role: 'user', content: prompt },
@@ -368,9 +408,6 @@ option's text as your "answer".`
     { reasoning: true, provider: providerId, userId },
     emit
   )
-
-  const raw = response.content
-  const parsed = extractJson<GeneratedAnswer[]>(raw)
 
   const answers: GeneratedAnswer[] = (Array.isArray(parsed) ? parsed : []).map(
     (a) => ({
@@ -443,7 +480,7 @@ export async function runVerification(
     }, null, 2))
     .replaceAll('{{PAIRS}}', JSON.stringify(pairs, null, 2))
 
-  const response = await streamAgentCall(
+  const { parsed } = await callAndParseJson<VerificationVerdict[]>(
     [
       { role: 'system', content: 'Output only a raw JSON array.' },
       { role: 'user', content: prompt },
@@ -451,9 +488,6 @@ export async function runVerification(
     { reasoning: true, provider: providerId, userId },
     emit
   )
-
-  const raw = response.content
-  const parsed = extractJson<VerificationVerdict[]>(raw)
 
   const verdicts: VerificationVerdict[] = (Array.isArray(parsed) ? parsed : []).map(
     (v) => ({
