@@ -11,6 +11,7 @@ import { toast } from 'sonner'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Card } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
@@ -96,6 +97,9 @@ export default function ApiKeysSettingsPage() {
                 <p className="font-bold text-foreground">1. How many API keys are needed?</p>
                 <p className="text-muted-foreground text-[11px] mt-0.5">
                   Just **ONE**. Add a key for OpenAI, Anthropic, Gemini, GLM, Qwen, or OpenRouter — every one of those can read the diagram image, so the whole pipeline (all agents) runs on that single key automatically. You never pick a provider or model yourself; the console does that for you.
+                </p>
+                <p className="text-muted-foreground text-[11px] mt-1">
+                  Want more headroom? You can add **more than one key for the same provider** — paste each on its own line in the key field. If one hits its rate limit mid-run, the pipeline automatically rotates to the next one instead of failing.
                 </p>
               </div>
               
@@ -349,14 +353,21 @@ function BuiltInProviderCard({
         </div>
       ) : (
         <div className="mt-3 space-y-2">
-          <Input
-            type="password"
+          <Textarea
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
-            placeholder={provider.hasOwnKey ? 'New API key (replaces the saved one)' : 'API key'}
-            className="h-9 text-xs"
+            placeholder={
+              provider.hasOwnKey
+                ? 'New key(s) — replaces the saved one(s). Add more than one, one per line, to auto-rotate when one hits its rate limit.'
+                : 'API key. To add more than one for automatic rotation, put each on its own line.'
+            }
+            className="min-h-16 text-xs"
             autoComplete="off"
+            spellCheck={false}
           />
+          <p className="text-[10px] text-muted-foreground">
+            Add multiple keys (one per line, or comma-separated) for the same provider — if one hits its rate limit mid-run, the pipeline automatically moves to the next.
+          </p>
           <Input
             value={model}
             onChange={(e) => setModel(e.target.value)}
@@ -501,7 +512,15 @@ function CustomProviderForm({
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs">API key</Label>
-            <Input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="sk-…" className="h-9" autoComplete="off" required />
+            <Textarea
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              placeholder="sk-… (add more than one, one per line, to auto-rotate when one hits its rate limit)"
+              className="min-h-16 text-xs"
+              autoComplete="off"
+              spellCheck={false}
+              required
+            />
           </div>
           <div className="flex items-center justify-end gap-2 pt-1">
             <Button type="button" variant="outline" size="sm" onClick={onClose}>Cancel</Button>
@@ -649,13 +668,13 @@ function CustomProviderCard({
             <Input value={model} onChange={(e) => setModel(e.target.value)} placeholder="Default model" className="h-9 text-xs" />
           </div>
           <Input value={baseURL} onChange={(e) => setBaseURL(e.target.value)} placeholder="Base URL" className="h-9 text-xs" />
-          <Input
-            type="password"
+          <Textarea
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
-            placeholder="New API key (leave blank to keep current)"
-            className="h-9 text-xs"
+            placeholder="New key(s) — leave blank to keep current. Add more than one, one per line, to auto-rotate when one hits its rate limit."
+            className="min-h-16 text-xs"
             autoComplete="off"
+            spellCheck={false}
           />
           <div className="flex items-center gap-2">
             <Button size="sm" className="h-8 gap-1.5 text-xs" onClick={save} disabled={saving}>

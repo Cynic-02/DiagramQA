@@ -223,9 +223,20 @@ function getEnvKeysForProvider(provider: ProviderConfig): string[] {
   return splitKeys(raw)
 }
 
+/**
+ * Splits a raw stored/submitted key string into individual keys for
+ * rotation. Accepts commas, semicolons, or newlines as separators (or
+ * any mix) so a user pasting multiple keys — one per line, the natural
+ * way to paste a list — works the same as the platform's own comma-
+ * separated env-var convention. This is the sole mechanism behind "add
+ * multiple keys for one provider so if one is exhausted another takes
+ * over": every provider call already iterates this array and moves to
+ * the next key on a 429/quota error, so a user's own keys rotate the
+ * exact same way the built-in ones do.
+ */
 function splitKeys(value: string): string[] {
   return value
-    .split(',')
+    .split(/[,;\n]+/)
     .map((k) => k.trim())
     .filter(Boolean)
 }
