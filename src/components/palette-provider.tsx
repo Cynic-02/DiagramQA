@@ -46,7 +46,10 @@ export const PALETTE_META: Record<PaletteKey, { label: string; swatch: string }>
   terracotta_earth: { label: 'Terracotta Earth', swatch: '#c1633b' },
   cotton_candy: { label: 'Cotton Candy', swatch: '#ff9ecb' },
   lavender_haze: { label: 'Lavender Haze', swatch: '#a78bfa' },
-  lattice: { label: 'Lattice', swatch: '#2438c8' },
+  // Swatch is the moss-green secondary, not the ultramarine primary:
+  // Lattice's primary sits too close to Monad's #2b59d1 to tell apart
+  // at swatch size, and green is unique in the light row.
+  lattice: { label: 'Lattice', swatch: '#4e7a5c' },
   sunset_pop: { label: 'Sunset Pop', swatch: '#ff6b4a' },
   royal_purple: { label: 'Royal Purple', swatch: '#a855f7' },
   ocean_teal: { label: 'Ocean Teal', swatch: '#00b4a6' },

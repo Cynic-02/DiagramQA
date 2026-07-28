@@ -975,13 +975,13 @@
   --sidebar-active-glow: 0 0 15px color-mix(in srgb, var(--primary) 18%, transparent);
 }
 
-/* Lattice — Swiss-technical / lab-notebook. Cool paper ground,
-   ultramarine primary, moss green as the "verified/read" signal and a
-   restrained amber for highlights. Ported from themes/lattice-tutorial-series.html
-   so the standalone theme and the app share one set of seed colors. */
+/* Lattice — lab-notebook / graph-paper. Warm cream paper ground with an
+   ultramarine grid, moss green as the "verified/read" signal and a
+   restrained amber for highlights. Ported from public/themes/lattice.html.
+   All fg/bg pairs verified >= 4.5:1 (WCAG AA normal text). */
 [data-theme="light"][data-palette="lattice"] {
-  --bg: #eaeef4; --surface: #ffffff; --primary: #2438c8; --secondary: #4e7a5c;
-  --accent: #c8871a; --text: #16202e; --muted-text: #5a6a7d; --ink: #101a26;
+  --bg: #f2ece1; --surface: #fffcf5; --primary: #2438c8; --secondary: #4e7a5c;
+  --accent: #c8871a; --text: #241f18; --muted-text: #6b5f4e; --ink: #1a1610;
   --muted: color-mix(in srgb, var(--ink) 6%, transparent);
 
   --background: var(--bg);
@@ -1251,12 +1251,13 @@
   --sidebar-active-glow: 0 0 15px color-mix(in srgb, var(--primary) 22%, transparent);
 }
 
-/* Lattice Dim — the dim counterpart to the light Lattice palette.
-   Same structural logic, lifted to a cool slate ground with a
-   periwinkle primary so the ultramarine stays legible on dark. */
+/* Lattice Dim — the dim counterpart. Same logic on a warm dark-paper
+   ground (not slate) so it reads as the lights-off version of the cream
+   sheet rather than a different theme. Periwinkle primary keeps the
+   ultramarine legible on dark. All pairs verified >= 4.5:1. */
 [data-theme="dark"][data-palette="lattice_dim"] {
-  --bg: #0e1420; --surface: #17202f; --primary: #8ea0ff; --secondary: #7fb08d;
-  --accent: #e0b155; --text: #dfe7f2; --muted-text: #8494a8; --ink: #070b12;
+  --bg: #17140f; --surface: #211c15; --primary: #8ea0ff; --secondary: #7fb08d;
+  --accent: #e0b155; --text: #ece4d6; --muted-text: #a1917c; --ink: #0d0b07;
   --muted: color-mix(in srgb, white 6%, transparent);
 
   --background: var(--bg);
@@ -1314,4 +1315,83 @@
 body {
   background:
     radial-gradient(circle at 22% 18%, color-mix(in srgb, var(--primary) 22%, var(--bg, var(--background))) 0%, var(--bg, var(--background)) 55%);
+}
+
+/* ============================================================
+   Lattice — texture + typography
+   The other palettes are colour-only. Lattice additionally carries the
+   graph-paper ground and the serif/mono pairing that define it, scoped
+   entirely to [data-palette="lattice"|"lattice_dim"] so no other palette
+   is affected. Delete this block to reduce Lattice to colour only.
+   ============================================================ */
+
+/* --- graph-paper ground ---
+   Two superimposed grids: a fine 24px rule and a heavier 120px rule,
+   both tinted from --primary so they re-colour with the palette.
+   Higher specificity than the shared `body` rule above, so it wins
+   regardless of source order. */
+[data-palette="lattice"] body {
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(to right,  color-mix(in srgb, var(--primary)  9%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--primary)  9%, transparent) 1px, transparent 1px),
+    linear-gradient(to right,  color-mix(in srgb, var(--primary) 16%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--primary) 16%, transparent) 1px, transparent 1px);
+  background-size: 24px 24px, 24px 24px, 120px 120px, 120px 120px;
+  background-position: -1px -1px;
+}
+
+[data-palette="lattice_dim"] body {
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(to right,  color-mix(in srgb, var(--primary) 10%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--primary) 10%, transparent) 1px, transparent 1px),
+    linear-gradient(to right,  color-mix(in srgb, var(--primary) 18%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--primary) 18%, transparent) 1px, transparent 1px);
+  background-size: 24px 24px, 24px 24px, 120px 120px, 120px 120px;
+  background-position: -1px -1px;
+}
+
+/* --- serif / mono pairing ---
+   No webfont is loaded: these are system stacks, so the palette stays
+   dependency-free and cannot block first paint. Source Serif 4 and IBM
+   Plex Mono are listed first and will be used if the app ever loads them.
+   Deliberately scoped to headings and prose only — pushing serif onto
+   buttons, inputs and tables would fight the product UI. */
+[data-palette="lattice"],
+[data-palette="lattice_dim"] {
+  --font-lattice-serif: 'Source Serif 4', ui-serif, Georgia, 'Iowan Old Style', 'Palatino Linotype', serif;
+  --font-lattice-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, 'Cascadia Mono', Menlo, Consolas, monospace;
+}
+
+[data-palette="lattice"] h1,
+[data-palette="lattice"] h2,
+[data-palette="lattice"] h3,
+[data-palette="lattice"] h4,
+[data-palette="lattice"] blockquote,
+[data-palette="lattice"] .prose,
+[data-palette="lattice_dim"] h1,
+[data-palette="lattice_dim"] h2,
+[data-palette="lattice_dim"] h3,
+[data-palette="lattice_dim"] h4,
+[data-palette="lattice_dim"] blockquote,
+[data-palette="lattice_dim"] .prose {
+  font-family: var(--font-lattice-serif);
+  letter-spacing: -0.011em;
+}
+
+[data-palette="lattice"] code,
+[data-palette="lattice"] pre,
+[data-palette="lattice"] kbd,
+[data-palette="lattice_dim"] code,
+[data-palette="lattice_dim"] pre,
+[data-palette="lattice_dim"] kbd {
+  font-family: var(--font-lattice-mono);
+}
+
+/* Cards and panels sit ON the paper, so they stay flat and opaque —
+   otherwise the grid shows through them and the whole page reads noisy. */
+[data-palette="lattice"] .palette-swatch,
+[data-palette="lattice_dim"] .palette-swatch {
+  background-clip: padding-box;
 }

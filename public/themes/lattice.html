@@ -10,29 +10,30 @@
 <style>
 /* ===========================================================
    LATTICE — theme tokens
-   Swiss-technical / lab-notebook. Light default, dim mode.
-   Grotesque for structure, serif for prose, mono for code.
+   Lab-notebook: warm cream paper, ultramarine grid. Light default,
+   dim mode. Grotesque for structure, serif for prose, mono for code.
    =========================================================== */
 :root {
   color-scheme: light;
-  --paper:       #f6f7fa;
-  --surface:     #ffffff;
-  --panel:       #edf0f6;
-  --code-bg:     #f1f4f9;
-  --ink:         #0e1117;
-  --ink-2:       #3f4a5b;
-  --ink-3:       #7a8598;
-  --rule:        #d9dfe9;
-  --rule-2:      #e9edf4;
-  --grid:        rgba(15, 23, 42, 0.045);
+  --paper:       #f2ece1;
+  --surface:     #fffcf5;
+  --panel:       #ebe3d5;
+  --code-bg:     #efe8db;
+  --ink:         #241f18;
+  --ink-2:       #574e40;
+  --ink-3:       #6b5f4e;
+  --rule:        #ddd3c2;
+  --rule-2:      #eae2d4;
+  --grid:        rgba(36, 56, 200, 0.07);
   --accent:      #2438c8;
   --accent-2:    #1a2a9e;
   --accent-wash: rgba(36, 56, 200, 0.08);
   --ok:          #17694a;
   --ok-wash:     rgba(23, 105, 74, 0.10);
   --gold:        #b57d12;
+  --gold-ink:    #8a5d08;
   --warn:        #b4441f;
-  --shadow:      rgba(15, 23, 42, 0.09);
+  --shadow:      rgba(60, 45, 25, 0.10);
 
   --sans:  "Archivo", "Helvetica Neue", Arial, sans-serif;
   --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
@@ -42,22 +43,23 @@
 
 [data-theme="dim"] {
   color-scheme: dark;
-  --paper:       #0c0f15;
-  --surface:     #11151d;
-  --panel:       #161c26;
-  --code-bg:     #131924;
-  --ink:         #e3e8f0;
-  --ink-2:       #a6b1c2;
-  --ink-3:       #6d7889;
-  --rule:        #232b38;
-  --rule-2:      #1a212c;
-  --grid:        rgba(148, 163, 184, 0.05);
+  --paper:       #17140f;
+  --surface:     #211c15;
+  --panel:       #29231a;
+  --code-bg:     #1e1911;
+  --ink:         #ece4d6;
+  --ink-2:       #c0b3a0;
+  --ink-3:       #a1917c;
+  --rule:        #332c22;
+  --rule-2:      #251f17;
+  --grid:        rgba(142, 160, 255, 0.06);
   --accent:      #8ea0ff;
   --accent-2:    #6f84f5;
   --accent-wash: rgba(142, 160, 255, 0.12);
   --ok:          #4fbf8b;
   --ok-wash:     rgba(79, 191, 139, 0.12);
   --gold:        #e2b551;
+  --gold-ink:    #e2b551;
   --warn:        #f08262;
   --shadow:      rgba(0, 0, 0, 0.45);
 }
@@ -812,7 +814,7 @@ ol, ul { list-style: none; }
 .kw  { color: var(--accent-2); font-weight: 500; }
 .str { color: var(--ok); }
 .cm  { color: var(--ink-3); font-style: italic; }
-.lit { color: var(--gold); }
+.lit { color: var(--gold-ink); }
 [data-theme="dim"] .kw { color: var(--accent); }
 
 /* ============ Live playground ============ */
@@ -999,7 +1001,7 @@ ol, ul { list-style: none; }
   font-family: var(--mono); font-size: 9px; letter-spacing: .1em; text-transform: uppercase;
   padding: 2px 7px; border-radius: 999px; border: 1px solid var(--accent); color: var(--accent); background: var(--accent-wash);
 }
-.badge.ed { border-color: var(--gold); color: var(--gold); background: transparent; }
+.badge.ed { border-color: var(--gold); color: var(--gold-ink); background: transparent; }
 .cmt-text { font-family: var(--serif); font-size: 15.5px; line-height: 1.55; color: var(--ink-2); }
 .cmt-text code { font-family: var(--mono); font-size: .82em; background: var(--code-bg); border: 1px solid var(--rule-2); border-radius: 3px; padding: 1px 5px; color: var(--accent-2); }
 [data-theme="dim"] .cmt-text code { color: var(--accent); }
