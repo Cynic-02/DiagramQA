@@ -975,6 +975,64 @@
   --sidebar-active-glow: 0 0 15px color-mix(in srgb, var(--primary) 18%, transparent);
 }
 
+/* Lattice — Swiss-technical / lab-notebook. Cool paper ground,
+   ultramarine primary, moss green as the "verified/read" signal and a
+   restrained amber for highlights. Ported from themes/lattice-tutorial-series.html
+   so the standalone theme and the app share one set of seed colors. */
+[data-theme="light"][data-palette="lattice"] {
+  --bg: #eaeef4; --surface: #ffffff; --primary: #2438c8; --secondary: #4e7a5c;
+  --accent: #c8871a; --text: #16202e; --muted-text: #5a6a7d; --ink: #101a26;
+  --muted: color-mix(in srgb, var(--ink) 6%, transparent);
+
+  --background: var(--bg);
+  --foreground: var(--text);
+  --card: var(--surface);
+  --card-foreground: var(--text);
+  --popover: var(--surface);
+  --popover-foreground: var(--text);
+  --primary-foreground: #ffffff;
+  --secondary-foreground: #ffffff;
+  --muted-foreground: var(--muted-text);
+  --accent-foreground: var(--ink);
+  --destructive: #ef4444;
+  --border: var(--ink);
+  --input: var(--ink);
+  --ring: var(--primary);
+
+  --chart-1: var(--primary); --chart-2: var(--secondary); --chart-3: var(--accent);
+  --chart-4: color-mix(in srgb, var(--primary) 60%, var(--accent));
+  --chart-5: color-mix(in srgb, var(--secondary) 60%, var(--primary));
+
+  --sidebar: var(--surface); --sidebar-foreground: var(--text);
+  --sidebar-primary: var(--primary); --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: color-mix(in srgb, var(--ink) 6%, transparent);
+  --sidebar-accent-foreground: var(--text);
+  --sidebar-border: var(--ink); --sidebar-ring: var(--primary);
+
+  --text-primary: var(--text);
+  --text-secondary: var(--muted-text);
+  --text-muted: color-mix(in srgb, var(--muted-text) 75%, transparent);
+
+  --shadow-sm: 0 2px 8px color-mix(in srgb, var(--ink) 12%, transparent);
+  --shadow-md: 0 4px 20px color-mix(in srgb, var(--ink) 16%, transparent);
+  --shadow-lg: 0 10px 30px color-mix(in srgb, var(--ink) 20%, transparent);
+  --shadow-red: 0 0 var(--glow-radius) color-mix(in srgb, var(--primary) var(--glow-opacity), transparent);
+
+  --bg-panel: color-mix(in srgb, var(--bg) var(--card-fill-opacity), transparent);
+  --bg-elevated: color-mix(in srgb, var(--bg) 55%, transparent);
+  --border-panel: var(--ink);
+  --border-strong: var(--ink);
+  --accent-muted: color-mix(in srgb, var(--accent) 10%, transparent);
+
+  --diagram-coral: var(--secondary);
+  --diagram-sky: var(--primary);
+  --diagram-mint: var(--secondary);
+  --diagram-gold: var(--accent);
+  --diagram-line: color-mix(in srgb, var(--ink) 20%, transparent);
+  --diagram-node-bg: var(--surface);
+  --sidebar-active-glow: 0 0 15px color-mix(in srgb, var(--primary) 18%, transparent);
+}
+
 /* ---- Dark palettes ---- */
 
 [data-theme="dark"][data-palette="sunset_pop"] {
@@ -1187,6 +1245,63 @@
   --diagram-coral: var(--secondary);
   --diagram-sky: var(--accent);
   --diagram-mint: var(--primary);
+  --diagram-gold: var(--accent);
+  --diagram-line: color-mix(in srgb, var(--primary) 22%, transparent);
+  --diagram-node-bg: var(--surface);
+  --sidebar-active-glow: 0 0 15px color-mix(in srgb, var(--primary) 22%, transparent);
+}
+
+/* Lattice Dim — the dim counterpart to the light Lattice palette.
+   Same structural logic, lifted to a cool slate ground with a
+   periwinkle primary so the ultramarine stays legible on dark. */
+[data-theme="dark"][data-palette="lattice_dim"] {
+  --bg: #0e1420; --surface: #17202f; --primary: #8ea0ff; --secondary: #7fb08d;
+  --accent: #e0b155; --text: #dfe7f2; --muted-text: #8494a8; --ink: #070b12;
+  --muted: color-mix(in srgb, white 6%, transparent);
+
+  --background: var(--bg);
+  --foreground: var(--text);
+  --card: var(--surface);
+  --card-foreground: var(--text);
+  --popover: var(--surface);
+  --popover-foreground: var(--text);
+  --primary-foreground: var(--ink);
+  --secondary-foreground: var(--ink);
+  --muted-foreground: var(--muted-text);
+  --accent-foreground: var(--ink);
+  --destructive: #e05a5a;
+  --border: var(--ink);
+  --input: var(--ink);
+  --ring: var(--primary);
+
+  --chart-1: var(--primary); --chart-2: var(--secondary); --chart-3: var(--accent);
+  --chart-4: color-mix(in srgb, var(--primary) 60%, var(--accent));
+  --chart-5: color-mix(in srgb, var(--secondary) 60%, var(--primary));
+
+  --sidebar: var(--surface); --sidebar-foreground: var(--text);
+  --sidebar-primary: var(--primary); --sidebar-primary-foreground: var(--ink);
+  --sidebar-accent: color-mix(in srgb, white 6%, transparent);
+  --sidebar-accent-foreground: var(--text);
+  --sidebar-border: var(--ink); --sidebar-ring: var(--primary);
+
+  --text-primary: var(--text);
+  --text-secondary: var(--muted-text);
+  --text-muted: color-mix(in srgb, var(--muted-text) 75%, transparent);
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 8px 30px rgba(0, 0, 0, 0.42);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.55);
+  --shadow-red: 0 0 var(--glow-radius) color-mix(in srgb, var(--primary) var(--glow-opacity), transparent);
+
+  --bg-panel: color-mix(in srgb, var(--bg) var(--card-fill-opacity), transparent);
+  --bg-elevated: color-mix(in srgb, var(--bg) 60%, transparent);
+  --border-panel: var(--ink);
+  --border-strong: var(--ink);
+  --accent-muted: color-mix(in srgb, var(--accent) 10%, transparent);
+
+  --diagram-coral: var(--secondary);
+  --diagram-sky: var(--primary);
+  --diagram-mint: var(--secondary);
   --diagram-gold: var(--accent);
   --diagram-line: color-mix(in srgb, var(--primary) 22%, transparent);
   --diagram-node-bg: var(--surface);

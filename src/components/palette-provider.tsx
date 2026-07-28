@@ -6,7 +6,7 @@ import { useTheme } from 'next-themes'
 /**
  * Layer 2 of the Neo-Brutal Aurora two-layer theme system: PALETTE.
  * Within whichever mode (light/dark) is active, the user picks from
- * that mode's own 4 palettes. Each mode remembers its own last-picked
+ * that mode's own palette set. Each mode remembers its own last-picked
  * palette independently — switching mode never resets the other
  * mode's choice, matching the design spec exactly.
  *
@@ -15,8 +15,8 @@ import { useTheme } from 'next-themes'
  * target the exact combination.
  */
 
-export type LightPalette = 'monad' | 'candy_pop' | 'terracotta_earth' | 'cotton_candy' | 'lavender_haze'
-export type DarkPalette = 'sunset_pop' | 'royal_purple' | 'ocean_teal' | 'fire_and_ice'
+export type LightPalette = 'monad' | 'candy_pop' | 'terracotta_earth' | 'cotton_candy' | 'lavender_haze' | 'lattice'
+export type DarkPalette = 'sunset_pop' | 'royal_purple' | 'ocean_teal' | 'fire_and_ice' | 'lattice_dim'
 export type PaletteKey = LightPalette | DarkPalette
 
 export const LIGHT_PALETTES: LightPalette[] = [
@@ -25,12 +25,14 @@ export const LIGHT_PALETTES: LightPalette[] = [
   'terracotta_earth',
   'cotton_candy',
   'lavender_haze',
+  'lattice',
 ]
 export const DARK_PALETTES: DarkPalette[] = [
   'sunset_pop',
   'royal_purple',
   'ocean_teal',
   'fire_and_ice',
+  'lattice_dim',
 ]
 
 const DEFAULTS = { light: 'monad' as PaletteKey, dark: 'sunset_pop' as PaletteKey }
@@ -44,10 +46,12 @@ export const PALETTE_META: Record<PaletteKey, { label: string; swatch: string }>
   terracotta_earth: { label: 'Terracotta Earth', swatch: '#c1633b' },
   cotton_candy: { label: 'Cotton Candy', swatch: '#ff9ecb' },
   lavender_haze: { label: 'Lavender Haze', swatch: '#a78bfa' },
+  lattice: { label: 'Lattice', swatch: '#2438c8' },
   sunset_pop: { label: 'Sunset Pop', swatch: '#ff6b4a' },
   royal_purple: { label: 'Royal Purple', swatch: '#a855f7' },
   ocean_teal: { label: 'Ocean Teal', swatch: '#00b4a6' },
   fire_and_ice: { label: 'Fire & Ice', swatch: '#00d4ff' },
+  lattice_dim: { label: 'Lattice Dim', swatch: '#8ea0ff' },
 }
 
 interface PaletteContextValue {
@@ -55,7 +59,7 @@ interface PaletteContextValue {
   mode: 'light' | 'dark'
   /** Currently active palette key for the current mode. */
   palette: PaletteKey
-  /** This mode's 4 selectable palette keys, in display order. */
+  /** This mode's selectable palette keys, in display order. */
   options: PaletteKey[]
   setPalette: (key: PaletteKey) => void
 }

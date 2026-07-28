@@ -1,0 +1,2039 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lattice — hands-on series for engineers who build things</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+<style>
+/* ===========================================================
+   LATTICE — theme tokens
+   Swiss-technical / lab-notebook. Light default, dim mode.
+   Grotesque for structure, serif for prose, mono for code.
+   =========================================================== */
+:root {
+  color-scheme: light;
+  --paper:       #f6f7fa;
+  --surface:     #ffffff;
+  --panel:       #edf0f6;
+  --code-bg:     #f1f4f9;
+  --ink:         #0e1117;
+  --ink-2:       #3f4a5b;
+  --ink-3:       #7a8598;
+  --rule:        #d9dfe9;
+  --rule-2:      #e9edf4;
+  --grid:        rgba(15, 23, 42, 0.045);
+  --accent:      #2438c8;
+  --accent-2:    #1a2a9e;
+  --accent-wash: rgba(36, 56, 200, 0.08);
+  --ok:          #17694a;
+  --ok-wash:     rgba(23, 105, 74, 0.10);
+  --gold:        #b57d12;
+  --warn:        #b4441f;
+  --shadow:      rgba(15, 23, 42, 0.09);
+
+  --sans:  "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --mono:  "IBM Plex Mono", "SF Mono", Menlo, monospace;
+  --max:   1240px;
+}
+
+[data-theme="dim"] {
+  color-scheme: dark;
+  --paper:       #0c0f15;
+  --surface:     #11151d;
+  --panel:       #161c26;
+  --code-bg:     #131924;
+  --ink:         #e3e8f0;
+  --ink-2:       #a6b1c2;
+  --ink-3:       #6d7889;
+  --rule:        #232b38;
+  --rule-2:      #1a212c;
+  --grid:        rgba(148, 163, 184, 0.05);
+  --accent:      #8ea0ff;
+  --accent-2:    #6f84f5;
+  --accent-wash: rgba(142, 160, 255, 0.12);
+  --ok:          #4fbf8b;
+  --ok-wash:     rgba(79, 191, 139, 0.12);
+  --gold:        #e2b551;
+  --warn:        #f08262;
+  --shadow:      rgba(0, 0, 0, 0.45);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; scroll-padding-top: 96px; }
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  transition: background .35s ease, color .35s ease;
+  overflow-x: hidden;
+}
+
+/* graph-paper ground — the structural signature of this theme */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 34px 34px;
+  -webkit-mask-image: radial-gradient(ellipse 110% 80% at 50% 0%, #000 15%, transparent 78%);
+  mask-image: radial-gradient(ellipse 110% 80% at 50% 0%, #000 15%, transparent 78%);
+}
+
+a { color: inherit; text-decoration: none; }
+button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; padding: 0; }
+ol, ul { list-style: none; }
+::selection { background: var(--accent); color: #fff; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+.wrap { max-width: var(--max); margin: 0 auto; padding: 0 32px; position: relative; z-index: 1; }
+@media (max-width: 760px) { .wrap { padding: 0 18px; } }
+
+.tick {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.tick.accent { color: var(--accent); }
+.num { font-variant-numeric: tabular-nums; }
+
+/* ============ Masthead ============ */
+.masthead {
+  position: sticky;
+  top: 0;
+  z-index: 90;
+  background: var(--paper);
+  background: color-mix(in srgb, var(--paper) 88%, transparent);
+  backdrop-filter: saturate(180%) blur(12px);
+  -webkit-backdrop-filter: saturate(180%) blur(12px);
+  border-bottom: 1px solid var(--rule);
+}
+.masthead-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 14px 0;
+}
+.brand { display: flex; align-items: center; gap: 11px; }
+.brand-glyph { width: 26px; height: 26px; display: block; }
+.brand-glyph line { stroke: var(--accent); stroke-width: 1.4; }
+.brand-glyph circle { fill: var(--accent); }
+.brand-name {
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: -.02em;
+}
+.brand-sub {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 13px;
+  color: var(--ink-3);
+  padding-left: 11px;
+  border-left: 1px solid var(--rule);
+}
+@media (max-width: 860px) { .brand-sub { display: none; } }
+
+.nav { display: flex; align-items: center; gap: 4px; }
+.nav a {
+  font-size: 13.5px;
+  color: var(--ink-2);
+  padding: 7px 11px;
+  border-radius: 3px;
+  transition: color .18s, background .18s;
+}
+.nav a:hover { color: var(--accent); background: var(--accent-wash); }
+@media (max-width: 900px) { .nav a { display: none; } }
+
+.ctrl {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 6px 11px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  background: var(--surface);
+  transition: border-color .18s, color .18s;
+  margin-left: 8px;
+}
+.ctrl:hover { border-color: var(--accent); color: var(--accent); }
+.ctrl .dotmark { width: 8px; height: 8px; border-radius: 50%; background: var(--ink); }
+[data-theme="dim"] .ctrl .dotmark { background: var(--gold); }
+
+/* index strip */
+.index-strip {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 0 0 10px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.index-strip::-webkit-scrollbar { display: none; }
+.index-strip .sep { color: var(--rule); }
+.index-strip .grow { flex: 1; }
+
+.read-bar {
+  position: absolute;
+  left: 0; bottom: -1px;
+  height: 2px;
+  width: 0;
+  background: var(--accent);
+  transition: width .12s linear;
+}
+
+/* ============ Section scaffolding ============ */
+.sec { padding: 76px 0; border-bottom: 1px solid var(--rule); }
+@media (max-width: 760px) { .sec { padding: 52px 0; } }
+
+.sec-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 40px;
+  align-items: end;
+  padding-bottom: 26px;
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 38px;
+}
+@media (max-width: 860px) { .sec-head { grid-template-columns: 1fr; gap: 22px; } }
+
+.sec-title {
+  font-size: clamp(26px, 3.2vw, 38px);
+  font-weight: 600;
+  letter-spacing: -.03em;
+  line-height: 1.08;
+  margin-top: 12px;
+  max-width: 18ch;
+}
+.sec-title em {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 400;
+  color: var(--accent);
+  letter-spacing: -.01em;
+}
+.sec-deck {
+  font-family: var(--serif);
+  font-size: 16.5px;
+  color: var(--ink-2);
+  max-width: 56ch;
+  margin-top: 14px;
+  line-height: 1.55;
+}
+
+/* ============ Hero ============ */
+.hero { padding: 66px 0 72px; border-bottom: 1px solid var(--rule); }
+.hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  gap: 56px;
+}
+@media (max-width: 980px) { .hero-grid { grid-template-columns: 1fr; gap: 44px; } }
+
+.hero-flag {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 18px;
+  margin-bottom: 22px;
+  border-bottom: 1px solid var(--rule);
+}
+.hero-flag .grow { flex: 1; }
+
+.hero-title {
+  font-size: clamp(40px, 6.4vw, 78px);
+  font-weight: 700;
+  line-height: .97;
+  letter-spacing: -.045em;
+  margin-bottom: 24px;
+}
+.hero-title em {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: -.015em;
+  color: var(--accent);
+}
+.hero-deck {
+  font-family: var(--serif);
+  font-size: 18.5px;
+  line-height: 1.58;
+  color: var(--ink-2);
+  max-width: 54ch;
+  margin-bottom: 30px;
+}
+
+.spec-table {
+  border-top: 1px solid var(--rule);
+  margin-bottom: 28px;
+}
+.spec-row {
+  display: grid;
+  grid-template-columns: 108px minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: baseline;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--rule-2);
+}
+.spec-row .k { font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
+.spec-row .v { font-size: 15px; font-weight: 500; }
+.spec-row .n { font-family: var(--mono); font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+@media (max-width: 560px) { .spec-row { grid-template-columns: 96px 1fr; } .spec-row .n { display: none; } }
+
+.hero-cta { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  border-radius: 3px;
+  font-size: 14px;
+  font-weight: 500;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: #fff;
+  transition: background .18s, border-color .18s, transform .18s;
+}
+[data-theme="dim"] .btn { color: #0c0f15; }
+.btn:hover { background: var(--accent-2); border-color: var(--accent-2); }
+.btn .ar { transition: transform .18s; }
+.btn:hover .ar { transform: translateX(3px); }
+.btn.ghost { background: transparent; color: var(--ink); border-color: var(--rule); }
+.btn.ghost:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-wash); }
+
+/* ledger card — "new chapters this week" */
+.ledger {
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: var(--surface);
+  box-shadow: 0 1px 2px var(--shadow);
+  overflow: hidden;
+  align-self: start;
+}
+.ledger-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--rule);
+  background: var(--panel);
+}
+.ledger-head em { font-family: var(--serif); font-style: italic; font-size: 12.5px; color: var(--ink-3); }
+.ledger-row {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--rule-2);
+  transition: background .18s;
+  cursor: pointer;
+}
+.ledger-row:hover { background: var(--accent-wash); }
+.ledger-row:last-of-type { border-bottom: none; }
+.ledger-row .d { font-family: var(--mono); font-size: 11px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.ledger-row .t { font-size: 14px; line-height: 1.35; }
+.ledger-row .t span { color: var(--ink-3); font-family: var(--serif); font-style: italic; font-size: 13px; }
+.pill {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--rule);
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+.pill.live { color: var(--ok); border-color: var(--ok); background: var(--ok-wash); }
+.pill.soon { color: var(--accent); border-color: var(--accent); background: var(--accent-wash); }
+.ledger-foot {
+  padding: 11px 16px;
+  border-top: 1px solid var(--rule);
+  background: var(--panel);
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+/* ============ Series library (card grid + completion rings) ============ */
+.filters { display: flex; gap: 6px; flex-wrap: wrap; }
+.filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 13px;
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  background: var(--surface);
+  font-size: 13px;
+  color: var(--ink-2);
+  transition: all .18s;
+}
+.filter:hover { border-color: var(--ink-3); }
+.filter.on { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+.filter b { font-family: var(--mono); font-size: 10.5px; font-weight: 500; opacity: .62; }
+
+.lib-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 18px;
+}
+@media (max-width: 560px) { .lib-grid { grid-template-columns: 1fr; } }
+
+.card {
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: var(--surface);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  transition: border-color .2s, box-shadow .2s, transform .2s;
+  position: relative;
+  overflow: hidden;
+}
+.card::after {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 2px;
+  background: var(--accent);
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: transform .28s cubic-bezier(.22,.9,.3,1);
+}
+.card:hover { border-color: var(--ink-3); box-shadow: 0 6px 22px var(--shadow); transform: translateY(-2px); }
+.card:hover::after { transform: scaleY(1); }
+.card.finished::after { background: var(--ok); transform: scaleY(1); }
+
+.card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.card-title {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -.02em;
+  line-height: 1.22;
+  margin-bottom: 7px;
+}
+.card-desc {
+  font-family: var(--serif);
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+.card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  align-items: center;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--rule-2);
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+.card-meta .sep { color: var(--rule); }
+
+/* SVG completion ring */
+.ring { width: 54px; height: 54px; flex: none; transform: rotate(-90deg); }
+.ring .track { fill: none; stroke: var(--rule); stroke-width: 4; }
+.ring .fill {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 4;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1s cubic-bezier(.22,.9,.3,1);
+}
+.ring.done .fill { stroke: var(--ok); }
+.ring-wrap { position: relative; display: grid; place-items: center; }
+.ring-label {
+  position: absolute;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-2);
+}
+.ring-wrap.done .ring-label { color: var(--ok); }
+
+.lib-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  padding-top: 26px;
+  margin-top: 26px;
+  border-top: 1px solid var(--rule);
+  font-size: 13.5px;
+  color: var(--ink-3);
+}
+.link-arrow { color: var(--accent); border-bottom: 1px solid currentColor; padding-bottom: 1px; }
+.link-arrow:hover { opacity: .68; }
+
+/* ============ Series page — prerequisite map ============ */
+.series-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
+  gap: 34px;
+  align-items: start;
+}
+@media (max-width: 980px) { .series-grid { grid-template-columns: 1fr; } }
+
+.map-panel {
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: var(--surface);
+  overflow: hidden;
+}
+.map-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--rule);
+  background: var(--panel);
+}
+.map-head h3 { font-size: 14px; font-weight: 600; letter-spacing: -.01em; }
+
+.map-svg { display: block; width: 100%; height: auto; background: var(--surface); }
+.map-svg .edge {
+  stroke: var(--rule);
+  stroke-width: 1.4;
+  fill: none;
+  transition: stroke .22s, opacity .22s, stroke-width .22s;
+}
+.map-svg .edge.rec { stroke-dasharray: 5 4; }
+.map-svg .edge.hot { stroke: var(--accent); stroke-width: 2.2; opacity: 1; }
+.map-svg .edge.cold { opacity: .12; }
+
+.map-svg .node { cursor: pointer; transition: opacity .22s; }
+.map-svg .node.cold { opacity: .2; }
+.map-svg .node .disc {
+  fill: var(--surface);
+  stroke: var(--ink-3);
+  stroke-width: 1.4;
+  transition: fill .22s, stroke .22s, stroke-width .22s, r .22s;
+}
+.map-svg .node.read .disc { fill: var(--ok); stroke: var(--ok); }
+.map-svg .node.here .disc { fill: var(--accent); stroke: var(--accent); }
+.map-svg .node.hot .disc { stroke: var(--accent); stroke-width: 2.6; }
+.map-svg .node .idx {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 500;
+  fill: var(--ink-2);
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+}
+.map-svg .node.read .idx, .map-svg .node.here .idx { fill: var(--surface); }
+[data-theme="dim"] .map-svg .node.read .idx,
+[data-theme="dim"] .map-svg .node.here .idx { fill: #0c0f15; }
+.map-svg .node .cap {
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 500;
+  fill: var(--ink-2);
+  text-anchor: middle;
+  pointer-events: none;
+}
+.map-svg .node.read .cap, .map-svg .node.here .cap { fill: var(--ink); }
+.map-svg .arrow { fill: var(--rule); transition: fill .22s, opacity .22s; }
+.map-svg .arrow.hot { fill: var(--accent); }
+.map-svg .arrow.cold { opacity: .12; }
+
+.map-readout {
+  border-top: 1px solid var(--rule);
+  padding: 14px 16px;
+  min-height: 86px;
+  background: var(--panel);
+}
+.map-readout h4 { font-size: 14.5px; font-weight: 600; letter-spacing: -.01em; margin-bottom: 8px; }
+.map-readout .lines { display: grid; gap: 5px; }
+.map-readout .line { display: grid; grid-template-columns: 82px minmax(0, 1fr); gap: 12px; font-size: 13px; align-items: baseline; }
+.map-readout .line b { font-family: var(--mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); font-weight: 500; }
+.map-readout .line span { color: var(--ink-2); }
+.map-readout .idle { font-family: var(--serif); font-style: italic; color: var(--ink-3); font-size: 14px; }
+
+.map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 11px 16px;
+  border-top: 1px solid var(--rule);
+  font-size: 11.5px;
+  color: var(--ink-3);
+}
+.map-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 11px; height: 11px; border-radius: 50%; border: 1.4px solid var(--ink-3); }
+.sw.read { background: var(--ok); border-color: var(--ok); }
+.sw.here { background: var(--accent); border-color: var(--accent); }
+.sw.ln { width: 16px; height: 0; border-radius: 0; border: none; border-top: 1.6px solid var(--ink-3); }
+.sw.ln.dash { border-top-style: dashed; }
+
+/* chapter list */
+.ch-panel { position: sticky; top: 108px; }
+@media (max-width: 980px) { .ch-panel { position: static; } }
+.ch-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding-bottom: 11px;
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 2px;
+}
+.ch-row {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 11px 8px 11px 0;
+  border-bottom: 1px solid var(--rule-2);
+  cursor: pointer;
+  transition: background .18s, padding .18s;
+}
+.ch-row:hover { background: var(--accent-wash); padding-left: 8px; padding-right: 8px; }
+.ch-row .i { font-family: var(--mono); font-size: 11px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.ch-row .t { font-size: 14.5px; }
+.ch-row .s { font-family: var(--mono); font-size: 9.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
+.ch-row.read .s { color: var(--ok); }
+.ch-row.here .t { color: var(--accent); font-weight: 600; }
+.ch-row.here .s { color: var(--accent); }
+.ch-row.here .i { color: var(--accent); }
+
+/* ============ Chapter page ============ */
+.chapter-head { padding: 66px 0 34px; border-bottom: 1px solid var(--rule); margin-bottom: 44px; }
+.crumbs { display: flex; flex-wrap: wrap; gap: 9px; align-items: baseline; margin-bottom: 16px; }
+.crumbs .sep { color: var(--rule); }
+.chapter-title {
+  font-size: clamp(32px, 4.8vw, 56px);
+  font-weight: 700;
+  letter-spacing: -.04em;
+  line-height: 1.03;
+  max-width: 20ch;
+  margin-bottom: 16px;
+}
+.chapter-title em { font-family: var(--serif); font-style: italic; font-weight: 400; letter-spacing: -.012em; color: var(--accent); }
+.byline { font-size: 13.5px; color: var(--ink-3); }
+.byline b { color: var(--ink); font-weight: 500; }
+
+.chapter-layout {
+  display: grid;
+  grid-template-columns: 216px minmax(0, 1fr);
+  gap: 56px;
+  align-items: start;
+}
+@media (max-width: 980px) { .chapter-layout { grid-template-columns: 1fr; gap: 30px; } }
+
+.rail { position: sticky; top: 108px; }
+@media (max-width: 980px) { .rail { position: static; } }
+.rail-block { margin-bottom: 26px; }
+.rail-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  padding-bottom: 9px;
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 8px;
+}
+.toc li a {
+  display: block;
+  font-size: 13px;
+  color: var(--ink-2);
+  padding: 6px 0 6px 12px;
+  border-left: 2px solid transparent;
+  line-height: 1.35;
+  transition: color .18s, border-color .18s;
+}
+.toc li a:hover { color: var(--accent); }
+.toc li.on a { color: var(--accent); border-left-color: var(--accent); font-weight: 500; }
+
+.checklist li {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  gap: 9px;
+  align-items: start;
+  padding: 6px 0;
+  font-size: 12.8px;
+  color: var(--ink-2);
+  line-height: 1.4;
+}
+.box {
+  width: 13px; height: 13px;
+  margin-top: 3px;
+  border: 1.4px solid var(--ink-3);
+  border-radius: 2px;
+  position: relative;
+  transition: background .22s, border-color .22s;
+}
+.checklist li.on .box { background: var(--ok); border-color: var(--ok); }
+.checklist li.on .box::after {
+  content: '';
+  position: absolute;
+  left: 3.6px; top: .6px;
+  width: 4px; height: 8px;
+  border: solid var(--surface);
+  border-width: 0 1.6px 1.6px 0;
+  transform: rotate(43deg);
+}
+[data-theme="dim"] .checklist li.on .box::after { border-color: #0c0f15; }
+.checklist li.on { color: var(--ink-3); }
+.checklist li.on .txt { text-decoration: line-through; text-decoration-color: var(--rule); }
+.checklist li em { display: block; font-family: var(--serif); font-style: italic; font-size: 11.5px; color: var(--ink-3); }
+.checklist li.pop .box { background: var(--gold); border-color: var(--gold); animation: pop .45s ease; }
+@keyframes pop { 0%,100% { transform: scale(1); } 45% { transform: scale(1.45); } }
+
+.done-btn {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 3px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  transition: all .2s;
+}
+.done-btn:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+.done-btn.on { background: transparent; color: var(--ok); border-color: var(--ok); }
+
+/* prose */
+.prose { max-width: 700px; font-family: var(--serif); font-size: 18.5px; line-height: 1.7; color: var(--ink); }
+.prose h3 {
+  font-family: var(--sans);
+  font-size: 25px;
+  font-weight: 600;
+  letter-spacing: -.028em;
+  line-height: 1.16;
+  margin: 46px 0 14px;
+  scroll-margin-top: 108px;
+}
+.prose h3 .s {
+  display: block;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: .14em;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+.prose p { margin-bottom: 20px; }
+.prose p.lead::first-letter {
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 56px;
+  float: left;
+  line-height: .84;
+  padding: 5px 9px 0 0;
+  color: var(--accent);
+}
+.prose code {
+  font-family: var(--mono);
+  font-size: .8em;
+  background: var(--code-bg);
+  border: 1px solid var(--rule-2);
+  border-radius: 3px;
+  padding: 1px 5px;
+  color: var(--accent-2);
+}
+[data-theme="dim"] .prose code { color: var(--accent); }
+.prose strong { font-weight: 600; }
+
+.note {
+  border-left: 2px solid var(--accent);
+  background: var(--accent-wash);
+  padding: 16px 18px;
+  margin: 28px 0;
+  border-radius: 0 3px 3px 0;
+  font-size: 16.5px;
+  line-height: 1.55;
+}
+.note b {
+  display: block;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+/* ============ Code surfaces ============ */
+.slab { border: 1px solid var(--rule); border-radius: 4px; overflow: hidden; margin: 28px 0; background: var(--surface); }
+.slab-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 9px 14px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--rule);
+}
+.slab-bar .file { font-family: var(--mono); font-size: 11.5px; color: var(--ink-2); }
+.slab-bar .lang { font-family: var(--mono); font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
+.slab pre {
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.62;
+  padding: 15px 16px;
+  overflow-x: auto;
+  background: var(--code-bg);
+  color: var(--ink);
+  white-space: pre;
+  tab-size: 2;
+}
+.kw  { color: var(--accent-2); font-weight: 500; }
+.str { color: var(--ok); }
+.cm  { color: var(--ink-3); font-style: italic; }
+.lit { color: var(--gold); }
+[data-theme="dim"] .kw { color: var(--accent); }
+
+/* ============ Live playground ============ */
+.pg { border: 1px solid var(--rule); border-radius: 4px; overflow: hidden; margin: 30px 0; background: var(--surface); }
+.pg-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 10px 14px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--rule);
+  flex-wrap: wrap;
+}
+.pg-bar .title { font-size: 13.5px; font-weight: 600; letter-spacing: -.01em; }
+.pg-bar .title em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var(--ink-3); font-size: 13px; }
+.live-dot {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--mono); font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--ok);
+}
+.live-dot i { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); display: block; animation: blip 2.2s ease-in-out infinite; }
+@keyframes blip { 0%,100% { opacity: 1; } 50% { opacity: .25; } }
+
+.pg-split { display: grid; grid-template-columns: 1fr 1fr; }
+@media (max-width: 760px) { .pg-split { grid-template-columns: 1fr; } }
+
+.pg-pane { display: flex; flex-direction: column; min-width: 0; }
+.pg-pane + .pg-pane { border-left: 1px solid var(--rule); }
+@media (max-width: 760px) { .pg-pane + .pg-pane { border-left: none; border-top: 1px solid var(--rule); } }
+.pane-label {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  padding: 7px 14px;
+  border-bottom: 1px solid var(--rule-2);
+  background: var(--surface);
+  display: flex;
+  justify-content: space-between;
+}
+.pg-input {
+  flex: 1;
+  width: 100%;
+  min-height: 300px;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.62;
+  padding: 14px 16px;
+  background: var(--code-bg);
+  color: var(--ink);
+  border: none;
+  outline: none;
+  resize: vertical;
+  white-space: pre;
+  tab-size: 2;
+}
+.pg-out {
+  flex: 1;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.62;
+  padding: 14px 16px;
+  color: var(--ink-2);
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-x: auto;
+}
+.pg-out .ln { display: block; }
+.pg-out .ln::before { content: '› '; color: var(--ink-3); }
+.pg-out .ln.obj { color: var(--accent-2); }
+[data-theme="dim"] .pg-out .ln.obj { color: var(--accent); }
+.pg-out.err { color: var(--warn); }
+.pg-out .empty { font-family: var(--serif); font-style: italic; color: var(--ink-3); }
+.pg-foot {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  padding: 8px 14px; border-top: 1px solid var(--rule); background: var(--panel);
+}
+
+/* ============ Diff widget (before → after crossfade) ============ */
+.diff { border: 1px solid var(--rule); border-radius: 4px; overflow: hidden; margin: 30px 0; background: var(--surface); }
+.diff-bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;
+  padding: 10px 14px; background: var(--panel); border-bottom: 1px solid var(--rule);
+}
+.diff-bar .title { font-size: 13.5px; font-weight: 600; letter-spacing: -.01em; }
+.diff-toggle {
+  display: inline-flex;
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  overflow: hidden;
+  background: var(--surface);
+}
+.diff-toggle button {
+  padding: 6px 14px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  transition: background .2s, color .2s;
+}
+.diff-toggle button.on { background: var(--accent); color: #fff; }
+[data-theme="dim"] .diff-toggle button.on { color: #0c0f15; }
+
+.diff-stage { display: grid; position: relative; }
+.diff-pane {
+  grid-area: 1 / 1;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.68;
+  background: var(--code-bg);
+  transition: opacity .42s ease, transform .42s cubic-bezier(.22,.9,.3,1), filter .42s ease;
+}
+.diff[data-state="before"] .diff-pane.after { opacity: 0; transform: translateY(14px); filter: blur(3px); pointer-events: none; }
+.diff[data-state="after"]  .diff-pane.before { opacity: 0; transform: translateY(-14px); filter: blur(3px); pointer-events: none; }
+
+.dl { display: grid; grid-template-columns: 34px minmax(0, 1fr); }
+.dl .g {
+  text-align: right; padding: 2px 9px; color: var(--ink-3); font-size: 10.5px;
+  background: var(--surface); border-right: 1px solid var(--rule-2);
+  font-variant-numeric: tabular-nums; user-select: none;
+}
+.dl .c { padding: 2px 14px; white-space: pre; overflow-x: auto; }
+.dl.del { background: rgba(180, 68, 31, .09); }
+.dl.del .c { color: var(--warn); }
+.dl.del .g::after { content: '−'; margin-left: 4px; color: var(--warn); }
+.dl.ins { background: var(--ok-wash); }
+.dl.ins .c { color: var(--ok); }
+.dl.ins .g::after { content: '+'; margin-left: 4px; color: var(--ok); }
+
+.diff-foot { padding: 9px 14px; border-top: 1px solid var(--rule); background: var(--panel); font-size: 12.5px; color: var(--ink-3); }
+.diff-foot em { font-family: var(--serif); font-style: italic; }
+
+/* ============ Next up ============ */
+.nextup { background: var(--panel); border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); padding: 40px 0; }
+.nextup-grid { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 26px; align-items: end; }
+@media (max-width: 700px) { .nextup-grid { grid-template-columns: 1fr; } }
+.nextup h3 { font-size: 25px; font-weight: 600; letter-spacing: -.03em; margin: 8px 0 6px; }
+.nextup h3 em { font-family: var(--serif); font-style: italic; font-weight: 400; color: var(--accent); }
+.nextup p { font-size: 13.5px; color: var(--ink-3); }
+
+/* ============ Comments ============ */
+.disc-grid { display: grid; grid-template-columns: 216px minmax(0, 1fr); gap: 56px; }
+@media (max-width: 980px) { .disc-grid { grid-template-columns: 1fr; gap: 28px; } }
+.disc-side { position: sticky; top: 108px; align-self: start; }
+@media (max-width: 980px) { .disc-side { position: static; } }
+.disc-side h3 { font-size: 15px; font-weight: 600; margin-bottom: 8px; letter-spacing: -.01em; }
+.disc-side p { font-family: var(--serif); font-size: 13.5px; color: var(--ink-3); line-height: 1.5; margin-bottom: 14px; }
+.house li {
+  font-family: var(--serif); font-style: italic; font-size: 12.8px; color: var(--ink-3);
+  padding: 5px 0 5px 14px; position: relative;
+}
+.house li::before { content: '—'; position: absolute; left: 0; color: var(--accent); font-style: normal; }
+.house { border-top: 1px solid var(--rule); padding-top: 12px; }
+
+.compose { display: grid; grid-template-columns: 36px minmax(0,1fr); gap: 12px; padding-bottom: 26px; margin-bottom: 28px; border-bottom: 1px solid var(--rule); }
+.av {
+  width: 36px; height: 36px; border-radius: 3px;
+  display: grid; place-items: center;
+  font-size: 12px; font-weight: 600; letter-spacing: -.01em;
+  background: var(--panel); color: var(--ink-2); border: 1px solid var(--rule);
+}
+.av.me { background: var(--accent); color: #fff; border-color: var(--accent); }
+[data-theme="dim"] .av.me { color: #0c0f15; }
+.compose textarea {
+  width: 100%; min-height: 82px; resize: vertical;
+  font-family: var(--serif); font-size: 15.5px; line-height: 1.5;
+  color: var(--ink); background: var(--surface);
+  border: 1px solid var(--rule); border-radius: 3px; padding: 11px 13px; outline: none;
+  transition: border-color .18s;
+}
+.compose textarea:focus { border-color: var(--accent); }
+.compose-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 9px; font-size: 12px; color: var(--ink-3); }
+.send { padding: 7px 15px; border-radius: 3px; background: var(--ink); color: var(--paper); font-family: var(--mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; transition: background .18s; }
+.send:hover { background: var(--accent); color: #fff; }
+
+.threads { display: grid; gap: 24px; }
+.cmt { display: grid; grid-template-columns: 36px minmax(0,1fr); gap: 12px; }
+.cmt-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; margin-bottom: 5px; }
+.cmt-head .who { font-size: 14.5px; font-weight: 600; letter-spacing: -.01em; }
+.cmt-head .when { font-size: 12px; color: var(--ink-3); font-family: var(--mono); }
+.badge {
+  font-family: var(--mono); font-size: 9px; letter-spacing: .1em; text-transform: uppercase;
+  padding: 2px 7px; border-radius: 999px; border: 1px solid var(--accent); color: var(--accent); background: var(--accent-wash);
+}
+.badge.ed { border-color: var(--gold); color: var(--gold); background: transparent; }
+.cmt-text { font-family: var(--serif); font-size: 15.5px; line-height: 1.55; color: var(--ink-2); }
+.cmt-text code { font-family: var(--mono); font-size: .82em; background: var(--code-bg); border: 1px solid var(--rule-2); border-radius: 3px; padding: 1px 5px; color: var(--accent-2); }
+[data-theme="dim"] .cmt-text code { color: var(--accent); }
+.cmt-acts { display: flex; gap: 14px; margin-top: 8px; font-size: 12px; color: var(--ink-3); font-family: var(--mono); }
+.cmt-acts a:hover { color: var(--accent); }
+.replies { margin-top: 16px; padding-left: 20px; border-left: 2px solid var(--rule); display: grid; gap: 16px; }
+.replies .cmt { grid-template-columns: 30px minmax(0,1fr); gap: 10px; }
+.replies .av { width: 30px; height: 30px; font-size: 11px; }
+.replies .cmt-text { font-size: 14.5px; }
+
+/* ============ Celebration ============ */
+.cheer {
+  position: fixed;
+  left: 50%; bottom: 28px;
+  transform: translate(-50%, 160%);
+  z-index: 300;
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 20px 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--gold);
+  border-radius: 5px;
+  box-shadow: 0 14px 44px var(--shadow);
+  transition: transform .55s cubic-bezier(.2,.9,.3,1.25);
+  max-width: min(92vw, 380px);
+}
+.cheer.up { transform: translate(-50%, 0); }
+.cheer svg { width: 42px; height: 42px; flex: none; }
+.cheer svg .ring2 { fill: none; stroke: var(--gold); stroke-width: 2.4; opacity: .35; stroke-dasharray: 132; stroke-dashoffset: 132; }
+.cheer svg .tick2 { fill: none; stroke: var(--gold); stroke-width: 3.6; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 46; stroke-dashoffset: 46; }
+.cheer.up svg .ring2 { animation: draw .7s .1s ease-out forwards; }
+.cheer.up svg .tick2 { animation: draw .5s .45s ease-out forwards; }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+.cheer .ct { font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+.cheer .cs { font-family: var(--mono); font-size: 11.5px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.cheer .x { position: absolute; top: 4px; right: 7px; font-size: 15px; line-height: 1; color: var(--ink-3); padding: 3px; }
+.cheer .x:hover { color: var(--accent); }
+
+/* ============ Colophon ============ */
+.colophon { padding: 46px 0 26px; background: var(--panel); border-top: 1px solid var(--rule); }
+.colo-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 36px; margin-bottom: 30px; }
+@media (max-width: 760px) { .colo-grid { grid-template-columns: 1fr 1fr; gap: 26px; } }
+.colo-grid h4 { font-family: var(--mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); margin-bottom: 10px; font-weight: 500; }
+.colo-grid p { font-family: var(--serif); font-size: 13.5px; color: var(--ink-2); line-height: 1.5; }
+.colo-grid p em { font-style: italic; color: var(--ink); }
+.colo-grid li { padding: 3px 0; font-size: 13px; color: var(--ink-2); }
+.colo-grid li a:hover { color: var(--accent); }
+.colo-foot { border-top: 1px solid var(--rule); padding-top: 15px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+
+/* ============ Motion & touch ============ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  html { scroll-behavior: auto; }
+}
+@media (pointer: coarse) {
+  .card:hover { transform: none; box-shadow: none; }
+  .ch-row:hover, .ledger-row:hover { background: transparent; padding-left: 0; }
+}
+</style>
+</head>
+<body>
+
+<!-- ============ Masthead ============ -->
+<header class="masthead">
+  <div class="wrap">
+    <div class="masthead-row">
+      <div class="brand">
+        <svg class="brand-glyph" viewBox="0 0 26 26" aria-hidden="true">
+          <line x1="13" y1="3" x2="4" y2="13"/><line x1="13" y1="3" x2="22" y2="13"/>
+          <line x1="4" y1="13" x2="13" y2="23"/><line x1="22" y1="13" x2="13" y2="23"/>
+          <line x1="4" y1="13" x2="22" y2="13"/>
+          <circle cx="13" cy="3" r="2.2"/><circle cx="4" cy="13" r="2.2"/>
+          <circle cx="22" cy="13" r="2.2"/><circle cx="13" cy="23" r="2.2"/>
+        </svg>
+        <span class="brand-name">Lattice</span>
+        <span class="brand-sub">series you finish, not feeds you scroll</span>
+      </div>
+      <nav class="nav">
+        <a href="#library">Library</a>
+        <a href="#series">Series map</a>
+        <a href="#chapter">Reading</a>
+        <a href="#discussion">Discussion</a>
+        <button class="ctrl" id="themeBtn" aria-label="Toggle colour mode">
+          <span class="dotmark"></span><span id="themeLabel">dim</span>
+        </button>
+      </nav>
+    </div>
+    <div class="index-strip">
+      <span class="tick">Cycle 04</span><span class="sep">/</span>
+      <span class="tick">Series 12</span><span class="sep">/</span>
+      <span class="tick num">Updated 24 Jul 2026</span>
+      <span class="grow"></span>
+      <span class="tick">Compiled in Singapore &amp; Utrecht</span>
+    </div>
+  </div>
+  <div class="read-bar" id="readBar"></div>
+</header>
+
+<!-- ============ Hero ============ -->
+<section class="hero">
+  <div class="wrap">
+    <div class="hero-grid">
+      <div>
+        <div class="hero-flag">
+          <span class="tick accent">Featured series</span>
+          <span class="grow"></span>
+          <span class="tick num">Ch. 05 / 09 · next drops Thursday</span>
+        </div>
+        <h1 class="hero-title">Build a query<br>engine, <em>one layer<br>at a time.</em></h1>
+        <p class="hero-deck">
+          Nine chapters that start at a raw SQL string and end at a cost-based
+          planner — tokenizer, AST, logical plan, physical operators, joins.
+          Every chapter ships a playground you can edit in place, so the thing
+          you read and the thing you run are never two different programs.
+        </p>
+
+        <div class="spec-table">
+          <div class="spec-row"><span class="k">Author</span><span class="v">Noor Haddad</span><span class="n">Utrecht</span></div>
+          <div class="spec-row"><span class="k">Language</span><span class="v">TypeScript · runs in the page</span><span class="n">no build step</span></div>
+          <div class="spec-row"><span class="k">Length</span><span class="v">9 chapters · 41,800 words</span><span class="n">≈ 3h 20m</span></div>
+          <div class="spec-row"><span class="k">Level</span><span class="v">Intermediate → Advanced</span><span class="n">SQL helpful</span></div>
+        </div>
+
+        <div class="hero-cta">
+          <a class="btn" href="#chapter">Resume at chapter 5 <span class="ar">→</span></a>
+          <a class="btn ghost" href="#series">Open the prerequisite map</a>
+        </div>
+      </div>
+
+      <aside class="ledger">
+        <div class="ledger-head">
+          <span class="tick">New this week</span>
+          <em>five chapters, four series</em>
+        </div>
+        <div class="ledger-row"><span class="d">21 Jul</span><span class="t">Ch. 04 · Logical Plans <span>— Query Engine</span></span><span class="pill live">live</span></div>
+        <div class="ledger-row"><span class="d">22 Jul</span><span class="t">Ch. 11 · Container Queries <span>— Layout</span></span><span class="pill live">live</span></div>
+        <div class="ledger-row"><span class="d">23 Jul</span><span class="t">Ch. 02 · Ring Buffers <span>— Zig by Example</span></span><span class="pill live">live</span></div>
+        <div class="ledger-row"><span class="d">24 Jul</span><span class="t">Ch. 07 · Vector Indexes <span>— Retrieval</span></span><span class="pill soon">today</span></div>
+        <div class="ledger-row"><span class="d">25 Jul</span><span class="t">Ch. 05 · Physical Operators <span>— Query Engine</span></span><span class="pill soon">thu</span></div>
+        <div class="ledger-foot">
+          <span class="tick">Cycle closes 31 Jul</span>
+          <a class="link-arrow" href="#library">all series →</a>
+        </div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<!-- ============ Series library ============ -->
+<section class="sec" id="library">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <span class="tick accent">02 — The library</span>
+        <h2 class="sec-title">Twelve series. <em>Every one has an ending.</em></h2>
+        <p class="sec-deck">
+          A series is a single argument delivered in order, with its prerequisites drawn
+          rather than assumed. Pick one, work through it, close it out.
+        </p>
+      </div>
+      <div class="filters">
+        <button class="filter on">All <b>12</b></button>
+        <button class="filter">Reading <b>4</b></button>
+        <button class="filter">Finished <b>3</b></button>
+        <button class="filter">New <b>2</b></button>
+      </div>
+    </div>
+
+    <div class="lib-grid">
+      <article class="card" data-cat="reading">
+        <div class="card-top">
+          <div>
+            <h3 class="card-title">Build a Query Engine, One Layer at a Time</h3>
+            <p class="card-desc">SQL string in, rows out. Tokenizer through cost-based planning, in runnable TypeScript.</p>
+          </div>
+          <span class="ring-wrap" data-pct="44"><svg class="ring" viewBox="0 0 54 54"><circle class="track" cx="27" cy="27" r="23"/><circle class="fill" cx="27" cy="27" r="23"/></svg><span class="ring-label">44%</span></span>
+        </div>
+        <div class="card-meta"><span>Noor Haddad</span><span class="sep">·</span><span>9 chapters</span><span class="sep">·</span><span>4 read</span></div>
+      </article>
+
+      <article class="card" data-cat="reading">
+        <div class="card-top">
+          <div>
+            <h3 class="card-title">Zig by Example</h3>
+            <p class="card-desc">Allocators, comptime, ring buffers and error unions — written for people arriving from C.</p>
+          </div>
+          <span class="ring-wrap" data-pct="33"><svg class="ring" viewBox="0 0 54 54"><circle class="track" cx="27" cy="27" r="23"/><circle class="fill" cx="27" cy="27" r="23"/></svg><span class="ring-label">33%</span></span>
+        </div>
+        <div class="card-meta"><span>Kenji Aro</span><span class="sep">·</span><span>6 chapters</span><span class="sep">·</span><span>2 read</span></div>
+      </article>
+
+      <article class="card finished" data-cat="finished">
+        <div class="card-top">
+          <div>
+            <h3 class="card-title">Layout: The Modern Box Model</h3>
+            <p class="card-desc">Subgrid, container queries, cascade layers and anchor positioning — one technique per chapter.</p>
+          </div>
+          <span class="ring-wrap done" data-pct="100"><svg class="ring done" viewBox="0 0 54 54"><circle class="track" cx="27" cy="27" r="23"/><circle class="fill" cx="27" cy="27" r="23"/></svg><span class="ring-label">✓</span></span>
+        </div>
+        <div class="card-meta"><span>Priya Raghunathan</span><span class="sep">·</span><span>14 chapters</span><span class="sep">·</span><span>finished</span></div>
+      </article>
+
+      <article class="card" data-cat="reading">
+        <div class="card-top">
+          <div>
+            <h3 class="card-title">Retrieval Systems from Scratch</h3>
+            <p class="card-desc">Inverted indexes, BM25, embeddings and HNSW — with a corpus small enough to reason about.</p>
+          </div>
+          <span class="ring-wrap" data-pct="70"><svg class="ring" viewBox="0 0 54 54"><circle class="track" cx="27" cy="27" r="23"/><circle class="fill" cx="27" cy="27" r="23"/></svg><span class="ring-label">70%</span></span>
+        </div>
+        <div class="card-meta"><span>Ada Mensah</span><span class="sep">·</span><span>10 chapters</span><span class="sep">·</span><span>7 read</span></div>
+      </article>
+
+      <article class="card" data-cat="new">
+        <div class="card-top">
+          <div>
+            <h3 class="card-title">Scheduling, Fairly</h3>
+            <p class="card-desc">Run queues, work stealing and priority inversion, demonstrated with a simulator you can slow down.</p>
+          </div>
+          <span class="ring-wrap" data-pct="0"><svg class="ring" viewBox="0 0 54 54"><circle class="track" cx="27" cy="27" r="23"/><circle class="fill" cx="27" cy="27" r="23"/></svg><span class="ring-label">new</span></span>
+        </div>
+        <div class="card-meta"><span>Tomás Ferreira</span><span class="sep">·</span><span>7 chapters</span><span class="sep">·</span><span>not started</span></div>
+      </article>
+
+      <article class="card finished" data-cat="finished">
+        <div class="card-top">
+          <div>
+            <h3 class="card-title">Bytes, Encodings, and Regret</h3>
+            <p class="card-desc">UTF-8, normalisation, grapheme clusters — and why your string length is a lie in four languages.</p>
+          </div>
+          <span class="ring-wrap done" data-pct="100"><svg class="ring done" viewBox="0 0 54 54"><circle class="track" cx="27" cy="27" r="23"/><circle class="fill" cx="27" cy="27" r="23"/></svg><span class="ring-label">✓</span></span>
+        </div>
+        <div class="card-meta"><span>Ines Halvorsen</span><span class="sep">·</span><span>5 chapters</span><span class="sep">·</span><span>finished</span></div>
+      </article>
+    </div>
+
+    <div class="lib-foot">
+      <span>Showing 6 of 12 series · sorted by last opened.</span>
+      <a class="link-arrow" href="#series">Browse the full library →</a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ Series page ============ -->
+<section class="sec" id="series">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <span class="tick accent">03 — Series map</span>
+        <h2 class="sec-title">Prerequisites, <em>drawn not implied.</em></h2>
+        <p class="sec-deck">
+          Hover any chapter to trace everything it needs and everything it unlocks.
+          Solid edges are required; dashed edges are recommended detours.
+        </p>
+      </div>
+    </div>
+
+    <div class="series-grid">
+      <div class="map-panel">
+        <div class="map-head">
+          <h3>Build a Query Engine · dependency graph</h3>
+          <span class="tick">hover to trace</span>
+        </div>
+        <svg class="map-svg" id="mapSvg" viewBox="0 0 760 520" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Chapter prerequisite graph"></svg>
+        <div class="map-readout" id="mapOut">
+          <p class="idle">Nothing selected — hover a node to see its prerequisites and what it unlocks.</p>
+        </div>
+        <div class="map-legend">
+          <span><i class="sw"></i>locked</span>
+          <span><i class="sw read"></i>read</span>
+          <span><i class="sw here"></i>current</span>
+          <span><i class="sw ln"></i>required</span>
+          <span><i class="sw ln dash"></i>recommended</span>
+        </div>
+      </div>
+
+      <div class="ch-panel">
+        <div class="ch-head">
+          <span class="tick">Chapters</span>
+          <span class="tick num">9 total · 4 read</span>
+        </div>
+        <ol id="chList">
+          <li class="ch-row read" data-id="1"><span class="i">01</span><span class="t">Tokenizer</span><span class="s">read</span></li>
+          <li class="ch-row read" data-id="2"><span class="i">02</span><span class="t">Parser &amp; AST</span><span class="s">read</span></li>
+          <li class="ch-row read" data-id="3"><span class="i">03</span><span class="t">Catalog &amp; Types</span><span class="s">read</span></li>
+          <li class="ch-row read" data-id="4"><span class="i">04</span><span class="t">Logical Plans</span><span class="s">read</span></li>
+          <li class="ch-row here" data-id="5"><span class="i">05</span><span class="t">Physical Operators</span><span class="s">reading</span></li>
+          <li class="ch-row" data-id="6"><span class="i">06</span><span class="t">Volcano Execution</span><span class="s">locked</span></li>
+          <li class="ch-row" data-id="7"><span class="i">07</span><span class="t">Predicate Pushdown</span><span class="s">locked</span></li>
+          <li class="ch-row" data-id="8"><span class="i">08</span><span class="t">Join Algorithms</span><span class="s">locked</span></li>
+          <li class="ch-row" data-id="9"><span class="i">09</span><span class="t">Cost-Based Planning</span><span class="s">locked</span></li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ Chapter ============ -->
+<section id="chapter">
+  <div class="wrap">
+    <header class="chapter-head">
+      <div class="crumbs">
+        <span class="tick">Build a Query Engine</span><span class="sep">/</span>
+        <span class="tick num">Chapter 05 of 09</span><span class="sep">/</span>
+        <span class="tick num">4,100 words</span>
+      </div>
+      <h1 class="chapter-title">Physical operators, <em>and the pull they answer to.</em></h1>
+      <p class="byline">By <b>Noor Haddad</b> · published 25 July 2026 · revised twice · reviewed by K. Aro</p>
+    </header>
+
+    <div class="chapter-layout">
+      <aside class="rail">
+        <div class="rail-block">
+          <div class="rail-label">On this page</div>
+          <ul class="toc" id="toc">
+            <li class="on"><a href="#s1">Plans are not programs</a></li>
+            <li><a href="#s2">The operator contract</a></li>
+            <li><a href="#s3">Run it yourself</a></li>
+            <li><a href="#s4">Materialise, then stop</a></li>
+            <li><a href="#s5">What to build next</a></li>
+          </ul>
+        </div>
+        <div class="rail-block">
+          <div class="rail-label">Progress</div>
+          <ul class="checklist" id="checklist">
+            <li class="on"><i class="box"></i><span class="txt">Read the opening</span></li>
+            <li class="on"><i class="box"></i><span class="txt">Read through §2</span></li>
+            <li><i class="box"></i><span class="txt">Edit the playground</span></li>
+            <li><i class="box"></i><span class="txt">Apply the §4 refactor</span></li>
+            <li id="autoItem"><i class="box"></i><span class="txt">Finish the chapter<em>auto at 80% scroll</em></span></li>
+          </ul>
+        </div>
+        <div class="rail-block">
+          <button class="done-btn" id="doneBtn">Mark chapter complete</button>
+        </div>
+      </aside>
+
+      <article class="prose" id="prose">
+        <h3 id="s1"><span class="s">§ 01</span>Plans are not programs</h3>
+        <p class="lead">By the end of chapter 4 you had a logical plan: a small tree of nodes that says <em>what</em> the query wants. <code>Filter</code> sits above <code>Scan</code>, <code>Project</code> sits above <code>Filter</code>, and none of them say a single word about how any of it will actually happen. That vagueness is deliberate. A logical plan is a claim about results; it is not yet a claim about work.</p>
+        <p>A physical operator is where the claim gets paid for. Same shape of tree, but every node now commits to a strategy — this filter evaluates a compiled predicate, that join builds a hash table on the left input, this scan reads a column slice rather than whole rows. The tree looks similar enough that people confuse the two for weeks. The difference is that you can cost a physical plan and you cannot cost a logical one.</p>
+
+        <h3 id="s2"><span class="s">§ 02</span>The operator contract</h3>
+        <p>Almost every engine written since System R agrees on the same tiny interface, usually called the <strong>Volcano</strong> or iterator model. An operator exposes one method — give me the next row, or tell me you are finished — and it may call that same method on its children as many times as it likes.</p>
+        <p>The consequence is worth stating plainly: <strong>no operator ever knows how big its input is.</strong> It cannot, because its input has not been produced yet. Rows are pulled through the tree one at a time from the top, and memory stays flat no matter how large the table is.</p>
+
+        <div class="slab">
+          <div class="slab-bar"><span class="file">src/exec/operator.ts</span><span class="lang">TypeScript</span></div>
+<pre><span class="cm">// The whole contract. Everything else is an implementation of it.</span>
+<span class="kw">interface</span> Operator&lt;Row&gt; {
+  open():  <span class="kw">void</span>;
+  next():  Row | <span class="kw">null</span>;   <span class="cm">// null == exhausted</span>
+  close(): <span class="kw">void</span>;
+}
+
+<span class="kw">class</span> Filter&lt;Row&gt; <span class="kw">implements</span> Operator&lt;Row&gt; {
+  <span class="kw">constructor</span>(
+    <span class="kw">private</span> input: Operator&lt;Row&gt;,
+    <span class="kw">private</span> pred: (r: Row) =&gt; <span class="kw">boolean</span>,
+  ) {}
+
+  open()  { <span class="kw">this</span>.input.open(); }
+  close() { <span class="kw">this</span>.input.close(); }
+
+  next(): Row | <span class="kw">null</span> {
+    <span class="kw">let</span> r: Row | <span class="kw">null</span>;
+    <span class="kw">while</span> ((r = <span class="kw">this</span>.input.next()) !== <span class="kw">null</span>) {
+      <span class="kw">if</span> (<span class="kw">this</span>.pred(r)) <span class="kw">return</span> r;
+    }
+    <span class="kw">return</span> <span class="kw">null</span>;
+  }
+}</pre>
+        </div>
+
+        <div class="note">
+          <b>Worth noticing</b>
+          <code>Filter</code> has no buffer, no array, and no length. It is pure control flow over somebody else's rows — which is exactly why you can stack forty of them without thinking about memory.
+        </div>
+
+        <h3 id="s3"><span class="s">§ 03</span>Run it yourself</h3>
+        <p>Below is the same model in about twenty lines, using closures instead of classes so it stays readable in a browser. It is live: edit anything and the output recomputes as you type. Try widening the predicate, adding a <code>limit</code> operator that stops after N rows, or projecting a column that does not exist and watching what comes back.</p>
+
+        <div class="pg">
+          <div class="pg-bar">
+            <span class="title">Volcano pipeline <em>— pull-based, one row at a time</em></span>
+            <span class="live-dot"><i></i>live</span>
+          </div>
+          <div class="pg-split">
+            <div class="pg-pane">
+              <div class="pane-label"><span>editor</span><span>JavaScript</span></div>
+              <textarea class="pg-input" id="pgIn" spellcheck="false">// Each operator is a function: call it, get a row or null.
+
+const rows = [
+  { id: 1, city: "Lisbon", temp: 19 },
+  { id: 2, city: "Oslo",   temp: 4  },
+  { id: 3, city: "Cairo",  temp: 33 },
+  { id: 4, city: "Dhaka",  temp: 31 },
+];
+
+const scan = (src) => { let i = 0; return () => src[i++] ?? null; };
+
+const filter = (input, pred) => () => {
+  let r;
+  while ((r = input()) !== null) if (pred(r)) return r;
+  return null;
+};
+
+const project = (input, cols) => () => {
+  const r = input();
+  if (r === null) return null;
+  return Object.fromEntries(cols.map(c => [c, r[c]]));
+};
+
+// SELECT city, temp FROM rows WHERE temp > 20
+const plan = project(filter(scan(rows), r => r.temp > 20), ["city", "temp"]);
+
+let row, n = 0;
+while ((row = plan()) !== null) { n++; console.log(row); }
+console.log("rows returned:", n);</textarea>
+            </div>
+            <div class="pg-pane">
+              <div class="pane-label"><span>output</span><span id="pgTime">—</span></div>
+              <div class="pg-out" id="pgOut"></div>
+            </div>
+          </div>
+          <div class="pg-foot">
+            <span class="tick">Runs in a scratch scope · console.log only</span>
+            <span class="tick num" id="pgCount">0 lines</span>
+          </div>
+        </div>
+
+        <p>Notice what did <em>not</em> happen: at no point did the pipeline hold more than one row. Swap <code>scan(rows)</code> for a generator over a four-gigabyte file and every line above still works unchanged. That property — not speed — is the reason the iterator model outlived nearly everything it competed with.</p>
+
+        <h3 id="s4"><span class="s">§ 04</span>Materialise, then stop</h3>
+        <p>The version most people write first builds an array at every stage. It is easier to debug and it is fine at ten rows, but it allocates the entire intermediate result three times before returning anything at all. Flip the toggle below to watch it collapse into the pull-based form.</p>
+
+        <div class="diff" id="diff" data-state="before">
+          <div class="diff-bar">
+            <span class="title">Materialised → streaming <span class="tick" style="margin-left:8px">3 allocations removed</span></span>
+            <span class="diff-toggle">
+              <button class="on" data-state="before">before</button>
+              <button data-state="after">after</button>
+            </span>
+          </div>
+          <div class="diff-stage">
+            <div class="diff-pane before">
+              <div class="dl del"><span class="g">1</span><span class="c">const a   = rows.slice();                 // copy 1</span></div>
+              <div class="dl del"><span class="g">2</span><span class="c">const b   = a.filter(hot);                // copy 2</span></div>
+              <div class="dl del"><span class="g">3</span><span class="c">const out = b.map(r =&gt; pick(r, cols));    // copy 3</span></div>
+              <div class="dl"><span class="g">4</span><span class="c"></span></div>
+              <div class="dl"><span class="g">5</span><span class="c">for (const r of out) emit(r);</span></div>
+              <div class="dl"><span class="g">6</span><span class="c"></span></div>
+              <div class="dl"><span class="g">7</span><span class="c">// peak memory: O(n) — three times over</span></div>
+            </div>
+            <div class="diff-pane after">
+              <div class="dl ins"><span class="g">1</span><span class="c">const plan = project(</span></div>
+              <div class="dl ins"><span class="g">2</span><span class="c">  filter(scan(rows), hot),</span></div>
+              <div class="dl ins"><span class="g">3</span><span class="c">  cols,</span></div>
+              <div class="dl ins"><span class="g">4</span><span class="c">);</span></div>
+              <div class="dl"><span class="g">5</span><span class="c">let r;</span></div>
+              <div class="dl"><span class="g">6</span><span class="c">while ((r = plan()) !== null) emit(r);</span></div>
+              <div class="dl"><span class="g">7</span><span class="c">// peak memory: O(1)</span></div>
+            </div>
+          </div>
+          <div class="diff-foot"><em>Same rows, same order, same predicate.</em> The only thing that changed is when the work happens.</div>
+        </div>
+
+        <p>The streaming version is not automatically faster — for tiny inputs the array version wins, because <code>Array.prototype.filter</code> is a tight loop in C++ and your closure chain is not. It wins on <em>shape</em>: memory stops depending on input size, and the first row arrives before the last row is read. Those two properties are what let a <code>LIMIT 10</code> finish in microseconds on a table with a hundred million rows.</p>
+
+        <h3 id="s5"><span class="s">§ 05</span>What to build next</h3>
+        <p>Three operators are enough to run real queries, and it is worth stopping here to add them before chapter 6 hands you an execution loop that assumes they exist. In rough order of how much you will learn per line written:</p>
+        <p><strong>Limit</strong> — trivial, and the first operator that returns <code>null</code> while its child still has rows. <strong>Sort</strong> — the first one that genuinely must materialise, which makes it the honest counterexample to everything above. <strong>HashAggregate</strong> — builds a map in <code>open()</code>, drains it in <code>next()</code>, and will teach you more about operator lifecycle than any amount of reading.</p>
+        <p>Chapter 6 wires these into a single execution loop and measures where the time actually goes — which, in a pull-based engine, is almost never where you expect.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============ Next up ============ -->
+<section class="nextup">
+  <div class="wrap">
+    <div class="nextup-grid">
+      <div>
+        <span class="tick">Next in this series · chapter 06 of 09</span>
+        <h3>Volcano Execution — <em>where the time actually goes.</em></h3>
+        <p>Publishes 1 August · Noor Haddad · 4,700 words · includes a flame-graph playground</p>
+      </div>
+      <a class="btn ghost" href="#">Reserve the chapter <span class="ar">→</span></a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ Discussion ============ -->
+<section class="sec" id="discussion">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <span class="tick accent">05 — Discussion</span>
+        <h2 class="sec-title">Notes on chapter 5. <em>Nineteen so far.</em></h2>
+      </div>
+    </div>
+
+    <div class="disc-grid">
+      <aside class="disc-side">
+        <h3>How this thread works</h3>
+        <p>Comments are per chapter and read by the author before they appear. We optimise for the person who finds this thread in eight months, not for today's replies.</p>
+        <ul class="house">
+          <li>Quote the section you mean.</li>
+          <li>Code bugs go to errata, not here.</li>
+          <li>Disagree without dismissing.</li>
+        </ul>
+      </aside>
+
+      <div>
+        <div class="compose">
+          <span class="av me">JK</span>
+          <div>
+            <textarea id="composeBox" placeholder="Add a note, a correction, or a question about chapter 5. Markdown supported."></textarea>
+            <div class="compose-foot">
+              <span>Cite a section when you can. Be kind.</span>
+              <button class="send" id="sendBtn">post note</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="threads">
+          <div class="cmt">
+            <span class="av">KA</span>
+            <div>
+              <div class="cmt-head"><span class="who">Kenji Aro</span><span class="badge ed">reviewer</span><span class="when">4 days ago</span></div>
+              <p class="cmt-text">The line about costing a physical plan but not a logical one is the cleanest statement of that distinction I have read. I spent a year thinking they were the same tree with different labels.</p>
+              <div class="cmt-acts"><a href="#">↑ 38</a><a href="#">reply</a><a href="#">cite §1</a></div>
+            </div>
+          </div>
+
+          <div class="cmt">
+            <span class="av">MR</span>
+            <div>
+              <div class="cmt-head"><span class="who">Marta Rus</span><span class="when">2 days ago</span></div>
+              <p class="cmt-text">Question on §3 — the playground version drops <code>open()</code> and <code>close()</code> entirely. Is that only for brevity, or does the closure form genuinely not need a lifecycle?</p>
+              <div class="cmt-acts"><a href="#">↑ 21</a><a href="#">reply</a><a href="#">cite §3</a></div>
+              <div class="replies">
+                <div class="cmt">
+                  <span class="av">NH</span>
+                  <div>
+                    <div class="cmt-head"><span class="who">Noor Haddad</span><span class="badge">author</span><span class="when">2 days ago</span></div>
+                    <p class="cmt-text">Brevity, mostly — but not entirely. A closure over an in-memory array has nothing to acquire or release. The moment a leaf operator holds a file handle or a network cursor, you need <code>open</code>/<code>close</code> back, and you need <code>close</code> to run on the error path too. Chapter 6 adds both.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="cmt">
+            <span class="av">TF</span>
+            <div>
+              <div class="cmt-head"><span class="who">Tomás Ferreira</span><span class="when">1 day ago</span></div>
+              <p class="cmt-text">Mild pushback on §4: "not automatically faster" undersells it. In V8 the closure chain also defeats inline caching once you stack more than a handful of operators, so the crossover point is higher than people assume. Worth a benchmark in chapter 6.</p>
+              <div class="cmt-acts"><a href="#">↑ 16</a><a href="#">reply</a><a href="#">cite §4</a></div>
+            </div>
+          </div>
+
+          <div class="cmt">
+            <span class="av">AM</span>
+            <div>
+              <div class="cmt-head"><span class="who">Ada Mensah</span><span class="when">14 hours ago</span></div>
+              <p class="cmt-text">Adding <code>Limit</code> before reading chapter 6 was good advice. It took four lines and immediately broke my mental model of who is allowed to stop the pipeline.</p>
+              <div class="cmt-acts"><a href="#">↑ 9</a><a href="#">reply</a><a href="#">cite §5</a></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ Colophon ============ -->
+<footer class="colophon">
+  <div class="wrap">
+    <div class="colo-grid">
+      <div>
+        <h4>Colophon</h4>
+        <p>Set in <em>Archivo</em> for structure, <em>Source Serif 4</em> for prose, <em>IBM Plex Mono</em> for code. One HTML file, vanilla CSS and JavaScript — no build step, no framework, no tracking.</p>
+      </div>
+      <div>
+        <h4>Editors</h4>
+        <p><em>Noor Haddad</em>, editor.<br><em>Kenji Aro</em>, technical review.<br>Priya Raghunathan, copy.</p>
+      </div>
+      <div>
+        <h4>Subscribe</h4>
+        <ul>
+          <li><a href="#">RSS · Atom</a></li>
+          <li><a href="#">Email, Thursdays</a></li>
+          <li><a href="#">EPUB edition</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Errata</h4>
+        <p>Found a mistake? <a class="link-arrow" href="#">File a correction.</a> Published each cycle, with credit.</p>
+      </div>
+    </div>
+    <div class="colo-foot">
+      <span class="tick">Lattice · Cycle 04 · 24 July 2026</span>
+      <span class="tick accent">— pull, don't push —</span>
+      <span class="tick">© 2026 Lattice</span>
+    </div>
+  </div>
+</footer>
+
+<!-- ============ Celebration ============ -->
+<div class="cheer" id="cheer" role="status" aria-live="polite">
+  <button class="x" id="cheerX" aria-label="Dismiss">×</button>
+  <svg viewBox="0 0 50 50" aria-hidden="true">
+    <circle class="ring2" cx="25" cy="25" r="21"/>
+    <path class="tick2" d="M 14 26 L 22 34 L 37 16"/>
+  </svg>
+  <div>
+    <div class="ct">Chapter 5 complete</div>
+    <div class="cs" id="cheerSub">5 of 9 · 56% of the series</div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var $  = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------- colour mode ---------- */
+  var root = document.documentElement,
+      themeBtn = $('#themeBtn'),
+      themeLabel = $('#themeLabel');
+
+  function applyTheme(mode) {
+    root.setAttribute('data-theme', mode);
+    themeLabel.textContent = mode === 'dim' ? 'light' : 'dim';
+    try { localStorage.setItem('lattice-theme', mode); } catch (e) {}
+  }
+  try {
+    var saved = localStorage.getItem('lattice-theme');
+    if (saved === 'dim' || saved === 'light') applyTheme(saved);
+  } catch (e) {}
+  themeBtn.addEventListener('click', function () {
+    applyTheme(root.getAttribute('data-theme') === 'dim' ? 'light' : 'dim');
+  });
+
+  /* ---------- reading progress ---------- */
+  var readBar = $('#readBar'), chapterEl = $('#chapter');
+  function updateBar() {
+    if (!chapterEl) return;
+    var r = chapterEl.getBoundingClientRect();
+    var span = r.height - window.innerHeight;
+    var pct = span > 0 ? Math.min(1, Math.max(0, -r.top / span)) : 0;
+    readBar.style.width = (pct * 100).toFixed(2) + '%';
+  }
+  window.addEventListener('scroll', updateBar, { passive: true });
+  window.addEventListener('resize', updateBar);
+  updateBar();
+
+  /* ---------- completion rings ---------- */
+  var CIRC = 2 * Math.PI * 23;
+  $$('.ring-wrap').forEach(function (w) {
+    var fill = $('.fill', w);
+    fill.style.strokeDasharray = CIRC.toFixed(2);
+    fill.style.strokeDashoffset = CIRC.toFixed(2);
+  });
+  function fillRing(w) {
+    var pct = Math.max(0, Math.min(100, parseFloat(w.dataset.pct || '0')));
+    var fill = $('.fill', w);
+    fill.style.strokeDashoffset = (CIRC * (1 - pct / 100)).toFixed(2);
+  }
+  if ('IntersectionObserver' in window) {
+    var ringObs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { fillRing(e.target); ringObs.unobserve(e.target); }
+      });
+    }, { threshold: 0.4 });
+    $$('.ring-wrap').forEach(function (w) { ringObs.observe(w); });
+  } else {
+    $$('.ring-wrap').forEach(fillRing);
+  }
+
+  /* ---------- library filters ---------- */
+  var FILTER_MAP = { 'All': null, 'Reading': 'reading', 'Finished': 'finished', 'New': 'new' };
+  $$('.filter').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      $$('.filter').forEach(function (b) { b.classList.remove('on'); });
+      btn.classList.add('on');
+      var key = (btn.textContent || '').trim().split(/\s+/)[0];
+      var want = FILTER_MAP[key];
+      $$('.lib-grid .card').forEach(function (c) {
+        c.style.display = (!want || c.dataset.cat === want) ? '' : 'none';
+      });
+    });
+  });
+
+  /* ---------- prerequisite map ---------- */
+  var NS = 'http://www.w3.org/2000/svg';
+  var R = 19;
+
+  var NODES = [
+    { id: 1, x: 380, y:  56, label: 'Tokenizer',           state: 'read' },
+    { id: 2, x: 170, y: 158, label: 'Parser & AST',        state: 'read' },
+    { id: 3, x: 590, y: 158, label: 'Catalog & Types',     state: 'read' },
+    { id: 4, x: 380, y: 262, label: 'Logical Plans',       state: 'read' },
+    { id: 5, x: 170, y: 366, label: 'Physical Operators',  state: 'here' },
+    { id: 6, x: 380, y: 366, label: 'Volcano Execution',   state: '' },
+    { id: 7, x: 590, y: 366, label: 'Predicate Pushdown',  state: '' },
+    { id: 8, x: 275, y: 462, label: 'Join Algorithms',     state: '' },
+    { id: 9, x: 500, y: 462, label: 'Cost-Based Planning', state: '' }
+  ];
+
+  var EDGES = [
+    { f: 1, t: 2 }, { f: 1, t: 3 },
+    { f: 2, t: 4 }, { f: 3, t: 4 },
+    { f: 4, t: 5 }, { f: 4, t: 6 }, { f: 4, t: 7 },
+    { f: 3, t: 7, rec: true },
+    { f: 5, t: 6 }, { f: 5, t: 8, rec: true },
+    { f: 6, t: 8 }, { f: 7, t: 9 }, { f: 8, t: 9 }
+  ];
+
+  var byId = {};
+  NODES.forEach(function (n) { byId[n.id] = n; });
+
+  var svg = $('#mapSvg'), mapOut = $('#mapOut');
+  var edgeEls = [], arrowEls = [], nodeEls = {};
+
+  function el(name, attrs, cls) {
+    var e = document.createElementNS(NS, name);
+    Object.keys(attrs).forEach(function (k) { e.setAttribute(k, attrs[k]); });
+    if (cls) e.setAttribute('class', cls);
+    return e;
+  }
+
+  function drawMap() {
+    var gEdges = el('g', {}, 'edges');
+    var gNodes = el('g', {}, 'nodes');
+
+    EDGES.forEach(function (e) {
+      var a = byId[e.f], b = byId[e.t];
+      var dx = b.x - a.x, dy = b.y - a.y;
+      var len = Math.sqrt(dx * dx + dy * dy) || 1;
+      var ux = dx / len, uy = dy / len;
+      var x1 = a.x + ux * (R + 3), y1 = a.y + uy * (R + 3);
+      var x2 = b.x - ux * (R + 10), y2 = b.y - uy * (R + 10);
+
+      var line = el('line', { x1: x1, y1: y1, x2: x2, y2: y2 },
+                    'edge' + (e.rec ? ' rec' : ''));
+      line.dataset.f = e.f; line.dataset.t = e.t;
+      gEdges.appendChild(line);
+      edgeEls.push(line);
+
+      var hx = x2 + ux * 8, hy = y2 + uy * 8;
+      var nx = -uy, ny = ux;
+      var pts = [
+        hx + ',' + hy,
+        (x2 + nx * 4.2) + ',' + (y2 + ny * 4.2),
+        (x2 - nx * 4.2) + ',' + (y2 - ny * 4.2)
+      ].join(' ');
+      var head = el('polygon', { points: pts }, 'arrow');
+      head.dataset.f = e.f; head.dataset.t = e.t;
+      gEdges.appendChild(head);
+      arrowEls.push(head);
+    });
+
+    NODES.forEach(function (n) {
+      var g = el('g', { transform: 'translate(' + n.x + ',' + n.y + ')', tabindex: '0',
+                        role: 'button', 'aria-label': 'Chapter ' + n.id + ': ' + n.label },
+                 'node' + (n.state ? ' ' + n.state : ''));
+      g.dataset.id = n.id;
+      g.appendChild(el('circle', { cx: 0, cy: 0, r: R }, 'disc'));
+      var idx = el('text', { x: 0, y: 0 }, 'idx');
+      idx.textContent = n.id < 10 ? '0' + n.id : String(n.id);
+      g.appendChild(idx);
+      var cap = el('text', { x: 0, y: R + 16 }, 'cap');
+      cap.textContent = n.label;
+      g.appendChild(cap);
+      gNodes.appendChild(g);
+      nodeEls[n.id] = g;
+    });
+
+    svg.appendChild(gEdges);
+    svg.appendChild(gNodes);
+  }
+  drawMap();
+
+  function walk(id, dir) {
+    var seen = {}, queue = [id];
+    while (queue.length) {
+      var cur = queue.shift();
+      EDGES.forEach(function (e) {
+        var from = dir === 'up' ? e.t : e.f;
+        var to   = dir === 'up' ? e.f : e.t;
+        if (from === cur && !seen[to]) { seen[to] = true; queue.push(to); }
+      });
+    }
+    return seen;
+  }
+
+  function directParents(id) { return EDGES.filter(function (e) { return e.t === id; }).map(function (e) { return e.f; }); }
+  function directChildren(id) { return EDGES.filter(function (e) { return e.f === id; }).map(function (e) { return e.t; }); }
+
+  function names(ids) {
+    if (!ids.length) return '—';
+    return ids.sort(function (a, b) { return a - b; })
+              .map(function (i) { return byId[i].label; }).join(', ');
+  }
+
+  var STATE_TEXT = { read: 'read', here: 'currently reading', '': 'not unlocked yet' };
+
+  function trace(id) {
+    id = Number(id);
+    var up = walk(id, 'up'), down = walk(id, 'down');
+    var live = {}; live[id] = true;
+    Object.keys(up).forEach(function (k) { live[k] = true; });
+    Object.keys(down).forEach(function (k) { live[k] = true; });
+
+    NODES.forEach(function (n) {
+      var g = nodeEls[n.id];
+      g.classList.toggle('hot', String(n.id) === String(id));
+      g.classList.toggle('cold', !live[n.id]);
+    });
+    function edgeLive(e) { return live[e.dataset.f] && live[e.dataset.t]; }
+    edgeEls.concat(arrowEls).forEach(function (e) {
+      var on = edgeLive(e);
+      e.classList.toggle('hot', on);
+      e.classList.toggle('cold', !on);
+    });
+
+    $$('.ch-row').forEach(function (row) {
+      row.style.opacity = live[row.dataset.id] ? '' : '.35';
+    });
+
+    var n = byId[id];
+    mapOut.innerHTML =
+      '<h4>' + (n.id < 10 ? '0' + n.id : n.id) + ' · ' + n.label + '</h4>' +
+      '<div class="lines">' +
+        '<div class="line"><b>Requires</b><span>' + names(directParents(id)) + '</span></div>' +
+        '<div class="line"><b>Unlocks</b><span>' + names(directChildren(id)) + '</span></div>' +
+        '<div class="line"><b>Status</b><span>' + STATE_TEXT[n.state] + '</span></div>' +
+      '</div>';
+  }
+
+  function clearTrace() {
+    NODES.forEach(function (n) { nodeEls[n.id].classList.remove('hot', 'cold'); });
+    edgeEls.concat(arrowEls).forEach(function (e) { e.classList.remove('hot', 'cold'); });
+    $$('.ch-row').forEach(function (row) { row.style.opacity = ''; });
+    mapOut.innerHTML = '<p class="idle">Nothing selected — hover a node to see its prerequisites and what it unlocks.</p>';
+  }
+
+  var pinned = null;
+  NODES.forEach(function (n) {
+    var g = nodeEls[n.id];
+    g.addEventListener('mouseenter', function () { if (!pinned) trace(n.id); });
+    g.addEventListener('mouseleave', function () { if (!pinned) clearTrace(); });
+    g.addEventListener('focus', function () { trace(n.id); });
+    g.addEventListener('blur', function () { if (!pinned) clearTrace(); });
+    g.addEventListener('click', function () {
+      if (pinned === n.id) { pinned = null; clearTrace(); }
+      else { pinned = n.id; trace(n.id); }
+    });
+  });
+
+  /* chapter list ↔ map sync */
+  $$('.ch-row').forEach(function (row) {
+    row.addEventListener('mouseenter', function () { if (!pinned) trace(row.dataset.id); });
+    row.addEventListener('mouseleave', function () { if (!pinned) clearTrace(); });
+    row.addEventListener('click', function () {
+      pinned = pinned === row.dataset.id ? null : row.dataset.id;
+      if (pinned) trace(pinned); else clearTrace();
+    });
+  });
+
+  /* ---------- live playground ---------- */
+  var pgIn = $('#pgIn'), pgOut = $('#pgOut'), pgTime = $('#pgTime'), pgCount = $('#pgCount');
+
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  function fmt(v) {
+    if (v === null) return 'null';
+    if (v === undefined) return 'undefined';
+    if (typeof v === 'string') return v;
+    if (typeof v === 'function') return '[function]';
+    try { return JSON.stringify(v); } catch (e) { return String(v); }
+  }
+
+  function runPlayground() {
+    var lines = [], started = performance.now();
+    var shim = {
+      log: function () { lines.push(Array.prototype.map.call(arguments, fmt).join(' ')); },
+      warn: function () { lines.push('warn: ' + Array.prototype.map.call(arguments, fmt).join(' ')); },
+      error: function () { lines.push('error: ' + Array.prototype.map.call(arguments, fmt).join(' ')); }
+    };
+    try {
+      /* eslint-disable no-new-func */
+      new Function('console', '"use strict";\n' + pgIn.value)(shim);
+      var ms = performance.now() - started;
+      pgOut.classList.remove('err');
+      pgOut.innerHTML = lines.length
+        ? lines.map(function (l) {
+            var isObj = /^[{[]/.test(l);
+            return '<span class="ln' + (isObj ? ' obj' : '') + '">' + esc(l) + '</span>';
+          }).join('')
+        : '<span class="empty">no output — call console.log to print something</span>';
+      pgTime.textContent = ms.toFixed(1) + ' ms';
+      pgCount.textContent = lines.length + (lines.length === 1 ? ' line' : ' lines');
+    } catch (err) {
+      pgOut.classList.add('err');
+      pgOut.textContent = '✕ ' + (err && err.message ? err.message : String(err));
+      pgTime.textContent = 'failed';
+      pgCount.textContent = '0 lines';
+    }
+  }
+
+  var pgTimer, pgTouched = false;
+  pgIn.addEventListener('input', function () {
+    clearTimeout(pgTimer);
+    pgTimer = setTimeout(runPlayground, 70);
+    if (!pgTouched) { pgTouched = true; checkItem(2); }
+  });
+  pgIn.addEventListener('keydown', function (e) {
+    if (e.key !== 'Tab') return;
+    e.preventDefault();
+    var s = pgIn.selectionStart, t = pgIn.selectionEnd;
+    pgIn.value = pgIn.value.slice(0, s) + '  ' + pgIn.value.slice(t);
+    pgIn.selectionStart = pgIn.selectionEnd = s + 2;
+    runPlayground();
+  });
+  runPlayground();
+
+  /* ---------- checklist ---------- */
+  var items = $$('#checklist li');
+  function checkItem(i) { if (items[i]) items[i].classList.add('on'); }
+
+  /* ---------- diff widget ---------- */
+  var diff = $('#diff');
+  $$('.diff-toggle button', diff).forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      $$('.diff-toggle button', diff).forEach(function (b) { b.classList.remove('on'); });
+      btn.classList.add('on');
+      diff.dataset.state = btn.dataset.state;
+      if (btn.dataset.state === 'after') checkItem(3);
+    });
+  });
+
+  /* ---------- sticky TOC ---------- */
+  var tocItems = $$('#toc li');
+  var headings = $$('.prose h3');
+  if ('IntersectionObserver' in window && headings.length) {
+    var tocObs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        tocItems.forEach(function (li) {
+          var a = li.querySelector('a');
+          li.classList.toggle('on', !!a && a.getAttribute('href') === '#' + en.target.id);
+        });
+      });
+    }, { rootMargin: '-104px 0px -68% 0px', threshold: 0 });
+    headings.forEach(function (h) { tocObs.observe(h); });
+  }
+
+  /* ---------- completion + celebration ---------- */
+  var prose = $('#prose'), cheer = $('#cheer'), autoItem = $('#autoItem'),
+      doneBtn = $('#doneBtn'), celebrated = false;
+
+  function chime() {
+    if (reduced) return;
+    try {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      var ctx = new AC(), t0 = ctx.currentTime;
+      [[587.33, 0], [880, 0.09], [1174.66, 0.19]].forEach(function (n) {
+        var osc = ctx.createOscillator(), gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = n[0];
+        gain.gain.setValueAtTime(0.0001, t0 + n[1]);
+        gain.gain.exponentialRampToValueAtTime(0.07, t0 + n[1] + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t0 + n[1] + 0.75);
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.start(t0 + n[1]);
+        osc.stop(t0 + n[1] + 0.8);
+      });
+      setTimeout(function () { if (ctx.close) ctx.close(); }, 1400);
+    } catch (e) { /* audio is a nicety, never a requirement */ }
+  }
+
+  function celebrate() {
+    if (celebrated) return;
+    celebrated = true;
+    autoItem.classList.add('on', 'pop');
+    cheer.classList.add('up');
+    chime();
+
+    doneBtn.textContent = '✓ chapter complete';
+    doneBtn.classList.add('on');
+
+    var row = $('.ch-row.here');
+    if (row) { row.querySelector('.s').textContent = 'read'; row.classList.add('read'); }
+
+    var node = nodeEls[5];
+    if (node) { node.classList.remove('here'); node.classList.add('read'); }
+
+    var wrap = $('.lib-grid .ring-wrap');
+    if (wrap) { wrap.dataset.pct = '56'; $('.ring-label', wrap).textContent = '56%'; fillRing(wrap); }
+    var meta = $('.lib-grid .card .card-meta');
+    if (meta) meta.innerHTML = '<span>Noor Haddad</span><span class="sep">·</span><span>9 chapters</span><span class="sep">·</span><span>5 read</span>';
+
+    setTimeout(function () { cheer.classList.remove('up'); }, 6500);
+  }
+
+  function watchScroll() {
+    if (celebrated || !prose) return;
+    var r = prose.getBoundingClientRect();
+    var seen = window.innerHeight - r.top;
+    if (r.height > 0 && seen / r.height >= 0.8) celebrate();
+  }
+  window.addEventListener('scroll', watchScroll, { passive: true });
+
+  doneBtn.addEventListener('click', celebrate);
+  $('#cheerX').addEventListener('click', function () { cheer.classList.remove('up'); });
+
+  /* ---------- compose ---------- */
+  var box = $('#composeBox');
+  $('#sendBtn').addEventListener('click', function () {
+    if (!box.value.trim()) { box.focus(); return; }
+    box.value = '';
+    box.placeholder = 'Thanks — your note is queued for review. It appears once the author reads it.';
+  });
+})();
+</script>
+
+</body>
+</html>

@@ -53,3 +53,7 @@ server.log
 # Skills directory
 /skills/
 .vercel
+
+# local debug scripts - these have contained real API keys in plaintext
+debug-*.ps1
+test-image-b64.txt
