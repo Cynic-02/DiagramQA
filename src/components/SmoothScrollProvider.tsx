@@ -23,10 +23,18 @@ export function SmoothScrollProvider({ children }: { children: React.ReactNode }
     if (reduceMotion) return
 
     const lenis = new Lenis({
-      duration: 1.1,
+      // Was 1.1s. Every wheel tick became a 1.1-second animation, so the
+      // page kept gliding long after the input stopped — which reads as
+      // input lag rather than smoothness, and holds the compositor busy
+      // (re-blurring the sticky chrome) for the whole duration. 0.7s
+      // still smooths the steps without feeling detached from the wheel.
+      duration: 0.7,
       easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), // expo-out
       smoothWheel: true,
       touchMultiplier: 1.4,
+      // Native momentum on touch is already smooth and hardware-driven;
+      // running Lenis on top of it costs frames and fights the OS.
+      syncTouch: false,
     })
 
     let raf = 0

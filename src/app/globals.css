@@ -382,10 +382,19 @@
      lighter blur than content panels since these sit over moving
      content and need to stay legible without a heavy sheen. */
   .glass-chrome {
-    background: color-mix(in srgb, var(--background) 72%, transparent);
-    backdrop-filter: blur(14px) saturate(150%);
-    -webkit-backdrop-filter: blur(14px) saturate(150%);
+    background: color-mix(in srgb, var(--background) 82%, transparent);
+    /* backdrop-filter is re-evaluated every frame the backdrop moves, so
+       it is the single most expensive property on a sticky header. Blur
+       cost scales with radius: 14px -> 10px is a meaningful saving, and
+       dropping saturate() removes a second full pass over the sampled
+       region. The background is raised 72% -> 82% opaque to compensate,
+       so the chrome reads as solid rather than muddy. */
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     border-color: var(--border-panel);
+    /* Own compositing layer so scrolling does not repaint it. */
+    will-change: backdrop-filter;
+    transform: translateZ(0);
   }
 
   .text-balance { text-wrap: balance; }
@@ -562,10 +571,15 @@
 /* ============================================================
    BLOB DRIFT ANIMATION — the ambient orbs' slow organic movement.
    ============================================================ */
+/* Translate-only. These elements carry filter: blur(60px); animating
+   scale() on a blurred element forces the browser to re-rasterize the
+   blurred bitmap every frame, whereas a pure translate can be handled
+   by the compositor from a single cached raster. The drift reads the
+   same, at a fraction of the paint cost. */
 @keyframes hw-blob {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  33%       { transform: translate(28px, -44px) scale(1.07); }
-  66%       { transform: translate(-18px, 18px) scale(0.93); }
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  33%      { transform: translate3d(28px, -44px, 0); }
+  66%      { transform: translate3d(-18px, 18px, 0); }
 }
 
 /* ============================================================
@@ -1446,4 +1460,38 @@ body {
 /* Media should never exceed its column on any device. */
 :where(img, svg, video, canvas, iframe) {
   max-width: 100%;
+}
+
+/* ============================================================
+   COMPOSITING HINTS
+   The ambient orbs each carry filter: blur(60px). Promoting them to
+   their own compositing layer means the blurred bitmap is rasterized
+   once and then only transformed by the GPU, instead of being repainted
+   as the drift animation runs. Paired with the translate-only keyframes
+   above, the orbs become nearly free.
+   ============================================================ */
+.hw-orb-1,
+.hw-orb-2,
+.hw-orb-3 {
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+/* The grain sheet is static and sits above everything at z-9999.
+   Flagging it as its own layer stops it being re-rasterized whenever
+   the content beneath it repaints. */
+.grain-overlay {
+  will-change: opacity;
+  transform: translateZ(0);
+}
+
+/* Respect the OS setting: kill ambient motion entirely rather than
+   merely shortening it. */
+@media (prefers-reduced-motion: reduce) {
+  .hw-orb-1,
+  .hw-orb-2,
+  .hw-orb-3 {
+    animation: none !important;
+    will-change: auto;
+  }
 }

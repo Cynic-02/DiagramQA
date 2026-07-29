@@ -85,8 +85,8 @@ export const metadata: Metadata = {
   },
 };
 
-import { CustomCursor } from "@/components/custom-cursor";
-import { CursorSpotlight } from "@/components/cursor-spotlight";
+// CustomCursor / CursorSpotlight intentionally not imported — see the note
+// in <body> below. Re-add both imports to restore the pointer effects.
 import { HapticFeedbackInitializer } from "@/components/haptic-feedback-initializer";
 import { AuroraBlobs } from "@/components/AuroraBlobs";
 import { SmoothScrollProvider } from "@/components/SmoothScrollProvider";
@@ -107,8 +107,28 @@ export default function RootLayout({
               {/* Film grain texture */}
               <div className="grain-overlay" aria-hidden />
               <AuroraBlobs />
-              <CustomCursor />
-              <CursorSpotlight />
+              {/*
+                CustomCursor and CursorSpotlight removed from the global
+                layout — they were the two largest sources of the "laggy"
+                feel, and both ran on every page:
+
+                CustomCursor set `cursor: none` and replaced the native
+                pointer with a spring-animated div. A JS-drawn cursor is
+                always at least one frame behind the real pointer, so the
+                lag was literally visible on every mouse movement. It also
+                ran el.closest() over a six-selector list on every
+                pointermove, unthrottled.
+
+                CursorSpotlight painted a full-viewport radial-gradient
+                whose centre updated on pointermove, composited with
+                mix-blend-mode: screen. A blend mode over a full-page area
+                forces the browser to re-composite the whole stacking
+                context, so every mouse movement triggered a full-screen
+                repaint plus a full-screen blend.
+
+                The components are kept in the tree; re-mount them here to
+                restore the effect.
+              */}
               <HapticFeedbackInitializer />
               <PageTransition>{children}</PageTransition>
               <Toaster />
