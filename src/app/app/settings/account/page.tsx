@@ -4,10 +4,10 @@ import * as React from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import {
-  User, Mail, KeyRound, ShieldCheck, ArrowLeft, Loader2, Save,
+  User, Mail, KeyRound, Loader2, Save,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { ThemeToggle } from '@/components/theme-toggle'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -93,16 +93,7 @@ export default function AccountSettingsPage() {
   return (
     <div className="relative flex min-h-screen flex-col grid-faint-lighter bg-background text-foreground">
       {/* Nav */}
-      <nav className="sticky top-0 z-50 w-full flex h-14 items-center justify-between border-b border-border/40 bg-background/85 backdrop-blur-md px-4 sm:px-6">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs" asChild>
-            <Link href="/app"><ArrowLeft className="size-3" />Console</Link>
-          </Button>
-          <span className="text-border">/</span>
-          <span className="text-xs text-muted-foreground uppercase font-semibold">Account Settings</span>
-        </div>
-        <ThemeToggle />
-      </nav>
+      <PageHeader title="Account Settings" />
 
       <div className="relative z-10 mx-auto w-full max-w-xl flex-1 p-6 md:p-8">
         {/* Header */}

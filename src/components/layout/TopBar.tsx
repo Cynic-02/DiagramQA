@@ -1,35 +1,43 @@
 'use client'
 
 import * as React from 'react'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { RotateCcw, Menu, Check, X, Loader2, Activity, Home, Bot, KeyRound, LogOut, History, User } from 'lucide-react'
+import { RotateCcw, Menu, Check, X, Loader2, Activity } from 'lucide-react'
 import { STAGES } from '@/lib/types'
 import { usePipelineStore } from '@/lib/store'
 import { BLOOM_META } from '@/lib/bloom'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { ThemeToggle } from '@/components/theme-toggle'
-import { PaletteSwitcher } from '@/components/palette-switcher'
+import { MainNav } from './MainNav'
+import { AppearanceMenu } from './AppearanceMenu'
+import { UserMenu } from './UserMenu'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 
 interface TopBarProps {
   /** Mobile-only: opens the off-canvas sidebar Sheet. */
   onOpenMobileSidebar?: () => void
+  /** Signed-in user's email, shown in the account menu. */
+  email?: string | null
 }
 
 /**
- * Slim sticky top bar inside the console content area.
- * Shows the active stage label + agent, the Bloom-level pill, run status,
- * a "New run" reset button, a LIVE pill while a run is in flight, and
- * (right-most) site navigation + theme toggle + sign out — this is the
- * single top header for the console; it used to be duplicated by a
- * second custom <nav> rendered directly in app/page.tsx, which produced
- * two stacked sticky headers visually overlapping each other.
+ * Sticky console header, organised into three zones.
+ *
+ * It previously ran fifteen controls in a single right-hand cluster —
+ * stage state, run telemetry, five nav links, a theme toggle, six
+ * palette dots and sign out — with no grouping, so everything competed
+ * equally for attention and nothing was findable.
+ *
+ * Now:
+ *   left    context   — stage title and agent
+ *   middle  telemetry — Bloom level, run status, run id, reset
+ *   right   navigation— primary nav, appearance, account
+ *
+ * Telemetry describes the current run, so it belongs beside the stage
+ * it refers to, not beside Sign out. That split alone takes the right
+ * cluster from fifteen items to three.
  */
-export function TopBar({ onOpenMobileSidebar }: TopBarProps) {
-  const router = useRouter()
+export function TopBar({ onOpenMobileSidebar, email }: TopBarProps) {
   const activeStage = usePipelineStore((s) => s.activeStage)
   const bloomLevel = usePipelineStore((s) => s.bloomLevel)
   const running = usePipelineStore((s) => s.running)
@@ -41,14 +49,8 @@ export function TopBar({ onOpenMobileSidebar }: TopBarProps) {
   const active = STAGES.find((s) => s.id === activeStage) ?? STAGES[0]
   const hue = BLOOM_META[bloomLevel].hue
 
-  const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' })
-    router.push('/')
-    router.refresh()
-  }
-
   return (
-    <header className="glass-chrome sticky top-0 z-30 w-full flex h-14 shrink-0 items-center gap-3 border-b px-4 sm:px-6">
+    <header className="glass-chrome sticky top-0 z-30 flex h-14 w-full shrink-0 items-center gap-3 border-b px-4 sm:px-6">
       {/* Mobile sidebar trigger */}
       {onOpenMobileSidebar && (
         <Button
@@ -56,37 +58,38 @@ export function TopBar({ onOpenMobileSidebar }: TopBarProps) {
           variant="ghost"
           size="icon"
           onClick={onOpenMobileSidebar}
-          className="-ml-1 size-8 lg:hidden"
+          className="-ml-1 size-8 shrink-0 lg:hidden"
           aria-label="Open pipeline navigation"
         >
           <Menu className="size-4" />
         </Button>
       )}
 
-      {/* Active stage label + agent */}
-      <div className="flex min-w-0 flex-1 items-center gap-2">
-        <motion.div
-          key={active.id}
-          initial={{ opacity: 0, y: -4 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-          className="flex min-w-0 items-baseline gap-2"
-        >
-          <h2 className="truncate text-[13px] font-semibold leading-none text-foreground sm:text-sm">
-            {active.label}
-          </h2>
-          <span className="hidden truncate text-[11px] leading-none text-muted-foreground sm:inline">
-            · {active.agent}
-          </span>
-        </motion.div>
-      </div>
+      {/* ---- Zone 1: stage context ---- */}
+      <motion.div
+        key={active.id}
+        initial={{ opacity: 0, y: -4 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+        className="flex min-w-0 shrink items-baseline gap-2"
+      >
+        <h2 className="truncate text-[13px] font-semibold leading-none text-foreground sm:text-sm">
+          {active.label}
+        </h2>
+        <span className="hidden truncate text-[11px] leading-none text-muted-foreground lg:inline">
+          · {active.agent}
+        </span>
+      </motion.div>
 
-      {/* Right cluster */}
-      <div className="flex shrink-0 items-center gap-2">
-        {/* Bloom pill */}
+      {/* ---- Zone 2: run telemetry ---- */}
+      <div className="flex min-w-0 flex-1 items-center gap-2">
         <span
-          className="hidden items-center gap-1.5 border border-border/70 rounded-full px-2.5 py-0.5 text-[11px] font-bold sm:inline-flex"
-          style={{ backgroundColor: `color-mix(in srgb, ${hue} 15%, transparent)`, borderColor: hue, color: 'var(--foreground)' }}
+          className="hidden shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-bold md:inline-flex"
+          style={{
+            backgroundColor: `color-mix(in srgb, ${hue} 15%, transparent)`,
+            borderColor: hue,
+            color: 'var(--foreground)',
+          }}
           title={`Bloom level: ${bloomLevel}`}
         >
           <span
@@ -97,45 +100,28 @@ export function TopBar({ onOpenMobileSidebar }: TopBarProps) {
           {bloomLevel}
         </span>
 
-        {/* Run status badge */}
         <RunStatusBadge running={running} completed={completed} failed={failed} />
 
-        {/* LIVE pill while running */}
         {running && (
           <motion.span
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            className="inline-flex items-center gap-1 border border-border/70 bg-accent/15 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-accent-foreground"
+            className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border/70 bg-accent/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-accent-foreground"
           >
-            <span className="thinking-dot inline-block size-1.5 rounded-full bg-foreground" aria-hidden />
+            <span
+              className="thinking-dot inline-block size-1.5 rounded-full bg-foreground"
+              aria-hidden
+            />
             Live
           </motion.span>
         )}
 
-        {/* Command palette hint (desktop) */}
-        <button
-          type="button"
-          onClick={() => {
-            // dispatch a synthetic keydown so the global listener toggles it
-            window.dispatchEvent(
-              new KeyboardEvent('keydown', { key: 'k', metaKey: true })
-            )
-          }}
-          className="hidden items-center gap-1.5 border border-border/70 rounded bg-muted/65 px-2 py-0.5 font-mono text-[10px] font-bold text-muted-foreground transition-all hover:bg-muted hover:text-foreground lg:flex"
-          aria-label="Open command palette"
-        >
-          <span>⌘K</span>
-        </button>
-
-        {/* Run id (compact) */}
         {runId && (
-          <span className="hidden font-mono text-[11px] text-muted-foreground/70 md:inline">
+          <span className="hidden shrink-0 font-mono text-[11px] text-muted-foreground/70 xl:inline">
             {runId.slice(0, 8)}
           </span>
         )}
 
-        {/* New run */}
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
@@ -143,7 +129,7 @@ export function TopBar({ onOpenMobileSidebar }: TopBarProps) {
               variant="ghost"
               size="icon"
               onClick={resetRun}
-              className="size-8 text-muted-foreground hover:text-foreground"
+              className="size-8 shrink-0 text-muted-foreground hover:text-foreground"
               aria-label="Start a new run"
               disabled={running}
             >
@@ -152,30 +138,29 @@ export function TopBar({ onOpenMobileSidebar }: TopBarProps) {
           </TooltipTrigger>
           <TooltipContent side="bottom">New run</TooltipContent>
         </Tooltip>
+      </div>
 
-        {/* Site navigation — divider then Home/Agents/API Keys/theme/sign out */}
-        <span className="mx-0.5 hidden h-5 w-px bg-border md:inline-block" aria-hidden />
+      {/* ---- Zone 3: navigation ---- */}
+      <div className="flex shrink-0 items-center gap-2">
+        <button
+          type="button"
+          onClick={() =>
+            window.dispatchEvent(
+              new KeyboardEvent('keydown', { key: 'k', metaKey: true }),
+            )
+          }
+          className="hidden items-center rounded border border-border/70 bg-muted/65 px-2 py-1 font-mono text-[10px] font-bold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground xl:flex"
+          aria-label="Open command palette"
+        >
+          ⌘K
+        </button>
 
-        <Button variant="ghost" size="sm" className="hidden h-8 gap-1.5 text-xs md:inline-flex" asChild>
-          <Link href="/"><Home className="size-3" /><span className="hidden lg:inline">Home</span></Link>
-        </Button>
-        <Button variant="ghost" size="sm" className="hidden h-8 gap-1.5 text-xs md:inline-flex" asChild>
-          <Link href="/app/agents"><Bot className="size-3" /><span className="hidden lg:inline">Agents</span></Link>
-        </Button>
-        <Button variant="ghost" size="sm" className="hidden h-8 gap-1.5 text-xs md:inline-flex" asChild>
-          <Link href="/app/history"><History className="size-3" /><span className="hidden lg:inline">History</span></Link>
-        </Button>
-        <Button variant="ghost" size="sm" className="hidden h-8 gap-1.5 text-xs md:inline-flex" asChild>
-          <Link href="/app/settings/api-keys"><KeyRound className="size-3" /><span className="hidden lg:inline">API Keys</span></Link>
-        </Button>
-        <Button variant="ghost" size="sm" className="hidden h-8 gap-1.5 text-xs md:inline-flex" asChild>
-          <Link href="/app/settings/account"><User className="size-3" /><span className="hidden lg:inline">Profile</span></Link>
-        </Button>
-        <ThemeToggle />
-        <PaletteSwitcher className="hidden sm:flex" />
-        <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs" onClick={handleLogout}>
-          <LogOut className="size-3" /><span className="hidden lg:inline">Sign out</span>
-        </Button>
+        <MainNav className="hidden sm:flex" />
+
+        <span className="mx-0.5 hidden h-5 w-px bg-border sm:inline-block" aria-hidden />
+
+        <AppearanceMenu />
+        <UserMenu email={email} />
       </div>
     </header>
   )
@@ -213,7 +198,7 @@ function RunStatusBadge({
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 border rounded-full px-2.5 py-0.5 text-[11px] font-bold',
+        'inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-bold',
         cls,
       )}
     >

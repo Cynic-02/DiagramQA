@@ -5,10 +5,10 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import {
-  ArrowLeft, Loader2, Calendar, FileText, Bot, HelpCircle, ArrowRight, Trash2, HelpCircle as QuestionIcon
+  Loader2, Calendar, FileText, Bot, HelpCircle, ArrowRight, Trash2, HelpCircle as QuestionIcon
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { ThemeToggle } from '@/components/theme-toggle'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { usePipelineStore } from '@/lib/store'
@@ -122,18 +122,7 @@ export default function HistoryPage() {
   return (
     <div className="relative flex min-h-screen flex-col grid-faint-lighter bg-background text-foreground">
       {/* Nav */}
-      <nav className="sticky top-0 z-50 w-full flex h-14 items-center justify-between border-b border-border/40 bg-background/85 backdrop-blur-md px-4 sm:px-6">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-[11px] font-bold" asChild>
-            <Link href="/app"><ArrowLeft className="size-3" />Console</Link>
-          </Button>
-          <span className="text-border">/</span>
-          <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Run History</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
-        </div>
-      </nav>
+      <PageHeader title="Run History" />
 
       <div className="relative z-10 mx-auto w-full max-w-5xl flex-1 p-6 md:p-8">
         {/* Header */}

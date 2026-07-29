@@ -4,10 +4,10 @@ import * as React from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Bot, Plus, Trash2, Sparkles, ArrowLeft, Loader2, Save, Globe, Lock, Brain, KeyRound, Edit2, RotateCcw
+  Bot, Plus, Trash2, Sparkles, Loader2, Save, Globe, Lock, Brain, Edit2, RotateCcw
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { ThemeToggle } from '@/components/theme-toggle'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -94,22 +94,7 @@ export default function AgentsPage() {
 
   return (
     <div className="relative flex min-h-screen flex-col grid-faint-lighter bg-background text-foreground">
-      {/* Nav */}
-      <nav className="sticky top-0 z-50 w-full flex h-14 items-center justify-between border-b border-border/40 bg-background/85 backdrop-blur-md px-4 sm:px-6">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-[11px] font-bold" asChild>
-            <Link href="/app"><ArrowLeft className="size-3" />Console</Link>
-          </Button>
-          <span className="text-border">/</span>
-          <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Agents &amp; Prompt Editor</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-[11px] font-bold" asChild>
-            <Link href="/app/settings/api-keys"><KeyRound className="size-3" />API Keys</Link>
-          </Button>
-          <ThemeToggle />
-        </div>
-      </nav>
+      <PageHeader title="Agents & Prompt Editor" />
 
       <div className="relative z-10 mx-auto w-full max-w-5xl flex-1 p-6 md:p-8">
         {/* Header */}

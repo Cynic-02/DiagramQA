@@ -4,11 +4,11 @@ import * as React from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  KeyRound, Plus, Trash2, ArrowLeft, Loader2, Save, ShieldCheck,
+  KeyRound, Plus, Trash2, Loader2, Save, ShieldCheck,
   ServerCog, Globe2, Pencil, X, FlaskConical,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { ThemeToggle } from '@/components/theme-toggle'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -55,16 +55,7 @@ export default function ApiKeysSettingsPage() {
 
   return (
     <div className="relative flex min-h-screen flex-col grid-faint-lighter">
-      <nav className="sticky top-0 z-50 w-full flex h-14 items-center justify-between border-b border-border/40 bg-background/80 backdrop-blur-md px-4 sm:px-6">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs" asChild>
-            <Link href="/app"><ArrowLeft className="size-3" />Console</Link>
-          </Button>
-          <span className="text-border">/</span>
-          <span className="text-xs text-muted-foreground">API Keys</span>
-        </div>
-        <ThemeToggle />
-      </nav>
+      <PageHeader title="API Keys" />
 
       <div className="relative z-10 mx-auto w-full max-w-6xl flex-1 p-6 md:p-8">
         <div className="mb-6 space-y-1.5">
