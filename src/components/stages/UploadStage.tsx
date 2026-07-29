@@ -282,9 +282,12 @@ export function UploadStage() {
 
   return (
     <StageFrame stageId="upload">
-      <div className="grid gap-6 lg:grid-cols-[1fr_420px] lg:items-start">
+      {/* Two-column only from xl. At lg the 280px rail leaves ~744px, which a
+          420px side panel would squeeze to an unusable ~250px main column —
+          so tablets and small laptops stack instead. */}
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px] xl:items-start">
         {/* ---------------- Left Column: Dropzone / Preview ---------------- */}
-        <div className="space-y-4">
+        <div className="min-w-0 space-y-4">
           <AnimatePresence mode="wait" initial={false}>
             {previewUrl ? (
               <motion.div
@@ -416,7 +419,7 @@ export function UploadStage() {
         </div>
 
         {/* ---------------- Right Column: Configurations & Action ---------------- */}
-        <div className="space-y-5">
+        <div className="min-w-0 space-y-5">
           {hasRunDiagram ? (
             <Card className="brutal-block p-5 space-y-4">
               <div className="space-y-1">

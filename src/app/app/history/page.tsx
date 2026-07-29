@@ -230,7 +230,7 @@ export default function HistoryPage() {
             </div>
           </Card>
         ) : (
-          <div className="grid gap-8 md:grid-cols-[180px_1fr] items-start mt-8">
+          <div className="grid gap-8 md:grid-cols-[180px_minmax(0,1fr)] items-start mt-8">
             {/* Left Column: sticky status selector sidebar */}
             <aside className="sticky top-20 hidden md:block border-r border-border/40 pr-6">
               <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block mb-4">

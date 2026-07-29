@@ -1429,3 +1429,21 @@ body {
 [data-palette="lattice_dim"] .palette-swatch {
   background-clip: padding-box;
 }
+
+/* ============================================================
+   OVERFLOW GUARDS
+   Long unbroken tokens — uploaded filenames, URLs, hashes, model
+   IDs — were forcing the page wider than the viewport because a
+   nowrap/unbreakable string sets a large min-content width, and a
+   bare `1fr` grid track resolves to minmax(auto, 1fr) which refuses
+   to shrink below it. The track fixes are in the components
+   (minmax(0,1fr) + min-w-0); this is the belt-and-braces layer.
+   ============================================================ */
+:where(p, h1, h2, h3, h4, h5, h6, li, dd, dt, td, th, figcaption, blockquote, label, code, pre) {
+  overflow-wrap: break-word;
+}
+
+/* Media should never exceed its column on any device. */
+:where(img, svg, video, canvas, iframe) {
+  max-width: 100%;
+}

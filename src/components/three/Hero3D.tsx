@@ -122,7 +122,7 @@ export default function Hero3D({ onEnterConsole }: Hero3DProps) {
         </motion.div>
 
         {/* Main content */}
-        <div className="grid flex-1 items-center gap-10 py-12 lg:grid-cols-[1fr_360px]">
+        <div className="grid flex-1 items-center gap-10 py-12 lg:grid-cols-[minmax(0,1fr)_360px]">
           <div className="flex flex-col justify-center">
             <motion.div
               initial={prefersReducedMotion ? false : { opacity: 0, y: 28 }}

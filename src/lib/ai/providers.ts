@@ -89,7 +89,13 @@ export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
     label: 'Anthropic Claude',
     apiKeyEnv: 'ANTHROPIC_API_KEY',
     baseURL: 'https://api.anthropic.com/v1',
-    defaultModel: 'claude-sonnet-4-20250514',
+    // claude-sonnet-4-20250514 was officially retired June 15, 2026 -
+    // every request to it fails outright now, for every user, not just
+    // new ones. claude-sonnet-5 is Anthropic's current model (verified
+    // directly against their own docs/announcement, released June 30
+    // 2026 - the "-4-6" migration target cited by older deprecation
+    // notices has itself since been superseded).
+    defaultModel: 'claude-sonnet-5',
     supportsVision: true,
     supportsReasoning: true,
   },
@@ -98,7 +104,12 @@ export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
     label: 'Google Gemini',
     apiKeyEnv: 'GEMINI_API_KEY',
     baseURL: 'https://generativelanguage.googleapis.com/v1beta',
-    defaultModel: 'gemini-2.5-flash',
+    // gemini-2.5-flash is officially deprecated (shutdown Oct 16, 2026)
+    // and Google has already started rejecting it for newly-created API
+    // keys ahead of that date - "This model ... is no longer available
+    // to new users" (404). Confirmed live with a real key during this
+    // fix. gemini-3.5-flash is Google's current GA replacement.
+    defaultModel: 'gemini-3.5-flash',
     supportsVision: true,
     supportsReasoning: true,
   },
@@ -1161,7 +1172,13 @@ async function callClaude(
   }
   if (system) body.system = system
   if (options.reasoning) {
-    body.thinking = { type: 'enabled', budget_tokens: 2000 }
+    // Manual thinking budgets (type:'enabled', budget_tokens:N) were
+    // deprecated on Sonnet 4.6 and are REMOVED entirely on Sonnet 5,
+    // Opus 4.7+, and Fable 5 - the request now returns a 400. Adaptive
+    // thinking is on by default on those models, so just requesting
+    // 'enabled' with no budget gets equivalent behavior without risking
+    // a hard error on the current default model.
+    body.thinking = { type: 'enabled' }
   }
 
   const res = await fetch(`${provider.baseURL}/messages`, {
@@ -1214,7 +1231,13 @@ async function* streamClaude(
   }
   if (system) body.system = system
   if (options.reasoning) {
-    body.thinking = { type: 'enabled', budget_tokens: 2000 }
+    // Manual thinking budgets (type:'enabled', budget_tokens:N) were
+    // deprecated on Sonnet 4.6 and are REMOVED entirely on Sonnet 5,
+    // Opus 4.7+, and Fable 5 - the request now returns a 400. Adaptive
+    // thinking is on by default on those models, so just requesting
+    // 'enabled' with no budget gets equivalent behavior without risking
+    // a hard error on the current default model.
+    body.thinking = { type: 'enabled' }
   }
 
   const res = await fetch(`${provider.baseURL}/messages`, {

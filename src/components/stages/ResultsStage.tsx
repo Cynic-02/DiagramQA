@@ -410,8 +410,8 @@ export function ResultsStage() {
           </RevealOnScroll>
         )}
 
-        <div className="grid gap-4 lg:grid-cols-[1fr_300px]">
-          <div className="space-y-3">
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
+          <div className="min-w-0 space-y-3">
             {mode === 'review' ? (
               <TeacherWorkspace
                 runId={runId || ''}

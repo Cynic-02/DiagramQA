@@ -105,7 +105,7 @@ export function ExtractionStage() {
 
               {/* ---- Top: thumbnail + summary ---- */}
               <Card className="overflow-hidden p-0">
-            <div className="grid gap-0 md:grid-cols-[260px_1fr]">
+            <div className="grid gap-0 md:grid-cols-[260px_minmax(0,1fr)]">
               <div className="flex items-center justify-center border-b border-border/40 bg-muted p-4 md:border-b-0 md:border-r border-border/40">
                 {diagramDataUrl && diagramDataUrl.startsWith('data:image') ? (
                   <TiltedCard
