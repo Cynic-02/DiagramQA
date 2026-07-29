@@ -26,7 +26,24 @@ import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
  * a page-level footer (rendered by the orchestrator as a sibling AFTER the
  * shell) sits at the bottom of the viewport when content is short.
  */
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({
+  children,
+  footer,
+}: {
+  children: React.ReactNode
+  /**
+   * Page footer, rendered INSIDE the main column.
+   *
+   * It used to be a sibling after <AppShell>, which meant the flex row
+   * holding the sticky rail ended above it. A `sticky top-0 h-screen`
+   * element stops sticking once its containing block's bottom scrolls
+   * past, so near the page bottom the rail detached and its footer
+   * (Run box, Collapse) visibly slid upward. Putting the page footer in
+   * the main column extends the row to the full document height, so the
+   * rail stays put all the way down.
+   */
+  footer?: React.ReactNode
+}) {
   const sidebarCollapsed = usePipelineStore((s) => s.sidebarCollapsed)
   const [mobileOpen, setMobileOpen] = React.useState(false)
 
@@ -73,6 +90,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             {/* Floating live log rail */}
             <AgentLogRail />
           </main>
+
+          {footer}
         </div>
       </div>
     </section>

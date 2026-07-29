@@ -558,8 +558,15 @@ export function UploadStage() {
                 </Card>
               </div>
 
-              {/* Action Button Card */}
-              <Card className="p-4 bg-muted/20 border-border/40 space-y-3">
+              {/* Action card — pinned to the bottom of the viewport.
+                  The config panel runs ~900px (Bloom wheel + question
+                  settings), so the primary action sat below the fold and
+                  had to be scrolled to. Sticky keeps the configure-then-run
+                  order intact while making Run reachable at any scroll
+                  position, and on mobile it lands in easy thumb reach.
+                  Opaque background + shadow because a stuck element paints
+                  over the content it passes. */}
+              <Card className="sticky bottom-4 z-20 space-y-3 border-border/60 bg-card p-4 shadow-lg">
                 {!hasUsableProvider ? (
                   <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-[11px] text-amber-500 space-y-1.5">
                     <p className="font-bold flex items-center gap-1.5">

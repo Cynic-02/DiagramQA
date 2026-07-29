@@ -51,7 +51,7 @@ export default function AppPage() {
       <ScrollProgress />
       <CommandPalette />
 
-      <AppShell>
+      <AppShell footer={<Footer />}>
         <StageTransition stageId={activeStage}>
           {renderActiveStage(activeStage)}
         </StageTransition>
@@ -65,8 +65,6 @@ export default function AppPage() {
           onOpenChange={setChatOpen}
         />
       )}
-
-      <Footer />
     </div>
   )
 }
