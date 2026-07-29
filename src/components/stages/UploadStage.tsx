@@ -420,9 +420,60 @@ export function UploadStage() {
           </AnimatePresence>
 
           {!hasRunDiagram && <DashboardStats />}
+
+          {/* Primary action — sits directly under the workspace metrics.
+              It previously lived at the foot of the ~900px config panel,
+              which put it below the fold. The main column ends at the
+              metrics row and had dead space underneath, so the action is
+              both visible without scrolling and adjacent to the diagram it
+              acts on. Hidden once a run is registered, matching the
+              "Pipeline active" card that replaces the config panel. */}
+          {!hasRunDiagram && (
+            <Card className="space-y-3 border-border/60 bg-card p-4">
+              {!hasUsableProvider ? (
+                <div className="space-y-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-[11px] text-amber-500">
+                  <p className="flex items-center gap-1.5 font-bold">
+                    ⚠️ No Usable API Keys
+                  </p>
+                  <p className="leading-relaxed">
+                    All AI providers are currently missing keys. Please add an API key in{' '}
+                    <Link href="/app/settings/api-keys" className="font-bold underline hover:text-amber-400">
+                      Settings
+                    </Link>{' '}
+                    to start the pipeline.
+                  </p>
+                </div>
+              ) : (
+                <p className="text-[11px] leading-relaxed text-muted-foreground">
+                  {uploadedFile
+                    ? 'Ready to run. The vision agent will initiate the process on click.'
+                    : 'Please select a diagram file to enable the agent pipeline.'}
+                </p>
+              )}
+              <Button
+                type="button"
+                size="lg"
+                onClick={runPipeline}
+                disabled={!uploadedFile || submitting || running || !hasUsableProvider}
+                className="spring-transition w-full hover:scale-[1.02] active:scale-[0.98]"
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    Starting…
+                  </>
+                ) : (
+                  <>
+                    <Play className="size-4" />
+                    Run pipeline →
+                  </>
+                )}
+              </Button>
+            </Card>
+          )}
         </div>
 
-        {/* ---------------- Right Column: Configurations & Action ---------------- */}
+        {/* ---------------- Right Column: Configuration ---------------- */}
         <div className="min-w-0 space-y-5">
           {hasRunDiagram ? (
             <Card className="brutal-block p-5 space-y-4">
@@ -557,56 +608,6 @@ export function UploadStage() {
                   </div>
                 </Card>
               </div>
-
-              {/* Action card — pinned to the bottom of the viewport.
-                  The config panel runs ~900px (Bloom wheel + question
-                  settings), so the primary action sat below the fold and
-                  had to be scrolled to. Sticky keeps the configure-then-run
-                  order intact while making Run reachable at any scroll
-                  position, and on mobile it lands in easy thumb reach.
-                  Opaque background + shadow because a stuck element paints
-                  over the content it passes. */}
-              <Card className="sticky bottom-4 z-20 space-y-3 border-border/60 bg-card p-4 shadow-lg">
-                {!hasUsableProvider ? (
-                  <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-[11px] text-amber-500 space-y-1.5">
-                    <p className="font-bold flex items-center gap-1.5">
-                      ⚠️ No Usable API Keys
-                    </p>
-                    <p className="leading-relaxed">
-                      All AI providers are currently missing keys. Please add an API key in{' '}
-                      <Link href="/app/settings/api-keys" className="underline font-bold hover:text-amber-400">
-                        Settings
-                      </Link>{' '}
-                      to start the pipeline.
-                    </p>
-                  </div>
-                ) : (
-                  <p className="text-[11px] leading-relaxed text-muted-foreground">
-                    {uploadedFile
-                      ? 'Ready to run. The vision agent will initiate the process on click.'
-                      : 'Please select a diagram file to enable the agent pipeline.'}
-                  </p>
-                )}
-                <Button
-                  type="button"
-                  size="lg"
-                  onClick={runPipeline}
-                  disabled={!uploadedFile || submitting || running || !hasUsableProvider}
-                  className="w-full spring-transition hover:scale-[1.02] active:scale-[0.98]"
-                >
-                  {submitting ? (
-                    <>
-                      <Loader2 className="size-4 animate-spin" />
-                      Starting…
-                    </>
-                  ) : (
-                    <>
-                      <Play className="size-4" />
-                      Run pipeline →
-                    </>
-                  )}
-                </Button>
-              </Card>
             </>
           )}
         </div>
