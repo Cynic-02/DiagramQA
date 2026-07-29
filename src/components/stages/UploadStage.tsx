@@ -40,7 +40,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Switch } from '@/components/ui/switch'
 import { Slider } from '@/components/ui/slider'
-import { StageFrame, DataChip } from './shared'
+import { StageFrame, StageHeader, DataChip } from './shared'
 import { BloomWheel } from './BloomWheel'
 import TiltedCard from '@/components/TiltedCard'
 import { ProviderSelect, useProviderOptions } from '@/components/provider-select'
@@ -281,13 +281,17 @@ export function UploadStage() {
   /* ---------------------------------------------------------------- */
 
   return (
-    <StageFrame stageId="upload">
+    <StageFrame stageId="upload" showHeader={false}>
       {/* Two-column only from xl. At lg the 280px rail leaves ~744px, which a
           420px side panel would squeeze to an unusable ~250px main column —
-          so tablets and small laptops stack instead. */}
+          so tablets and small laptops stack instead.
+          The stage header lives inside the main column rather than spanning
+          the full width, so the config panel starts level with it instead of
+          being pushed below, which left a large empty block top-right. */}
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px] xl:items-start">
         {/* ---------------- Left Column: Dropzone / Preview ---------------- */}
         <div className="min-w-0 space-y-4">
+          <StageHeader stageId="upload" />
           <AnimatePresence mode="wait" initial={false}>
             {previewUrl ? (
               <motion.div

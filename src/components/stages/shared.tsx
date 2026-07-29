@@ -155,9 +155,18 @@ export function RunningShimmer({ label }: { label: string }) {
 export function StageFrame({
   stageId,
   children,
+  showHeader = true,
 }: {
   stageId: StageId
   children: React.ReactNode
+  /**
+   * Set false when the stage renders its own <StageHeader> inside a
+   * column. UploadStage does this: with the header spanning full width,
+   * its side panel was forced below it, leaving a large dead rectangle
+   * in the top-right of the viewport. Moving the header into the main
+   * column lets the panel start at the top and fill that space.
+   */
+  showHeader?: boolean
 }) {
   const reduce = useReducedMotion()
   return (
@@ -167,12 +176,12 @@ export function StageFrame({
       transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
       className="relative mx-auto w-full max-w-7xl p-6 md:p-8"
     >
-      <StageHeader stageId={stageId} />
+      {showHeader && <StageHeader stageId={stageId} />}
       <motion.div
         initial={reduce ? false : { opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
-        className="mt-6 md:mt-8"
+        className={showHeader ? 'mt-6 md:mt-8' : undefined}
       >
         {children}
       </motion.div>
