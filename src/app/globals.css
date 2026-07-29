@@ -1326,29 +1326,63 @@ body {
    ============================================================ */
 
 /* --- graph-paper ground ---
-   Two superimposed grids: a fine 24px rule and a heavier 120px rule,
-   both tinted from --primary so they re-colour with the palette.
-   Higher specificity than the shared `body` rule above, so it wins
-   regardless of source order. */
-[data-palette="lattice"] body {
+   One grid definition, reused on every surface that can show it.
+   Fine 24px rule + heavier 120px rule, tinted from --primary so it
+   re-colours with the palette. */
+[data-palette="lattice"],
+[data-palette="lattice_dim"] {
+  --lattice-grid:
+    linear-gradient(to right,  var(--lattice-fine) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--lattice-fine) 1px, transparent 1px),
+    linear-gradient(to right,  var(--lattice-bold) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--lattice-bold) 1px, transparent 1px);
+  --lattice-grid-size: 24px 24px, 24px 24px, 120px 120px, 120px 120px;
+}
+[data-palette="lattice"] {
+  --lattice-fine: color-mix(in srgb, var(--primary)  9%, transparent);
+  --lattice-bold: color-mix(in srgb, var(--primary) 16%, transparent);
+}
+[data-palette="lattice_dim"] {
+  --lattice-fine: color-mix(in srgb, var(--primary) 10%, transparent);
+  --lattice-bold: color-mix(in srgb, var(--primary) 18%, transparent);
+}
+
+/* Surface 1: the page itself, for routes with no opaque wrapper. */
+[data-palette="lattice"] body,
+[data-palette="lattice_dim"] body {
   background-color: var(--bg);
-  background-image:
-    linear-gradient(to right,  color-mix(in srgb, var(--primary)  9%, transparent) 1px, transparent 1px),
-    linear-gradient(to bottom, color-mix(in srgb, var(--primary)  9%, transparent) 1px, transparent 1px),
-    linear-gradient(to right,  color-mix(in srgb, var(--primary) 16%, transparent) 1px, transparent 1px),
-    linear-gradient(to bottom, color-mix(in srgb, var(--primary) 16%, transparent) 1px, transparent 1px);
-  background-size: 24px 24px, 24px 24px, 120px 120px, 120px 120px;
+  background-image: var(--lattice-grid);
+  background-size: var(--lattice-grid-size);
   background-position: -1px -1px;
 }
 
-[data-palette="lattice_dim"] body {
-  background-color: var(--bg);
-  background-image:
-    linear-gradient(to right,  color-mix(in srgb, var(--primary) 10%, transparent) 1px, transparent 1px),
-    linear-gradient(to bottom, color-mix(in srgb, var(--primary) 10%, transparent) 1px, transparent 1px),
-    linear-gradient(to right,  color-mix(in srgb, var(--primary) 18%, transparent) 1px, transparent 1px),
-    linear-gradient(to bottom, color-mix(in srgb, var(--primary) 18%, transparent) 1px, transparent 1px);
-  background-size: 24px 24px, 24px 24px, 120px 120px, 120px 120px;
+/* Surface 2: the landing page. .bg-hero-void paints an opaque radial
+   wash across min-h-screen, which would otherwise bury the grid on
+   body entirely — so the grid is composited on top of that wash here
+   rather than fought with. Grid layers first = painted above. */
+[data-palette="lattice"] .bg-hero-void,
+[data-palette="lattice_dim"] .bg-hero-void {
+  background:
+    var(--lattice-grid),
+    radial-gradient(
+      120% 120% at 50% 22%,
+      color-mix(in srgb, var(--bg, var(--background)) 92%, white) 0%,
+      color-mix(in srgb, var(--bg, var(--background)) 90%, black) 100%
+    );
+  background-size: var(--lattice-grid-size), cover;
+  background-position: -1px -1px, center;
+  background-repeat: repeat, no-repeat;
+}
+
+/* Surface 3: the app's own neutral grids. .grid-faint-lighter draws
+   white at 2%, which is invisible on cream — so both are re-pointed at
+   the ultramarine grid while Lattice is active. */
+[data-palette="lattice"] .grid-faint,
+[data-palette="lattice"] .grid-faint-lighter,
+[data-palette="lattice_dim"] .grid-faint,
+[data-palette="lattice_dim"] .grid-faint-lighter {
+  background-image: var(--lattice-grid);
+  background-size: var(--lattice-grid-size);
   background-position: -1px -1px;
 }
 
