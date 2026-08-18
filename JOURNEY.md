@@ -73,12 +73,17 @@ chromatic / light — which map to `--foreground` / `--primary` / `--secondary`
 at render time. A contrast guard nudges a slot toward the foreground if a
 given palette would make it invisible against its own background.
 
-**Dark mode and the artwork:** the SVGs are dark line art on transparency,
-authored for a light page. On a dark theme they'd be nearly invisible, so by
-default they get `invert(1) hue-rotate(180deg)` — lightness flips, hue is
-preserved. This makes line work read white but also flips the illustrations'
-own tones (dark hair becomes light, etc.). If you'd rather not have that,
-set `darkArtwork: 'none'` or `'dim'` in `JOURNEY_CONFIG`.
+**Dark mode and the artwork:** the illustrations keep their authored colours
+in every theme — switching to dark does not recolour them. Their dark outlines
+lose some contrast against a dark paper, but the artwork stays itself. If you
+ever want the opposite, `darkArtwork` in `JOURNEY_CONFIG` also accepts
+`'invert'` (flips lightness, keeps hue — outlines read white but dark hair
+turns light) and `'dim'` (authored colours with a soft glow).
+
+**Exit hand-off:** the canvas is fixed, so the final illustration would
+otherwise stay pinned over whatever section follows the journey. The stage
+fades out across the tail of the last section, and the graph paper's grid
+fades with it, so the hand-off into the next section is seamless.
 
 ## Asset notes
 

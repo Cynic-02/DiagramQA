@@ -29,6 +29,7 @@ import {
   overlayBox,
   pickParticleCount,
   placeScene,
+  smoothstep,
   type Placement,
 } from '@/lib/journey/layout'
 import type { PointCloud } from '@/lib/journey/svgToPointCloud'
@@ -337,6 +338,20 @@ export default function JourneyStage({ scenes, containerRef }: Props) {
       const sectionH = vh * (C.sectionVh / 100)
       const docTop = rect.top + window.scrollY
       const viewCenter = window.scrollY + vh / 2
+
+      // The canvas is fixed, so once the final scene has assembled it
+      // would otherwise stay pinned over whatever section follows the
+      // journey. Fade the whole stage out across the tail of the last
+      // section instead of letting it hang over the next page.
+      const lastCentre = docTop + (N - 1) * sectionH + sectionH / 2
+      const exit = smoothstep(
+        lastCentre + sectionH * 0.16,
+        docTop + N * sectionH - sectionH * 0.06,
+        viewCenter
+      )
+      wrap.style.opacity = String(1 - exit)
+      if (exit >= 1) return
+
       const targetG = Math.min(
         N - 1,
         Math.max(0, (viewCenter - (docTop + sectionH / 2)) / sectionH)

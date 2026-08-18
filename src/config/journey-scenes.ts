@@ -281,13 +281,15 @@ export const JOURNEY_CONFIG = {
   sectionVh: 100,
 
   /**
-   * The illustrations are dark line art on transparency, drawn for a
-   * light page. On a dark theme they would be almost invisible, so:
-   *   'invert' — flip lightness, keep hue (line work reads white)
-   *   'none'   — leave the artwork exactly as authored
-   *   'dim'    — leave as authored but lift it with a soft glow
+   * How the line art is treated on a dark theme.
+   *   'none'   — leave the artwork exactly as authored (default). Dark
+   *              outlines lose contrast on a dark paper, but the
+   *              illustrations keep their real colours.
+   *   'invert' — flip lightness, keep hue. Outlines read white, but the
+   *              artwork's own tones flip too (dark hair turns light).
+   *   'dim'    — as authored, lifted with a soft glow.
    */
-  darkArtwork: 'invert' as 'invert' | 'none' | 'dim',
+  darkArtwork: 'none' as 'invert' | 'none' | 'dim',
 
   /** particle counts by device tier */
   particles: {

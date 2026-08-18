@@ -142,14 +142,17 @@ export default function ScienceJourney({
         )
       )}
 
-      {/* soften the hand-off from the paper back into the rest of the page */}
+      {/* The graph paper stops dead at the container edge, which leaves a
+          hard horizontal seam where the grid ends. Fade the grid out over
+          the tail of the last section instead. Sits at z-10: above the
+          paper, below both the artwork (z-20) and the copy (z-30). */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 bottom-0 z-30 h-40"
+        className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-[55vh]"
         style={{
           background: `linear-gradient(to bottom, transparent, ${
             theme?.paper ?? 'var(--background)'
-          })`,
+          } 78%)`,
         }}
       />
 
