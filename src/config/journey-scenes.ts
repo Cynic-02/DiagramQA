@@ -68,14 +68,17 @@ export interface IdleSpec {
   period: number
 }
 
+// Amplitudes stay inside the brief's ranges; the cycles sit at the faster
+// end of its 5–10s window so a settled illustration is visibly alive
+// without the motion ever reading as a bounce.
 export const IDLE_PRESETS: Record<IdlePreset, IdleSpec> = {
-  human: { x: 1, y: 3, rot: 0.2, scale: 0.008, period: 8 },
-  float: { x: 2, y: 5, rot: 0.6, scale: 0.006, period: 9 },
-  drift: { x: 4, y: 2, rot: 0.25, scale: 0.005, period: 10 },
-  pulse: { x: 0.5, y: 1.5, rot: 0.2, scale: 0.012, period: 7 },
-  breathe: { x: 1, y: 2, rot: 0.15, scale: 0.01, period: 7.5 },
-  hover: { x: 1, y: 2, rot: 0.25, scale: 0.005, period: 8.5 },
-  still: { x: 0.5, y: 1, rot: 0.1, scale: 0.004, period: 10 },
+  human: { x: 1.5, y: 3, rot: 0.2, scale: 0.008, period: 6 },
+  float: { x: 2, y: 5, rot: 0.6, scale: 0.006, period: 6.5 },
+  drift: { x: 4, y: 2, rot: 0.25, scale: 0.005, period: 7 },
+  pulse: { x: 0.5, y: 1.5, rot: 0.2, scale: 0.012, period: 5.5 },
+  breathe: { x: 1, y: 2, rot: 0.15, scale: 0.01, period: 5.5 },
+  hover: { x: 1, y: 2, rot: 0.25, scale: 0.005, period: 6 },
+  still: { x: 0.5, y: 1, rot: 0.1, scale: 0.004, period: 7 },
 }
 
 /* ------------------------------------------------------------------ */
@@ -315,15 +318,28 @@ export const JOURNEY_CONFIG = {
   /** z displacement at mid-morph, fraction of object size */
   depth: 0.16,
 
-  /** ambient drift of the ink grain, in CSS px. Slow and small — this is
-   *  what makes a settled illustration feel alive without morphing. */
-  ambient: 2.6,
+  /** ambient drift of settled particles, in CSS px. Small and slow. */
+  ambient: 2.4,
 
-  /** how visible the resting ink layer is on a settled illustration.
-   *  0 = the shape is a completely static image (previous behaviour);
-   *  0.15–0.30 reads as living grain; above ~0.4 it starts to fuzz the
-   *  crisp artwork underneath. */
-  restOpacity: 0.22,
+  /**
+   * The resting ink layer, drawn on top of a settled illustration.
+   *
+   * OFF by default. These illustrations are full-colour, not line art, so
+   * a blanket of particles over one reads as dust or dirt rather than as
+   * life — particle colours come from the theme, which in dark mode means
+   * near-white specks scattered over blue water and green hills.
+   *
+   * If you do want it, keep `opacity` low and `fraction` small: a sparse
+   * few motes drifting reads far better than a full grain layer.
+   *   opacity  — 0 disables it. 0.10–0.18 is the usable range.
+   *   fraction — share of particles kept as motes. 0.03–0.08.
+   *   drift    — extra drift for those motes, multiple of `ambient`.
+   */
+  rest: {
+    opacity: 0,
+    fraction: 0.05,
+    drift: 2.5,
+  },
 
   /** speed multiplier for the resting drift only (1 = as authored) */
   restSpeed: 1.0,

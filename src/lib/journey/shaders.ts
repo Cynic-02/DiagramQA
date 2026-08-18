@@ -35,6 +35,10 @@ uniform float uRadial;     // radial bias, px
 uniform float uDepth;      // z displacement, px
 uniform float uAmbient;    // idle float while scrolling is stopped, px
 uniform float uAmbientSpeed;
+uniform float uOpacity;    // opacity of the flowing cloud
+uniform float uRestAlpha;  // opacity of the sparse resting motes
+uniform float uRestFrac;   // fraction of particles kept as resting motes
+uniform float uRestDrift;  // extra drift multiplier for those motes
 uniform float uSize;
 uniform float uPixelRatio;
 
@@ -51,7 +55,7 @@ uniform vec3 uC1; // red
 uniform vec3 uC2; // yellow
 
 varying vec3  vColor;
-varying float vFade;
+varying float vAlpha;
 
 const float PI = 3.141592653589793;
 
@@ -125,13 +129,21 @@ void main() {
 
   vec2 pos = base + disp * env;
 
+  // Resting motes: only a small deterministic subset stays visible once a
+  // shape has settled. Blanketing every particle over a full-colour
+  // illustration reads as dirt, not life — a sparse few reads as drifting
+  // ink. uRestAlpha of 0 turns the resting layer off entirely.
+  float restMask = step(aRandom.x, uRestFrac);
+  float restAlpha = uRestAlpha * restMask;
+
   // barely-there life while the page is still — each particle drifts on
-  // its own slow loop, so a settled illustration breathes as ink grain
-  // rather than sitting frozen. Never large enough to blur the shape.
+  // its own slow loop, so a settled illustration breathes rather than
+  // sitting frozen. Resting motes drift a little wider than the rest.
+  float amb = uAmbient * (1.0 + restMask * uRestDrift);
   pos += vec2(
     sin(uTime * 0.31 * uAmbientSpeed + aRandom.x * 6.2831) + 0.45 * sin(uTime * 0.17 * uAmbientSpeed + aRandom.z * 6.2831),
     cos(uTime * 0.27 * uAmbientSpeed + aRandom.y * 6.2831) + 0.45 * cos(uTime * 0.21 * uAmbientSpeed + aRandom.x * 6.2831)
-  ) * uAmbient;
+  ) * amb;
 
   // follow the settled artwork's own float/rotate/breathe
   vec2 rel2 = pos - uIdleCenter;
@@ -153,7 +165,8 @@ void main() {
   vColor = col;
 
   // particles deep in Z read very slightly lighter -> gentle depth
-  vFade = 1.0 - abs(z) / max(uDepth, 1.0) * 0.18;
+  float depthFade = 1.0 - abs(z) / max(uDepth, 1.0) * 0.18;
+  vAlpha = max(uOpacity, restAlpha) * depthFade;
 
   gl_PointSize = uSize * (0.72 + aRandom.z * 1.15) * uPixelRatio;
 }
@@ -162,10 +175,8 @@ void main() {
 export const JOURNEY_FRAG = /* glsl */ `
 precision mediump float;
 
-uniform float uOpacity;
-
 varying vec3  vColor;
-varying float vFade;
+varying float vAlpha;
 
 void main() {
   vec2 c = gl_PointCoord - 0.5;
@@ -175,6 +186,6 @@ void main() {
   // soft-edged dot: print grain, not glowing sci-fi dust
   float a = smoothstep(0.25, 0.06, d);
 
-  gl_FragColor = vec4(vColor, a * uOpacity * vFade);
+  gl_FragColor = vec4(vColor, a * vAlpha);
 }
 `

@@ -57,31 +57,36 @@ All in `JOURNEY_CONFIG` at the bottom of the same file:
   looser cloud, lower for a tighter morph.
 - `stagger` — spread of per-particle departure times; higher is more organic.
 - `smoothing` — damping toward the scroll-defined progress.
-- `restOpacity` / `ambient` / `restSpeed` — the resting ink layer (below).
+- `rest` / `ambient` / `restSpeed` — the optional resting ink layer (below).
 - `layout` — where the artwork sits (`desktopX` 0.3 = centre-right) and how big.
 - `sectionVh` — scroll distance per scene.
 - `darkArtwork` — how the line art is treated on a dark theme.
 
-## The resting ink layer
+## Life at rest
 
-A settled illustration is not a static image. A faint layer of particles sits
-exactly on top of the crisp artwork and drifts continuously on slow per-particle
-loops, so the shape reads as living ink rather than a printed picture. It never
-morphs — morph progress still comes only from scroll position — it only drifts.
+A settled illustration is never frozen: it floats, drifts, rotates a fraction
+of a degree and breathes on a 5.5–7s cycle, each scene on its own phase so no
+two move in lockstep. That motion is the crisp artwork itself, set per scene by
+`idle` and tuned in `IDLE_PRESETS`.
 
-The layer is locked to the artwork's own idle float, rotation and breathing
-(the same transform the `<img>` gets in CSS is mirrored into the shader), so it
-moves *with* the illustration instead of ghosting beside it.
+There is also an optional **resting ink layer** — particles drawn on top of the
+settled artwork, drifting without morphing. It is **off by default**
+(`rest.opacity: 0`), and should probably stay that way. These illustrations are
+full-colour, not line art, and the particle palette comes from the theme: in
+dark mode that means near-white specks scattered over blue water and green
+hills, which reads as dust on the screen rather than as life.
 
-Three dials in `JOURNEY_CONFIG`:
+If you want to experiment with it, it is now sparse rather than a blanket —
+only `rest.fraction` of the particles stay visible, and they drift wider than
+the rest, so it reads as a few motes of ink rather than grain over everything:
 
-- `restOpacity` (0.22) — how visible the resting grain is. `0` restores a
-  completely static settled shape. Above ~0.4 it starts to fuzz the artwork.
-- `ambient` (2.6) — drift distance in CSS px. Keep it small.
-- `restSpeed` (1.0) — drift speed. Lower is slower and calmer.
+- `rest.opacity` — 0 disables. 0.10–0.18 is the usable range.
+- `rest.fraction` — share of particles kept as motes. 0.03–0.08.
+- `rest.drift` — extra drift for those motes, as a multiple of `ambient`.
+- `ambient` / `restSpeed` — drift distance in px, and drift speed.
 
-Drift is strongest when the page is still and eases off as soon as scrolling
-starts, so it never competes with the morph.
+Motes only appear on a settled shape and only while the page is actually
+still; they fade out the moment scrolling starts.
 
 ## Theming
 

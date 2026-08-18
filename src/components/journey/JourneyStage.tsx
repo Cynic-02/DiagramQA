@@ -162,6 +162,9 @@ export default function JourneyStage({ scenes, containerRef }: Props) {
       uDepth: { value: 0 },
       uAmbient: { value: 0 },
       uAmbientSpeed: { value: C.restSpeed },
+      uRestAlpha: { value: 0 },
+      uRestFrac: { value: C.rest.fraction },
+      uRestDrift: { value: C.rest.drift },
       uSize: { value: C.particleSize },
       uPixelRatio: { value: dpr },
       uIdleCenter: { value: new THREE.Vector2(0, 0) },
@@ -439,6 +442,10 @@ export default function JourneyStage({ scenes, containerRef }: Props) {
         uniforms.uAmbient.value =
           C.ambient * (0.35 + 0.65 * stillness) * (0.4 + 0.6 * settled) * m
         uniforms.uOpacity.value = fade.particles
+        // Resting motes only exist on a settled shape, and only while the
+        // page is actually still.
+        uniforms.uRestAlpha.value =
+          C.rest.opacity * settled * stillness * m
 
         const idleA = applyOverlay(i, srcCloud, ps, fade.src, fade.idleSrc, time)
         const idleB = applyOverlay(
@@ -467,6 +474,7 @@ export default function JourneyStage({ scenes, containerRef }: Props) {
           1 + (idleA.sc - 1) * wA + (idleB.sc - 1) * wB
       } else {
         uniforms.uOpacity.value = 0
+        uniforms.uRestAlpha.value = 0
         // show whichever crisp image we already have so the section is
         // never blank while its neighbour is still being processed
         if (srcCloud) {
