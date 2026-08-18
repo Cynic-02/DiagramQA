@@ -1,0 +1,95 @@
+# The Scroll Journey (hero animation)
+
+The landing page hero is a scroll-linked particle engine: each illustration
+dissolves into ink particles which flow across the page and reassemble into
+the next illustration. Scroll position drives it directly — scroll up and the
+whole thing runs backwards.
+
+## Running it
+
+```bash
+npm run dev          # http://localhost:3000
+```
+
+Add `?debug=1` to the URL for the live panel (fps, current scene pair, global
+and local progress, scroll velocity, shapes loaded).
+
+> **Heads up:** `NODE_ENV` is set to `production` permanently in your Windows
+> environment. That makes `npm install` skip and prune devDependencies, which
+> breaks the dev server (`Cannot find module '@tailwindcss/postcss'`). Either
+> unset it in System Environment Variables, or always run
+> `$env:NODE_ENV="development"` before installing.
+
+## Where things live
+
+| What | Where |
+| --- | --- |
+| Scene order, per-scene tuning, engine config | `src/config/journey-scenes.ts` |
+| Hero copy, captions, section layout | `src/components/journey/ScienceJourney.tsx` |
+| WebGL engine, overlay, debug panel | `src/components/journey/JourneyStage.tsx` |
+| SVG → point cloud sampling | `src/lib/journey/svgToPointCloud.ts` |
+| Theme bridge (mode + palette) | `src/lib/journey/theme.ts` |
+| Shaders | `src/lib/journey/shaders.ts` |
+| Placement + cross-fade curves | `src/lib/journey/layout.ts` |
+| Illustrations | `public/images/*.svg` |
+
+## Changing the sequence
+
+Everything is driven by the `JOURNEY_SCENES` array in
+`src/config/journey-scenes.ts`. Reorder it, delete entries, or splice in one of
+the `JOURNEY_EXTRAS` — section count, scroll length and morph order all follow.
+No other file knows a filename.
+
+Each scene accepts `scale`, `x`, `y`, `idle` (motion personality), `flow`
+(transition direction preset) and `flowStrength`.
+
+**The sequence is currently 15 sections × 100vh**, so the rest of the landing
+page starts about 15 screens down. Shorten the array if that's too long.
+
+## Common tweaks
+
+All in `JOURNEY_CONFIG` at the bottom of the same file:
+
+- `particles` — point counts per device tier. Raise `desktop` for denser
+  reconstructions, lower it if frame rate suffers.
+- `particleSize` — base point size in CSS px.
+- `flowStrength` — how far particles stray from the direct path. Raise for a
+  looser cloud, lower for a tighter morph.
+- `stagger` — spread of per-particle departure times; higher is more organic.
+- `smoothing` — damping toward the scroll-defined progress.
+- `layout` — where the artwork sits (`desktopX` 0.3 = centre-right) and how big.
+- `sectionVh` — scroll distance per scene.
+- `darkArtwork` — how the line art is treated on a dark theme (see below).
+
+## Theming
+
+The journey reads the site's own CSS tokens (`--background`, `--foreground`,
+`--primary`, `--secondary`) and re-reads them whenever `data-theme` or
+`data-palette` changes. The mode toggle and the palette switcher therefore
+drive the paper colour, the grid, the text **and** the particle colours.
+
+Sampling quantises every pixel into three semantic slots — dark ink /
+chromatic / light — which map to `--foreground` / `--primary` / `--secondary`
+at render time. A contrast guard nudges a slot toward the foreground if a
+given palette would make it invisible against its own background.
+
+**Dark mode and the artwork:** the SVGs are dark line art on transparency,
+authored for a light page. On a dark theme they'd be nearly invisible, so by
+default they get `invert(1) hue-rotate(180deg)` — lightness flips, hue is
+preserved. This makes line work read white but also flips the illustrations'
+own tones (dark hair becomes light, etc.). If you'd rather not have that,
+set `darkArtwork: 'none'` or `'dim'` in `JOURNEY_CONFIG`.
+
+## Asset notes
+
+- Assets are sampled at runtime from `public/images/`. Drop in a replacement
+  with the same filename and it just works — no rebuild step.
+- Every asset must have a **transparent background**. Sampling uses alpha to
+  find the artwork; a baked-in background rectangle samples as a solid block.
+- `public/images/teacher.svg` is excluded from the sequence for exactly that
+  reason. Re-export it with transparency to use it.
+
+## Deploying
+
+Unchanged — `npm run build` then deploy to Vercel as before. The sampling all
+happens in the browser, so there's no extra build step or server work.

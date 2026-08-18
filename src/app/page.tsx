@@ -28,18 +28,25 @@ import { MagneticButton } from '@/components/magnetic-button'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
 
-const Hero3D = dynamic(() => import('@/components/three/Hero3D'), {
-  ssr: false,
-  loading: () => (
-    <section
-      id="hero"
-      aria-busy="true"
-      className="relative flex min-h-screen items-center justify-center bg-background"
-    >
-      <div className="size-8 animate-pulse border-[3px] border-border bg-primary" />
-    </section>
-  ),
-})
+// The hero is now the scroll-linked particle journey: every illustration
+// dissolves into red/black/yellow ink and reassembles as the next one.
+// Sequence + tuning live in src/config/journey-scenes.ts.
+// (Hero3D is kept in the tree — swap it back here to restore the old hero.)
+const ScienceJourney = dynamic(
+  () => import('@/components/journey/ScienceJourney'),
+  {
+    ssr: false,
+    loading: () => (
+      <section
+        id="hero"
+        aria-busy="true"
+        className="relative flex min-h-screen items-center justify-center bg-background"
+      >
+        <div className="size-8 animate-pulse rounded-full bg-primary" />
+      </section>
+    ),
+  }
+)
 
 const Strands = dynamic(() => import('@/components/reactbits/Strands'), { ssr: false })
 
@@ -248,13 +255,21 @@ export default function LandingPage() {
         <ThemeToggle />
       </div>
 
-      <div className="relative z-10 flex flex-1 flex-col">
-        <Hero3D
-          onEnterConsole={() => {
-            router.push('/login')
-          }}
-        />
+      {/* Journey sits OUTSIDE the z-10 wrapper on purpose: its own
+          sections paint at z-30, above the portalled particle canvas at
+          z-20, so text is never covered by the cloud. */}
+      <ScienceJourney
+        onEnterConsole={() => {
+          router.push('/login')
+        }}
+        onSeeHow={() => {
+          document
+            .getElementById('how-it-works')
+            ?.scrollIntoView({ behavior: 'smooth' })
+        }}
+      />
 
+      <div className="relative z-10 flex flex-1 flex-col">
         <FeaturesSection />
         <HowItWorksSection />
         <CTASection />

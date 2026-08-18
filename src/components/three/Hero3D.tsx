@@ -15,6 +15,7 @@ import DecryptedText from '@/components/reactbits/DecryptedText'
 import { ShaderLogo } from '@/components/shader-icons'
 import { LiveConversionCard } from '@/components/LiveConversionCard'
 import { MagneticButton } from '@/components/magnetic-button'
+import HeroParallaxObjects from '@/components/HeroParallaxObjects'
 
 /* ------------------------------------------------------------------ */
 /* Types & constants                                                   */
@@ -75,6 +76,11 @@ export default function Hero3D({ onEnterConsole }: Hero3DProps) {
       aria-label="DiagramMind hero"
       className="relative min-h-screen w-full overflow-hidden"
     >
+      {/* Parallax illustration objects — the 12 hand-drawn SVGs floating
+          at three depth layers (mouse + scroll parallax). Sits above the
+          page background, below the content overlay. */}
+      <HeroParallaxObjects />
+
       {/* Layer 4: content overlay */}
       <motion.div
         className="relative z-10 mx-auto flex min-h-screen max-w-7xl flex-col px-6 py-10 sm:px-10 sm:py-14 lg:py-16"
