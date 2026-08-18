@@ -161,8 +161,13 @@ export default function JourneyStage({ scenes, containerRef }: Props) {
       uRadial: { value: 0 },
       uDepth: { value: 0 },
       uAmbient: { value: 0 },
+      uAmbientSpeed: { value: C.restSpeed },
       uSize: { value: C.particleSize },
       uPixelRatio: { value: dpr },
+      uIdleCenter: { value: new THREE.Vector2(0, 0) },
+      uIdleOffset: { value: new THREE.Vector2(0, 0) },
+      uIdleRot: { value: 0 },
+      uIdleScale: { value: 1 },
       uOpacity: { value: 0 },
       uC0: { value: new THREE.Vector3(...PALETTE_RGB[0]) },
       uC1: { value: new THREE.Vector3(...PALETTE_RGB[1]) },
@@ -246,6 +251,14 @@ export default function JourneyStage({ scenes, containerRef }: Props) {
 
     const boxCache = new Map<number, string>()
 
+    interface IdleXform {
+      tx: number
+      ty: number
+      rot: number
+      sc: number
+    }
+    const NO_IDLE: IdleXform = { tx: 0, ty: 0, rot: 0, sc: 1 }
+
     const applyOverlay = (
       i: number,
       cloud: PointCloud,
@@ -253,10 +266,10 @@ export default function JourneyStage({ scenes, containerRef }: Props) {
       opacity: number,
       idle: number,
       time: number
-    ) => {
+    ): IdleXform => {
       const el = overlayRefs.current[i]
       const img = imgRefs.current[i]
-      if (!el || !img) return
+      if (!el || !img) return NO_IDLE
 
       if (!img.getAttribute('src')) img.setAttribute('src', scenes[i].asset)
 
@@ -277,7 +290,7 @@ export default function JourneyStage({ scenes, containerRef }: Props) {
       const strength = reduceMotion ? 0 : idle
       if (strength <= 0.001) {
         el.style.transform = 'translate3d(0,0,0)'
-        return
+        return NO_IDLE
       }
       const ph = i * 1.7
       const t = (time / spec.period) * Math.PI * 2
@@ -288,6 +301,9 @@ export default function JourneyStage({ scenes, containerRef }: Props) {
       el.style.transform = `translate3d(${tx.toFixed(2)}px, ${ty.toFixed(
         2
       )}px, 0) rotate(${rot.toFixed(3)}deg) scale(${sc.toFixed(4)})`
+
+      // CSS y grows downward, world y grows upward
+      return { tx, ty: -ty, rot: (-rot * Math.PI) / 180, sc }
     }
 
     const hideOverlay = (i: number) => {
@@ -416,13 +432,39 @@ export default function JourneyStage({ scenes, containerRef }: Props) {
         uniforms.uSwirl.value = preset.swirl * ref * fs * m
         uniforms.uRadial.value = preset.radial * ref * fs * m
         uniforms.uDepth.value = C.depth * ref * m
+        // Ambient drift is what makes a settled shape feel alive, so it
+        // is strongest at rest and eases off once the morph takes over.
         const stillness = 1 - Math.min(1, Math.abs(velocity) * 3)
+        const settled = Math.max(fade.idleSrc, fade.idleDst)
         uniforms.uAmbient.value =
-          C.ambient * (0.3 + 0.7 * stillness) * fade.particles * m
+          C.ambient * (0.35 + 0.65 * stillness) * (0.4 + 0.6 * settled) * m
         uniforms.uOpacity.value = fade.particles
 
-        applyOverlay(i, srcCloud, ps, fade.src, fade.idleSrc, time)
-        applyOverlay(i + 1, dstCloud, pd, fade.dst, fade.idleDst, time)
+        const idleA = applyOverlay(i, srcCloud, ps, fade.src, fade.idleSrc, time)
+        const idleB = applyOverlay(
+          i + 1,
+          dstCloud,
+          pd,
+          fade.dst,
+          fade.idleDst,
+          time
+        )
+
+        // Lock the resting ink layer onto whichever illustration is
+        // settled, so it drifts with the artwork instead of beside it.
+        const wA = fade.idleSrc
+        const wB = fade.idleDst
+        uniforms.uIdleCenter.value.set(
+          ps.cx * wA + pd.cx * wB,
+          ps.cy * wA + pd.cy * wB
+        )
+        uniforms.uIdleOffset.value.set(
+          idleA.tx * wA + idleB.tx * wB,
+          idleA.ty * wA + idleB.ty * wB
+        )
+        uniforms.uIdleRot.value = idleA.rot * wA + idleB.rot * wB
+        uniforms.uIdleScale.value =
+          1 + (idleA.sc - 1) * wA + (idleB.sc - 1) * wB
       } else {
         uniforms.uOpacity.value = 0
         // show whichever crisp image we already have so the section is

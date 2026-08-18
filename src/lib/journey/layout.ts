@@ -99,11 +99,17 @@ export interface Fade {
 export function crossfade(p: number): Fade {
   const src = 1 - smoothstep(0.07, 0.19, p)
   const dst = smoothstep(0.87, 1.0, p)
-  const particles = smoothstep(0.08, 0.2, p) * (1 - smoothstep(0.86, 1.0, p))
+  const flowing = smoothstep(0.08, 0.2, p) * (1 - smoothstep(0.86, 1.0, p))
+
+  // A settled illustration keeps a faint layer of ink grain sitting
+  // exactly on top of itself. It never morphs — it only drifts — so the
+  // shape stays crisp while still feeling alive rather than printed.
+  const rest = JOURNEY_CONFIG.restOpacity
+
   return {
     src,
     dst,
-    particles,
+    particles: Math.max(flowing, rest),
     idleSrc: 1 - smoothstep(0.0, 0.09, p),
     idleDst: smoothstep(0.91, 1.0, p),
   }

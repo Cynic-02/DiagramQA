@@ -34,8 +34,17 @@ uniform float uSwirl;      // tangential bias, px
 uniform float uRadial;     // radial bias, px
 uniform float uDepth;      // z displacement, px
 uniform float uAmbient;    // idle float while scrolling is stopped, px
+uniform float uAmbientSpeed;
 uniform float uSize;
 uniform float uPixelRatio;
+
+// Idle transform of the settled illustration. The crisp <img> is moved
+// by CSS; these mirror that exact motion so the resting particle layer
+// stays locked to the artwork instead of ghosting beside it.
+uniform vec2  uIdleCenter;
+uniform vec2  uIdleOffset;
+uniform float uIdleRot;
+uniform float uIdleScale;
 
 uniform vec3 uC0; // black
 uniform vec3 uC1; // red
@@ -116,11 +125,20 @@ void main() {
 
   vec2 pos = base + disp * env;
 
-  // barely-there life while the page is still
+  // barely-there life while the page is still — each particle drifts on
+  // its own slow loop, so a settled illustration breathes as ink grain
+  // rather than sitting frozen. Never large enough to blur the shape.
   pos += vec2(
-    sin(uTime * 0.55 + aRandom.x * 6.2831),
-    cos(uTime * 0.47 + aRandom.y * 6.2831)
+    sin(uTime * 0.31 * uAmbientSpeed + aRandom.x * 6.2831) + 0.45 * sin(uTime * 0.17 * uAmbientSpeed + aRandom.z * 6.2831),
+    cos(uTime * 0.27 * uAmbientSpeed + aRandom.y * 6.2831) + 0.45 * cos(uTime * 0.21 * uAmbientSpeed + aRandom.x * 6.2831)
   ) * uAmbient;
+
+  // follow the settled artwork's own float/rotate/breathe
+  vec2 rel2 = pos - uIdleCenter;
+  float ca = cos(uIdleRot);
+  float sa = sin(uIdleRot);
+  rel2 = vec2(rel2.x * ca - rel2.y * sa, rel2.x * sa + rel2.y * ca) * uIdleScale;
+  pos = uIdleCenter + rel2 + uIdleOffset;
 
   float z = (aRandom.z - 0.5) * uDepth * env;
 

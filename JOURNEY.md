@@ -57,9 +57,31 @@ All in `JOURNEY_CONFIG` at the bottom of the same file:
   looser cloud, lower for a tighter morph.
 - `stagger` — spread of per-particle departure times; higher is more organic.
 - `smoothing` — damping toward the scroll-defined progress.
+- `restOpacity` / `ambient` / `restSpeed` — the resting ink layer (below).
 - `layout` — where the artwork sits (`desktopX` 0.3 = centre-right) and how big.
 - `sectionVh` — scroll distance per scene.
-- `darkArtwork` — how the line art is treated on a dark theme (see below).
+- `darkArtwork` — how the line art is treated on a dark theme.
+
+## The resting ink layer
+
+A settled illustration is not a static image. A faint layer of particles sits
+exactly on top of the crisp artwork and drifts continuously on slow per-particle
+loops, so the shape reads as living ink rather than a printed picture. It never
+morphs — morph progress still comes only from scroll position — it only drifts.
+
+The layer is locked to the artwork's own idle float, rotation and breathing
+(the same transform the `<img>` gets in CSS is mirrored into the shader), so it
+moves *with* the illustration instead of ghosting beside it.
+
+Three dials in `JOURNEY_CONFIG`:
+
+- `restOpacity` (0.22) — how visible the resting grain is. `0` restores a
+  completely static settled shape. Above ~0.4 it starts to fuzz the artwork.
+- `ambient` (2.6) — drift distance in CSS px. Keep it small.
+- `restSpeed` (1.0) — drift speed. Lower is slower and calmer.
+
+Drift is strongest when the page is still and eases off as soon as scrolling
+starts, so it never competes with the morph.
 
 ## Theming
 

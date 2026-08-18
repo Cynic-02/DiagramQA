@@ -315,8 +315,18 @@ export const JOURNEY_CONFIG = {
   /** z displacement at mid-morph, fraction of object size */
   depth: 0.16,
 
-  /** ambient float while scrolling is stopped, in CSS px */
-  ambient: 2.0,
+  /** ambient drift of the ink grain, in CSS px. Slow and small — this is
+   *  what makes a settled illustration feel alive without morphing. */
+  ambient: 2.6,
+
+  /** how visible the resting ink layer is on a settled illustration.
+   *  0 = the shape is a completely static image (previous behaviour);
+   *  0.15–0.30 reads as living grain; above ~0.4 it starts to fuzz the
+   *  crisp artwork underneath. */
+  restOpacity: 0.22,
+
+  /** speed multiplier for the resting drift only (1 = as authored) */
+  restSpeed: 1.0,
 
   /** damped-lerp factor toward the scroll-defined progress */
   smoothing: 0.14,
