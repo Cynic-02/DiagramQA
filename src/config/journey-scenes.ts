@@ -344,6 +344,34 @@ export const JOURNEY_CONFIG = {
   /** speed multiplier for the resting drift only (1 = as authored) */
   restSpeed: 1.0,
 
+  /**
+   * Pointer parallax. Particles carry a per-particle depth factor so the
+   * cloud separates into layers rather than sliding as one sheet; the
+   * crisp artwork moves by `image` only. Kept small on purpose — it must
+   * never look like the shape itself is shifting. Disabled on touch and
+   * under prefers-reduced-motion.
+   */
+  parallax: {
+    /** max particle travel, px */
+    particles: 13,
+    /** max travel of the crisp illustration, px */
+    image: 7,
+    /** damping toward the pointer, per frame at 60fps */
+    ease: 0.055,
+  },
+
+  /**
+   * One-time entrance. On first load the opening illustration gathers
+   * itself out of scattered ink instead of appearing fully formed.
+   * Skipped if the page is already scrolled, or under reduced motion.
+   *   scatter  — how far the ink starts out, fraction of object size
+   *   duration — seconds to settle
+   */
+  intro: {
+    scatter: 0.55,
+    duration: 1.8,
+  },
+
   /** damped-lerp factor toward the scroll-defined progress */
   smoothing: 0.14,
 

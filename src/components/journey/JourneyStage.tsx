@@ -167,6 +167,9 @@ export default function JourneyStage({ scenes, containerRef }: Props) {
       uRestDrift: { value: C.rest.drift },
       uSize: { value: C.particleSize },
       uPixelRatio: { value: dpr },
+      uParallax: { value: new THREE.Vector2(0, 0) },
+      uIntro: { value: 1 },
+      uIntroScatter: { value: 0 },
       uIdleCenter: { value: new THREE.Vector2(0, 0) },
       uIdleOffset: { value: new THREE.Vector2(0, 0) },
       uIdleRot: { value: 0 },
@@ -206,6 +209,32 @@ export default function JourneyStage({ scenes, containerRef }: Props) {
     }
     applyTheme()
     const stopThemeWatch = watchJourneyTheme(applyTheme)
+
+    /* ---------------- pointer parallax ---------------- */
+
+    // Desktop pointer only: a coarse pointer means touch, where there is
+    // no hover position to track and the effect would be meaningless.
+    const finePointer = window.matchMedia('(pointer: fine)').matches
+    const parallaxOn = finePointer && !reduceMotion
+
+    let pointerX = 0
+    let pointerY = 0
+    let paraX = 0
+    let paraY = 0
+
+    const onPointerMove = (e: PointerEvent) => {
+      pointerX = (e.clientX / window.innerWidth) * 2 - 1
+      pointerY = (e.clientY / window.innerHeight) * 2 - 1
+    }
+    if (parallaxOn) {
+      window.addEventListener('pointermove', onPointerMove, { passive: true })
+    }
+
+    /* ---------------- entrance ---------------- */
+
+    // Only play the entrance when the visitor actually lands at the top.
+    let intro = window.scrollY > 40 || reduceMotion ? 1 : 0
+    let introStarted = intro >= 1
 
     /* ---------------- shape loading ---------------- */
 
@@ -291,8 +320,11 @@ export default function JourneyStage({ scenes, containerRef }: Props) {
 
       const spec = IDLE_PRESETS[scenes[i].idle ?? 'float']
       const strength = reduceMotion ? 0 : idle
+      const px = paraX * C.parallax.image
+      const py = paraY * C.parallax.image
+
       if (strength <= 0.001) {
-        el.style.transform = 'translate3d(0,0,0)'
+        el.style.transform = `translate3d(${px.toFixed(2)}px, ${py.toFixed(2)}px, 0)`
         return NO_IDLE
       }
       const ph = i * 1.7
@@ -301,9 +333,9 @@ export default function JourneyStage({ scenes, containerRef }: Props) {
       const ty = Math.cos(t * 0.83 + ph * 1.7) * spec.y * strength
       const rot = Math.sin(t * 0.61 + ph) * spec.rot * strength
       const sc = 1 + (0.5 + 0.5 * Math.sin(t * 0.77 + ph)) * spec.scale * strength
-      el.style.transform = `translate3d(${tx.toFixed(2)}px, ${ty.toFixed(
-        2
-      )}px, 0) rotate(${rot.toFixed(3)}deg) scale(${sc.toFixed(4)})`
+      el.style.transform = `translate3d(${(tx + px).toFixed(2)}px, ${(
+        ty + py
+      ).toFixed(2)}px, 0) rotate(${rot.toFixed(3)}deg) scale(${sc.toFixed(4)})`
 
       // CSS y grows downward, world y grows upward
       return { tx, ty: -ty, rot: (-rot * Math.PI) / 180, sc }
@@ -348,6 +380,13 @@ export default function JourneyStage({ scenes, containerRef }: Props) {
       const dt = Math.min(0.05, (now - last) / 1000)
       last = now
       time += dt
+
+      // damped pointer follow — never snaps to the cursor
+      if (parallaxOn) {
+        const pk = 1 - Math.pow(1 - C.parallax.ease, dt * 60)
+        paraX += (pointerX - paraX) * pk
+        paraY += (pointerY - paraY) * pk
+      }
 
       const rect = container.getBoundingClientRect()
       const inView = rect.top < vh && rect.bottom > 0
@@ -447,12 +486,36 @@ export default function JourneyStage({ scenes, containerRef }: Props) {
         uniforms.uRestAlpha.value =
           C.rest.opacity * settled * stillness * m
 
-        const idleA = applyOverlay(i, srcCloud, ps, fade.src, fade.idleSrc, time)
+        // Entrance — advances only once the opening shapes are ready, so
+        // it is never spent while the assets are still being sampled.
+        if (!introStarted) introStarted = true
+        if (intro < 1) intro = Math.min(1, intro + dt / C.intro.duration)
+        const introE = 1 - Math.pow(1 - intro, 3) // easeOutCubic
+        uniforms.uIntro.value = introE
+        uniforms.uIntroScatter.value = ref * C.intro.scatter
+        uniforms.uParallax.value.set(
+          paraX * C.parallax.particles,
+          -paraY * C.parallax.particles
+        )
+
+        // during the entrance the ink is visible and the crisp art fades up
+        const introCloud = 1 - smoothstep(0.35, 0.95, introE)
+        const introCrisp = smoothstep(0.55, 1.0, introE)
+        uniforms.uOpacity.value = Math.max(fade.particles, introCloud)
+
+        const idleA = applyOverlay(
+          i,
+          srcCloud,
+          ps,
+          fade.src * introCrisp,
+          fade.idleSrc,
+          time
+        )
         const idleB = applyOverlay(
           i + 1,
           dstCloud,
           pd,
-          fade.dst,
+          fade.dst * introCrisp,
           fade.idleDst,
           time
         )
@@ -529,6 +592,7 @@ export default function JourneyStage({ scenes, containerRef }: Props) {
       disposed = true
       cancelAnimationFrame(raf)
       stopThemeWatch()
+      window.removeEventListener('pointermove', onPointerMove)
       window.removeEventListener('resize', onResize)
       document.removeEventListener('visibilitychange', onVisibility)
       geometry.dispose()

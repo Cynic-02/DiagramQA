@@ -21,6 +21,7 @@ import { useEffect, useRef, useState } from 'react'
 import { ArrowRight, ArrowDown } from 'lucide-react'
 
 import { JOURNEY_CONFIG, JOURNEY_SCENES } from '@/config/journey-scenes'
+import { RevealOnScroll } from '@/components/reveal'
 import {
   readJourneyTheme,
   watchJourneyTheme,
@@ -130,14 +131,14 @@ export default function ScienceJourney({
             aria-label={scene.title}
             className="relative z-30 flex items-end px-6 pb-16 sm:px-10 lg:items-center lg:px-16 lg:pb-0"
           >
-            <div className="max-w-[420px]">
+            <RevealOnScroll direction="up" amount={0.5} className="max-w-[420px]">
               <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.28em] text-primary">
                 {String(i + 1).padStart(2, '0')} — {scene.title}
               </span>
               <p className="mt-3 text-pretty text-xl font-semibold leading-snug text-foreground sm:text-2xl">
                 {scene.caption}
               </p>
-            </div>
+            </RevealOnScroll>
           </section>
         )
       )}

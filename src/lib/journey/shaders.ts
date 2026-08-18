@@ -42,6 +42,14 @@ uniform float uRestDrift;  // extra drift multiplier for those motes
 uniform float uSize;
 uniform float uPixelRatio;
 
+// Pointer parallax, px. Applied with a per-particle depth factor so the
+// cloud separates into layers instead of sliding as one flat sheet.
+uniform vec2  uParallax;
+
+// One-time entrance: 0 = fully scattered, 1 = settled on the shape.
+uniform float uIntro;
+uniform float uIntroScatter;
+
 // Idle transform of the settled illustration. The crisp <img> is moved
 // by CSS; these mirror that exact motion so the resting particle layer
 // stays locked to the artwork instead of ghosting beside it.
@@ -151,6 +159,19 @@ void main() {
   float sa = sin(uIdleRot);
   rel2 = vec2(rel2.x * ca - rel2.y * sa, rel2.x * sa + rel2.y * ca) * uIdleScale;
   pos = uIdleCenter + rel2 + uIdleOffset;
+
+  // Entrance: the first shape gathers itself out of scattered ink rather
+  // than simply appearing. Zero effect once uIntro reaches 1.
+  float ip = 1.0 - uIntro;
+  if (ip > 0.0) {
+    float ang = aRandom.x * 6.2831;
+    float rad = 0.35 + aRandom.z * 1.15;
+    pos += vec2(cos(ang), sin(ang)) * rad * uIntroScatter * ip * ip;
+  }
+
+  // pointer parallax — depth layers, never enough to shift the silhouette
+  float layer = 0.45 + aRandom.z * 1.1;
+  pos += uParallax * layer;
 
   float z = (aRandom.z - 0.5) * uDepth * env;
 

@@ -88,6 +88,25 @@ the rest, so it reads as a few motes of ink rather than grain over everything:
 Motes only appear on a settled shape and only while the page is actually
 still; they fade out the moment scrolling starts.
 
+## Entrance and pointer parallax
+
+**Entrance.** On first load the opening illustration gathers itself out of
+scattered ink rather than appearing fully formed — the same machinery as a
+morph, run once. It is skipped entirely if the visitor arrives already
+scrolled (a refresh mid-page, or a deep link), and under reduced motion.
+`intro.scatter` sets how far out the ink starts, `intro.duration` how long it
+takes to settle.
+
+**Pointer parallax.** Particles carry a per-particle depth factor, so moving
+the mouse separates the cloud into layers instead of sliding it as one flat
+sheet. The crisp artwork moves by a smaller amount (`parallax.image`) than the
+particles (`parallax.particles`), which is what produces the depth. Motion is
+damped, never snapping to the cursor. Disabled on touch (`pointer: coarse`)
+and under reduced motion. The graph paper does not move at all.
+
+Both are deliberately restrained: parallax tops out around 7px of artwork
+travel. It should register as depth, not as the illustration sliding around.
+
 ## Theming
 
 The journey reads the site's own CSS tokens (`--background`, `--foreground`,
