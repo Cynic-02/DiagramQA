@@ -70,6 +70,15 @@ uniform float uOpacity;
 
 uniform vec2  uParallax;
 
+// Pointer repulsion — particles open a gap around the cursor.
+uniform vec2  uPointer;
+uniform float uRepelRadius;
+uniform float uRepelStrength;
+
+// Per-particle spin. Slow while a formation is held, faster while free.
+uniform float uSpinRest;
+uniform float uSpinFlow;
+
 uniform float uIntro;
 uniform float uIntroScatter;
 
@@ -87,6 +96,8 @@ uniform float uDebugErosion;
 
 varying vec3  vColor;
 varying float vAlpha;
+varying float vRot;
+varying float vSize;
 
 const float PI = 3.141592653589793;
 
@@ -240,6 +251,15 @@ void main() {
   float layer = 0.45 + aRandom.z * 1.1;
   pos += uParallax * layer;
 
+  // Pointer repulsion: the field opens a gap around the cursor and
+  // closes again behind it. Falloff is smooth so there is no hard edge,
+  // and shards nearer the pointer move further.
+  vec2 away = pos - uPointer;
+  float pd = length(away);
+  float push = 1.0 - smoothstep(0.0, uRepelRadius, pd);
+  push = push * push;
+  pos += normalize(away + vec2(0.0001, 0.0001)) * push * uRepelStrength;
+
   // flat at rest, a little depth while free
   float z = (aRandom.z - 0.5) * uDepth * free;
 
@@ -260,24 +280,67 @@ void main() {
   vColor = col;
   vAlpha = uOpacity * (1.0 - abs(z) / max(uDepth, 1.0) * 0.18);
 
-  gl_PointSize = uSize * (0.72 + aRandom.z * 1.15) * uPixelRatio;
+  // Each shard keeps its own orientation and turns slowly. Spin picks up
+  // while the particle is free and settles again once it is claimed.
+  float spin = mix(uSpinRest, uSpinFlow, free);
+  vRot = aRandom.x * 6.2831 + uTime * spin * (aRandom.z - 0.5) * 2.0;
+
+  vSize = uSize * (0.72 + aRandom.z * 1.15) * uPixelRatio;
+  gl_PointSize = vSize;
 }
 `
 
 export const JOURNEY_FRAG = /* glsl */ `
 precision mediump float;
 
+uniform float uShape;      // 0 = filled dot, 1 = outlined triangle
+uniform float uStroke;     // outline weight in px
+
 varying vec3  vColor;
 varying float vAlpha;
+varying float vRot;
+varying float vSize;
+
+// exact signed distance to an equilateral triangle centred on origin
+float sdTriangle(vec2 p, float r) {
+  const float k = 1.7320508;
+  p.x = abs(p.x) - r;
+  p.y = p.y + r / k;
+  if (p.x + k * p.y > 0.0) {
+    p = vec2(p.x - k * p.y, -k * p.x - p.y) / 2.0;
+  }
+  p.x -= clamp(p.x, -2.0 * r, 0.0);
+  return -length(p) * sign(p.y);
+}
 
 void main() {
   vec2 c = gl_PointCoord - 0.5;
-  float d = dot(c, c);
-  if (d > 0.25) discard;
+  c.y = -c.y; // gl_PointCoord is y-down
 
-  // soft-edged dot: printed ink grain, not glowing sci-fi dust
-  float a = smoothstep(0.25, 0.06, d);
+  float alpha;
 
-  gl_FragColor = vec4(vColor, a * vAlpha);
+  if (uShape > 0.5) {
+    // rotate into the shard's own frame
+    float ca = cos(vRot);
+    float sa = sin(vRot);
+    vec2 q = vec2(c.x * ca - c.y * sa, c.x * sa + c.y * ca);
+
+    float d = sdTriangle(q, 0.34);
+
+    // Keep the outline a constant weight on screen: a fixed UV width
+    // would vanish on small shards and go blobby on large ones.
+    float hw = clamp(uStroke / max(vSize, 1.0), 0.045, 0.22);
+    float aa = 1.4 / max(vSize, 1.0);
+
+    alpha = 1.0 - smoothstep(hw - aa, hw + aa, abs(d));
+  } else {
+    float d = dot(c, c);
+    if (d > 0.25) discard;
+    alpha = smoothstep(0.25, 0.06, d);
+  }
+
+  if (alpha <= 0.003) discard;
+
+  gl_FragColor = vec4(vColor, alpha * vAlpha);
 }
 `

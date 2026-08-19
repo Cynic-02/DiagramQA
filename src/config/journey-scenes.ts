@@ -362,17 +362,49 @@ export const JOURNEY_CONFIG = {
   /** used when paletteMode is 'ink' — black / red / yellow */
   inkPalette: ['#111111', '#C52A30', '#F2C45C'] as [string, string, string],
 
-  /** particle counts by device tier. Higher than a crossfade design
-   *  needs, because the particles alone must carry the illustration. */
-  particles: {
-    high: 20000,
-    desktop: 15000,
-    tablet: 9000,
-    mobile: 5500,
+  /**
+   * Shard shape. 'triangle' draws each particle as a hollow outlined
+   * triangle at its own rotation; 'dot' is a filled circle.
+   * Outlines need more room than dots, so triangle mode runs a lower
+   * count at a larger size — below ~4px an outline has no room to read.
+   */
+  particleShape: 'triangle' as 'triangle' | 'dot',
+
+  /** outline weight in px (triangle mode only) */
+  particleStroke: 1.15,
+
+  /** shard spin, radians/sec: held vs free */
+  spin: {
+    rest: 0.12,
+    flow: 0.85,
   },
 
-  /** base point size in CSS px (before per-particle variation) */
-  particleSize: 1.85,
+  /**
+   * Pointer repulsion — the field opens a gap around the cursor.
+   *   radius   — reach in px
+   *   strength — how far the nearest shards are pushed, px
+   *   ease     — follow damping; higher is snappier
+   */
+  pointer: {
+    radius: 180,
+    strength: 78,
+    ease: 0.22,
+  },
+
+  /** particle counts by device tier.
+   *  Outlined shards need air around them to read as shards at all — at
+   *  dot-mode densities they overlap into a solid silhouette. These
+   *  counts are tuned for triangle mode; raise them if you switch
+   *  particleShape back to 'dot'. */
+  particles: {
+    high: 4800,
+    desktop: 3600,
+    tablet: 2600,
+    mobile: 1800,
+  },
+
+  /** base shard size in CSS px (before per-particle variation) */
+  particleSize: 7.5,
 
   /** Breakup / assembly shaping. Spread staggers particles across the
    *  transition; window is how long a single particle takes to let go

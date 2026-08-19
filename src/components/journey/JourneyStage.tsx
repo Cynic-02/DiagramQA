@@ -172,8 +172,15 @@ export default function JourneyStage({ scenes, containerRef }: Props) {
       uDepth: { value: 0 },
       uAmbient: { value: 0 },
       uAmbientSpeed: { value: C.restSpeed },
-      uSize: { value: C.particleSize },
+      uSize: { value: C.particleSize as number },
       uPixelRatio: { value: dpr },
+      uShape: { value: C.particleShape === 'triangle' ? 1 : 0 },
+      uStroke: { value: C.particleStroke as number },
+      uSpinRest: { value: C.spin.rest as number },
+      uSpinFlow: { value: C.spin.flow as number },
+      uPointer: { value: new THREE.Vector2(1e6, 1e6) },
+      uRepelRadius: { value: C.pointer.radius as number },
+      uRepelStrength: { value: 0 },
       uParallax: { value: new THREE.Vector2(0, 0) },
       uIntro: { value: 1 },
       uIntroScatter: { value: 0 },
@@ -229,12 +236,33 @@ export default function JourneyStage({ scenes, containerRef }: Props) {
     let paraX = 0
     let paraY = 0
 
+    // Cursor in world pixels, tracked separately from the parallax with
+    // much lighter damping — repulsion has to feel immediate, parallax
+    // has to feel slow.
+    let cursorX = 1e6
+    let cursorY = 1e6
+    let repelX = 1e6
+    let repelY = 1e6
+    let pointerInside = false
+
     const onPointerMove = (e: PointerEvent) => {
       pointerX = (e.clientX / window.innerWidth) * 2 - 1
       pointerY = (e.clientY / window.innerHeight) * 2 - 1
+      cursorX = e.clientX - window.innerWidth / 2
+      cursorY = window.innerHeight / 2 - e.clientY
+      if (!pointerInside) {
+        // don't sweep the field on the first sample
+        repelX = cursorX
+        repelY = cursorY
+        pointerInside = true
+      }
+    }
+    const onPointerLeave = () => {
+      pointerInside = false
     }
     if (parallaxOn) {
       window.addEventListener('pointermove', onPointerMove, { passive: true })
+      document.addEventListener('pointerleave', onPointerLeave)
     }
 
     /* ---------------- entrance ---------------- */
@@ -393,6 +421,14 @@ export default function JourneyStage({ scenes, containerRef }: Props) {
         const pk = 1 - Math.pow(1 - C.parallax.ease, dt * 60)
         paraX += (pointerX - paraX) * pk
         paraY += (pointerY - paraY) * pk
+
+        const rk = 1 - Math.pow(1 - C.pointer.ease, dt * 60)
+        repelX += (cursorX - repelX) * rk
+        repelY += (cursorY - repelY) * rk
+        uniforms.uPointer.value.set(repelX, repelY)
+        uniforms.uRepelStrength.value = pointerInside
+          ? C.pointer.strength
+          : 0
       }
 
       const rect = container.getBoundingClientRect()
@@ -611,6 +647,7 @@ export default function JourneyStage({ scenes, containerRef }: Props) {
       cancelAnimationFrame(raf)
       stopThemeWatch()
       window.removeEventListener('pointermove', onPointerMove)
+      document.removeEventListener('pointerleave', onPointerLeave)
       window.removeEventListener('resize', onResize)
       document.removeEventListener('visibilitychange', onVisibility)
       geometry.dispose()
