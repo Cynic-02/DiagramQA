@@ -117,6 +117,13 @@ export function readJourneyTheme(): JourneyTheme {
     slot1 = mix(primary, ink, 0.4)
   }
 
+  // 'ink' pins the particles to the fixed scientific triad while paper
+  // and copy still follow the theme.
+  const particles: [number, number, number][] =
+    JOURNEY_CONFIG.paletteMode === 'ink'
+      ? JOURNEY_CONFIG.inkPalette.map((hex) => norm(resolve(hex, hex)))
+      : [norm(ink), norm(slot1), norm(slot2)]
+
   return {
     isDark,
     paper: rgbCss(paper),
@@ -125,7 +132,7 @@ export function readJourneyTheme(): JourneyTheme {
     ink: rgbCss(ink),
     accent: rgbCss(primary),
     muted: rgbCss(muted),
-    particles: [norm(ink), norm(slot1), norm(slot2)],
+    particles,
     artFilter: isDark ? DARK_ART_FILTERS[JOURNEY_CONFIG.darkArtwork] : 'none',
   }
 }

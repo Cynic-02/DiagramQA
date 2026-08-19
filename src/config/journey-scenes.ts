@@ -347,6 +347,21 @@ export const JOURNEY_CONFIG = {
    */
   crispAtRest: false,
 
+  /**
+   * Where particle colours come from.
+   *   'theme'  — follow the site's tokens, so the mode toggle and the
+   *              palette switcher recolour the sculptures (default).
+   *              Note this means a palette's own hues win: on a blue
+   *              primary the neuron reads blue, not red.
+   *   'ink'    — the fixed scientific triad below, regardless of theme.
+   *              Paper and copy still follow the theme; only the
+   *              particles are pinned.
+   */
+  paletteMode: 'theme' as 'theme' | 'ink',
+
+  /** used when paletteMode is 'ink' — black / red / yellow */
+  inkPalette: ['#111111', '#C52A30', '#F2C45C'] as [string, string, string],
+
   /** particle counts by device tier. Higher than a crossfade design
    *  needs, because the particles alone must carry the illustration. */
   particles: {
@@ -385,36 +400,13 @@ export const JOURNEY_CONFIG = {
   /** curl-noise spatial frequency */
   noiseFrequency: 2.1,
 
-  /** per-particle departure spread — higher = more organic breakup */
-  stagger: 0.34,
-
   /** z displacement at mid-morph, fraction of object size */
   depth: 0.16,
 
-  /** ambient drift of settled particles, in CSS px. Small and slow. */
+  /** ambient drift of the whole formation, in CSS px. Small and slow. */
   ambient: 2.4,
 
-  /**
-   * The resting ink layer, drawn on top of a settled illustration.
-   *
-   * OFF by default. These illustrations are full-colour, not line art, so
-   * a blanket of particles over one reads as dust or dirt rather than as
-   * life — particle colours come from the theme, which in dark mode means
-   * near-white specks scattered over blue water and green hills.
-   *
-   * If you do want it, keep `opacity` low and `fraction` small: a sparse
-   * few motes drifting reads far better than a full grain layer.
-   *   opacity  — 0 disables it. 0.10–0.18 is the usable range.
-   *   fraction — share of particles kept as motes. 0.03–0.08.
-   *   drift    — extra drift for those motes, multiple of `ambient`.
-   */
-  rest: {
-    opacity: 0,
-    fraction: 0.05,
-    drift: 2.5,
-  },
-
-  /** speed multiplier for the resting drift only (1 = as authored) */
+  /** speed multiplier for idle drift (1 = as authored) */
   restSpeed: 1.0,
 
   /**
