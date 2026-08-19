@@ -144,11 +144,16 @@ export function readJourneyTheme(): JourneyTheme {
       )
     }) as [number, number, number][]
 
+  // Grid ruling is tinted toward the palette accent rather than being a
+  // neutral grey, so the paper belongs to whichever theme is active
+  // instead of reading as a separate sheet laid over the site.
+  const rule = mix(ink, primary, 0.45)
+
   return {
     isDark,
     paper: rgbCss(paper),
-    grid: rgbCss(ink, isDark ? 0.1 : 0.16),
-    gridFaint: rgbCss(ink, isDark ? 0.06 : 0.1),
+    grid: rgbCss(rule, isDark ? 0.11 : 0.17),
+    gridFaint: rgbCss(rule, isDark ? 0.06 : 0.09),
     ink: rgbCss(ink),
     accent: rgbCss(primary),
     muted: rgbCss(muted),

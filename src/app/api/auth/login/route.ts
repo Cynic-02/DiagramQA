@@ -12,8 +12,13 @@ export async function POST(req: NextRequest) {
     }>(req)
     if (response) return response
 
-    const email = normalizeEmail(body?.email)
+    let email = normalizeEmail(body?.email)
     const password = typeof body?.password === 'string' ? body.password : ''
+
+    // Convenience: allow bare username "admin" to map to admin@admin.com
+    if (!email && typeof body?.email === 'string' && body.email.trim().toLowerCase() === 'admin') {
+      email = 'admin@admin.com'
+    }
 
     if (!email || !password) {
       return NextResponse.json(

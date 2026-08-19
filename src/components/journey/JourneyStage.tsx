@@ -33,7 +33,7 @@ import {
   smoothstep,
   type Placement,
 } from '@/lib/journey/layout'
-import type { PointCloud } from '@/lib/journey/svgToPointCloud'
+import { hashSeed, makeScatterCloud, type PointCloud } from '@/lib/journey/svgToPointCloud'
 
 interface Props {
   scenes: JourneyScene[]
@@ -213,6 +213,7 @@ export default function JourneyStage({ scenes, containerRef }: Props) {
       uCurated: { value: C.paletteMode === 'curated' ? 1 : 0 },
       uFreeSpread: { value: 0 },
       uFreeOpacity: { value: C.freeField.opacity as number },
+      uVolumetric: { value: 0 },
     }
 
     const material = new THREE.ShaderMaterial({
@@ -304,7 +305,16 @@ export default function JourneyStage({ scenes, containerRef }: Props) {
 
     /* ---------------- shape loading ---------------- */
 
-    const store = new ShapeStore(COUNT)
+    // Scenes marked formation:'scatter' never assemble into their
+    // asset's silhouette — the store resolves them to a loose scattered
+    // field instead of sampling the SVG at all.
+    const scatterByUrl = new Map<string, () => PointCloud>()
+    for (const s of scenes) {
+      if (s.formation === 'scatter') {
+        scatterByUrl.set(s.asset, () => makeScatterCloud(COUNT, hashSeed(s.id)))
+      }
+    }
+    const store = new ShapeStore(COUNT, undefined, (url) => scatterByUrl.get(url))
     const urls = scenes.map((s) => s.asset)
 
     let disposed = false
@@ -558,6 +568,8 @@ export default function JourneyStage({ scenes, containerRef }: Props) {
         uniforms.uRadial.value = preset.radial * ref * fs * m
         uniforms.uDepth.value = C.depth * ref * m
         uniforms.uFreeSpread.value = C.freeField.spread * ref * m
+        uniforms.uVolumetric.value =
+          scenes[i].volumetric || scenes[i + 1].volumetric ? 1 : 0
 
         // Scroll velocity is a secondary influence only — faster
         // scrolling loosens the field slightly, capped so the formation

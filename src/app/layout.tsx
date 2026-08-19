@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Playfair_Display, JetBrains_Mono, Inter, Space_Grotesk, Caveat } from "next/font/google";
+import { Playfair_Display, JetBrains_Mono, Inter, Space_Grotesk, Caveat, Kalam, Patrick_Hand } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
@@ -66,6 +66,25 @@ const caveat = Caveat({
   weight: ["700"],
 });
 
+// Homepage "educational notebook" pass — a bold marker-style handwritten
+// face for headings (Kalam) and a calmer handwritten face for running
+// copy (Patrick Hand), so the landing page reads like teacher's notes
+// rather than a product-marketing sans stack. Loaded alongside every
+// other family above; globals.css decides where each is actually used.
+const kalam = Kalam({
+  variable: "--font-kalam",
+  subsets: ["latin"],
+  display: "swap",
+  weight: ["400", "700"],
+});
+
+const patrickHand = Patrick_Hand({
+  variable: "--font-patrick-hand",
+  subsets: ["latin"],
+  display: "swap",
+  weight: ["400"],
+});
+
 export const metadata: Metadata = {
   title: "DiagramMind — Diagram Question Generation",
   description:
@@ -98,8 +117,23 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* Sets data-palette on <html> before first paint, the same way
+            next-themes' own inline script sets data-theme. Without this,
+            data-palette stays unset until PaletteProvider's useEffect
+            runs post-hydration, so every card/badge/button driven by
+            [data-theme][data-palette] selectors — i.e. all of them —
+            renders with no fill, no border colour, and no shadow for
+            that window. Reading localStorage directly here removes the
+            gap entirely instead of just shortening it. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var d=document.documentElement;var mode=localStorage.getItem('theme');if(mode!=='light'&&mode!=='dark'){mode=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}var light=['monad','candy_pop','terracotta_earth','cotton_candy','lavender_haze','lattice'];var dark=['sunset_pop','royal_purple','ocean_teal','fire_and_ice','lattice_dim'];var valid=mode==='dark'?dark:light;var stored=localStorage.getItem('nba-palette-'+mode);var palette=valid.indexOf(stored)!==-1?stored:(mode==='dark'?'sunset_pop':'monad');d.setAttribute('data-palette',palette);}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${bricolage.variable} ${archivoBlack.variable} ${spaceGrotesk.variable} ${caveat.variable} antialiased bg-background text-foreground min-h-screen`}
+        className={`${geistSans.variable} ${geistMono.variable} ${bricolage.variable} ${archivoBlack.variable} ${spaceGrotesk.variable} ${caveat.variable} ${kalam.variable} ${patrickHand.variable} antialiased bg-background text-foreground min-h-screen`}
       >
         <ThemeProvider>
           <PaletteProvider>

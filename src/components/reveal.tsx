@@ -30,7 +30,7 @@ export function RevealOnScroll({
   children,
   direction = 'up',
   delay = 0,
-  duration = 0.5,
+  duration = 0.65,
   amount = 0.2,
   className,
 }: RevealProps) {
@@ -71,11 +71,11 @@ const containerVariants: Variants = {
 }
 
 const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 18 },
+  hidden: { opacity: 0, y: 20 },
   show: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.45, ease: EASE },
+    transition: { duration: 0.6, ease: EASE },
   },
 }
 

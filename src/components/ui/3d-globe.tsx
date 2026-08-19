@@ -1,5 +1,5 @@
 "use client";
-import React, { useRef, useMemo, useState, useCallback, Suspense } from "react";
+import React, { useRef, useMemo, useState, useCallback, useEffect, Suspense } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls, Html, useTexture } from "@react-three/drei";
 import * as THREE from "three";
@@ -214,9 +214,23 @@ const defaultConfig: Required<Globe3DConfig> = {
 
 export function Globe3D({ markers = [], config = {}, className, onMarkerClick, onMarkerHover }: Globe3DProps) {
   const mergedConfig = useMemo(() => ({ ...defaultConfig, ...config }), [config]);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  // An r3f canvas renders every frame (auto-rotation, damping, marker
+  // visibility checks) even when scrolled a full page away. Watching the
+  // wrapper and switching the frameloop off outside the viewport keeps
+  // the globe effectively free while it can't be seen.
+  const [inView, setInView] = useState(true);
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(([entry]) => setInView(entry.isIntersecting), { rootMargin: "120px" });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <div className={cn("relative h-[500px] w-full", className)}>
-      <Canvas gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }} dpr={[1, 2]} camera={{ fov: 45, near: 0.1, far: 1000, position: [0, 0, mergedConfig.radius * 3.5] }} style={{ background: mergedConfig.backgroundColor || "transparent" }}>
+    <div ref={wrapRef} className={cn("relative h-[500px] w-full", className)}>
+      <Canvas gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }} dpr={[1, 2]} camera={{ fov: 45, near: 0.1, far: 1000, position: [0, 0, mergedConfig.radius * 3.5] }} style={{ background: mergedConfig.backgroundColor || "transparent" }} frameloop={inView ? "always" : "never"}>
         <Suspense fallback={<LoadingFallback />}>
           <Scene markers={markers} config={mergedConfig} onMarkerClick={onMarkerClick} onMarkerHover={onMarkerHover} />
         </Suspense>

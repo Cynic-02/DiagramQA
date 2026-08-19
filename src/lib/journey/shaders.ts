@@ -68,6 +68,12 @@ uniform float uSize;
 uniform float uPixelRatio;
 uniform float uOpacity;
 
+// 1 while either formation in the current pair is a volumetric scatter
+// field (JourneyScene.volumetric) — keeps the depth spread on even at
+// rest instead of only during a morph, so the field reads as a
+// suspended cloud rather than a flat plane of shards.
+uniform float uVolumetric;
+
 uniform vec2  uParallax;
 
 // Pointer repulsion — particles open a gap around the cursor.
@@ -269,17 +275,29 @@ void main() {
   float layer = 0.45 + aRandom.z * 1.1;
   pos += uParallax * layer;
 
-  // Pointer repulsion: the field opens a gap around the cursor and
-  // closes again behind it. Falloff is smooth so there is no hard edge,
-  // and shards nearer the pointer move further.
+  // Pointer repulsion: shards near the cursor drift aside and settle
+  // back once it moves on. Falloff is smooth so there is no hard edge.
+  // The push direction is bent per-particle by a random tangential
+  // component (instead of pointing straight away from the cursor for
+  // every shard), so the field reads as particles individually nudged
+  // rather than a uniform disc being carved out around the pointer.
   vec2 away = pos - uPointer;
   float pd = length(away);
   float push = 1.0 - smoothstep(0.0, uRepelRadius, pd);
   push = push * push;
-  pos += normalize(away + vec2(0.0001, 0.0001)) * push * uRepelStrength;
+  vec2 awayDir = normalize(away + vec2(0.0001, 0.0001));
+  vec2 tangentDir = vec2(-awayDir.y, awayDir.x);
+  float swirl = (aRandom.x - 0.5) * 1.8;
+  vec2 pushDir = normalize(awayDir + tangentDir * swirl);
+  pos += pushDir * push * uRepelStrength;
 
-  // flat at rest, a little depth while free
-  float z = (aRandom.z - 0.5) * uDepth * free;
+  // Depth while held: a coalesced shape (brain, network, logo) is still
+  // a real volume, not a flat decal, so it always keeps a base amount
+  // of z-spread — boosted further for scatter/volumetric formations and
+  // during the free/mid-morph phase, when the field is most dispersed.
+  float depthAmt = max(free, uVolumetric);
+  depthAmt = max(depthAmt, 0.32);
+  float z = (aRandom.z - 0.5) * uDepth * depthAmt;
 
   gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, z, 1.0);
 
@@ -312,14 +330,22 @@ void main() {
   // The field thins out as it loses its shape and comes back up as the
   // next one is claimed.
   float freeFade = mix(1.0, uFreeOpacity, free);
-  vAlpha = uOpacity * freeFade * (1.0 - abs(z) / max(uDepth, 1.0) * 0.18);
+
+  // Depth cue: only SIZE varies with proximity (near = bigger, far =
+  // smaller). Brightness is deliberately left alone — boosting alpha by
+  // depth on top of overlapping particles is what blew highlights out
+  // to solid white before. Size alone is enough to read as depth.
+  float depthN = clamp(z / max(uDepth, 1.0), -1.0, 1.0); // -1 far .. +1 near
+  float depthSize = 1.0 + depthN * 0.6;
+
+  vAlpha = uOpacity * freeFade * (1.0 - abs(z) / max(uDepth, 1.0) * 0.22);
 
   // Each shard keeps its own orientation and turns slowly. Spin picks up
   // while the particle is free and settles again once it is claimed.
   float spin = mix(uSpinRest, uSpinFlow, free);
   vRot = aRandom.x * 6.2831 + uTime * spin * (aRandom.z - 0.5) * 2.0;
 
-  vSize = uSize * (0.72 + aRandom.z * 1.15) * uPixelRatio;
+  vSize = uSize * (0.72 + aRandom.z * 1.15) * depthSize * uPixelRatio;
   gl_PointSize = vSize;
 }
 `

@@ -197,8 +197,12 @@ export function ChatPanel({ runId, open, onOpenChange }: ChatPanelProps) {
                 messages.map((msg) => <ChatBubble key={msg.id} msg={msg} />)
               )}
               {loading && (
-                <div className="flex justify-start">
-                  <div className="flex items-center gap-1.5 border border-border bg-muted/30 px-3 py-1.5 rounded-2xl">
+                <div className="flex justify-start items-start gap-2">
+                  <div className="shrink-0 flex items-center justify-center size-7 rounded-full border-2 border-accent/50 overflow-hidden bg-muted/40 shadow-sm">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/images/teacher.svg" alt="Teacher" className="size-5 object-contain" />
+                  </div>
+                  <div className="flex items-center gap-1.5 border border-border bg-muted/30 px-3 py-1.5 rounded-2xl rounded-tl-none">
                     <span className="thinking-dot size-1.5 rounded-full bg-accent" />
                     <span
                       className="thinking-dot size-1.5 rounded-full bg-accent"
@@ -260,6 +264,23 @@ function ChatBubble({ msg }: { msg: ChatMsg }) {
     setTimeout(() => setCopied(false), 2000)
   }
 
+  const Avatar = (
+    <div
+      className={cn(
+        'shrink-0 flex items-center justify-center size-7 rounded-full border-2 overflow-hidden bg-muted/40 shadow-sm',
+        isUser ? 'border-primary/40' : 'border-accent/50'
+      )}
+      title={isUser ? 'You (Student)' : 'AI Teacher'}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={isUser ? '/images/student.svg' : '/images/teacher.svg'}
+        alt={isUser ? 'Student' : 'Teacher'}
+        className="size-5 object-contain"
+      />
+    </div>
+  )
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
@@ -267,20 +288,24 @@ function ChatBubble({ msg }: { msg: ChatMsg }) {
       transition={{ duration: 0.15 }}
       className={cn('flex group relative items-start gap-2', isUser ? 'justify-end' : 'justify-start')}
     >
+      {/* Teacher avatar + copy button for AI messages */}
       {!isUser && (
-        <button
-          onClick={handleCopy}
-          type="button"
-          className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground self-center shrink-0"
-          title="Copy explanation"
-        >
-          {copied ? <Check className="size-3 text-emerald-500" /> : <Copy className="size-3" />}
-        </button>
+        <div className="flex flex-col items-center gap-1 shrink-0">
+          {Avatar}
+          <button
+            onClick={handleCopy}
+            type="button"
+            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground shrink-0"
+            title="Copy explanation"
+          >
+            {copied ? <Check className="size-3 text-emerald-500" /> : <Copy className="size-3" />}
+          </button>
+        </div>
       )}
 
       <div
         className={cn(
-          'max-w-[85%] border border-border/60 px-3.5 py-2 text-[11px] leading-relaxed rounded-2xl shadow-sm',
+          'max-w-[80%] border border-border/60 px-3.5 py-2 text-[11px] leading-relaxed rounded-2xl shadow-sm',
           isUser
             ? 'bg-primary text-primary-foreground rounded-tr-none'
             : 'bg-card text-foreground/90 rounded-tl-none'
@@ -321,6 +346,9 @@ function ChatBubble({ msg }: { msg: ChatMsg }) {
           </ReactMarkdown>
         )}
       </div>
+
+      {/* Student avatar for user messages */}
+      {isUser && Avatar}
     </motion.div>
   )
 }

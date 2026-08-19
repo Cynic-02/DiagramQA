@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, type FormEvent } from 'react'
+import { useState, useEffect, type FormEvent } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
@@ -51,7 +51,8 @@ export default function LoginPage() {
 
   const passwordTooShort =
     mode === 'signup' && password.length > 0 && password.length < 6
-  const emailInvalid = email.length > 0 && !EMAIL_RE.test(email)
+  // Allow bare usernames like "admin" — only flag as invalid if it contains '@' but is malformed
+  const emailInvalid = email.length > 0 && email.includes('@') && !EMAIL_RE.test(email)
 
   function switchMode(next: Mode) {
     if (next === mode) return
@@ -76,17 +77,25 @@ export default function LoginPage() {
     e.preventDefault()
     setError(null)
 
-    // Client-side validation
-    if (!EMAIL_RE.test(email)) {
+    // Client-side validation — allow bare usernames (e.g. "admin") through
+    if (email.includes('@') && !EMAIL_RE.test(email)) {
       setError('Please enter a valid email address.')
+      return
+    }
+    if (!email.trim()) {
+      setError('Please enter your email or username.')
       return
     }
     if (mode === 'signup' && !name.trim()) {
       setError('Please enter your name.')
       return
     }
-    if (password.length < 6) {
+    if (mode === 'signup' && password.length < 6) {
       setError('Password must be at least 6 characters.')
+      return
+    }
+    if (!password) {
+      setError('Please enter your password.')
       return
     }
 
@@ -226,9 +235,9 @@ export default function LoginPage() {
 
               <Field
                 id="email"
-                label="Email"
+                label="Email or Username"
                 type="email"
-                placeholder="you@example.com"
+                placeholder="admin or you@example.com"
                 icon={Mail}
                 autoComplete="email"
                 value={email}
@@ -326,6 +335,52 @@ export default function LoginPage() {
 /* ================================================================== */
 
 function VisualPanel({ reduce }: { reduce: boolean }) {
+  // Read theme colors from CSS variables so the heatmap always matches the active palette
+  const [heatmapColors, setHeatmapColors] = useState({
+    colors: ["#1c1310", "#ff6b4a", "#ffb84a", "#ffe066", "#ff6b4a", "#ffb84a", "#1c1310"],
+    colorBack: "#0e1219",
+  })
+
+  useEffect(() => {
+    function readThemeColors() {
+      const root = document.documentElement
+      const style = getComputedStyle(root)
+
+      const toHex = (cssValue: string): string => {
+        // Handle rgb(r, g, b) format
+        const rgbMatch = cssValue.trim().match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)/)
+        if (rgbMatch) {
+          const [, r, g, b] = rgbMatch
+          return '#' + [r, g, b].map(c => parseInt(c).toString(16).padStart(2, '0')).join('')
+        }
+        // Already hex
+        if (cssValue.trim().startsWith('#')) return cssValue.trim()
+        return '#0e1219'
+      }
+
+      const bg = toHex(style.getPropertyValue('--background'))
+      const primary = toHex(style.getPropertyValue('--primary'))
+      const secondary = toHex(style.getPropertyValue('--secondary'))
+      const accent = toHex(style.getPropertyValue('--accent'))
+
+      // Build a gradient ramp from dark background through the theme's accent colors
+      setHeatmapColors({
+        colors: [bg, primary, secondary, accent, secondary, primary, bg],
+        colorBack: bg,
+      })
+    }
+
+    readThemeColors()
+
+    // Re-read when theme or palette changes (data-theme / data-palette attributes)
+    const observer = new MutationObserver(readThemeColors)
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme', 'data-palette'],
+    })
+    return () => observer.disconnect()
+  }, [])
+
   return (
     <div className="relative hidden w-1/2 overflow-hidden border-r border-border/40 lg:flex">
       <div className="absolute inset-0 z-0 opacity-60">
@@ -333,8 +388,8 @@ function VisualPanel({ reduce }: { reduce: boolean }) {
           width="100%"
           height="100%"
           image="https://shaders.paper.design/images/logos/diamond.svg"
-          colors={["#112069", "#1f3ca3", "#3265e7", "#6bd8ff", "#ffe77a", "#ff9a1f", "#ff4d00"]}
-          colorBack="#0e1219"
+          colors={heatmapColors.colors}
+          colorBack={heatmapColors.colorBack}
           contour={0.5}
           angle={0}
           noise={0}

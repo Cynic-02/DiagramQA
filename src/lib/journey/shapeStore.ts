@@ -20,7 +20,11 @@ export class ShapeStore {
 
   constructor(
     private readonly count: number,
-    private readonly onLoaded?: (url: string) => void
+    private readonly onLoaded?: (url: string) => void,
+    /** Per-URL override — return a builder to skip sampleSvg entirely
+     *  (used for 'scatter' formation scenes, which never assemble into
+     *  a silhouette). Return undefined to fall back to normal loading. */
+    private readonly loaderFor?: (url: string) => (() => PointCloud) | undefined
   ) {}
 
   get(url: string): PointCloud | null {
@@ -38,10 +42,15 @@ export class ShapeStore {
     const running = this.inflight.get(url)
     if (running) return running
 
-    const p = sampleSvg(url, {
-      count: this.count,
-      edgeShare: JOURNEY_CONFIG.edgeShare,
-    })
+    const override = this.loaderFor?.(url)
+    const task: Promise<PointCloud> = override
+      ? Promise.resolve().then(override)
+      : sampleSvg(url, {
+          count: this.count,
+          edgeShare: JOURNEY_CONFIG.edgeShare,
+        })
+
+    const p = task
       .then((cloud) => {
         this.cache.set(url, cloud)
         this.onLoaded?.(url)

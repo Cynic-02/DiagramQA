@@ -47,7 +47,7 @@ export interface SampleOptions {
 }
 
 /** Small deterministic PRNG — same cloud on every reload. */
-function mulberry32(a: number) {
+export function mulberry32(a: number) {
   return function () {
     a |= 0
     a = (a + 0x6d2b79f5) | 0
@@ -213,4 +213,51 @@ export async function sampleSvg(
     aspect: bw / bh,
     box: { x0: x0 / w, y0: y0 / h, x1: (x1 + 1) / w, y1: (y1 + 1) / h },
   }
+}
+
+/**
+ * A "formless" cloud for scenes that should never assemble into a
+ * recognisable glyph. Instead of sampling an SVG silhouette, points are
+ * scattered with radial falloff around the scene's placement centre,
+ * loosely enough to read as dispersed ink across the page rather than
+ * a shape. `aspect: 1` and a full-frame `box` keep placement maths
+ * (layout.ts) working unchanged — those only matter for the crisp
+ * overlay image, which scatter scenes never show.
+ */
+export function makeScatterCloud(count: number, seed = 1337): PointCloud {
+  const rnd = mulberry32(seed)
+  const positions = new Float32Array(count * 2)
+  const colors = new Uint8Array(count)
+  for (let i = 0; i < count; i++) {
+    const angle = rnd() * Math.PI * 2
+    // A soft core with a long outward tail instead of an evenly-filled
+    // disc: pow(rnd, 1.6) bunches more points near the centre, same way
+    // a suspended volumetric cloud reads denser where more depth layers
+    // overlap. 2.1 reach (was a flat 1.8) gives it more room to breathe.
+    const core = Math.pow(rnd(), 1.6)
+    const radius = core * 2.1
+    // slight per-point lobing so the silhouette isn't a perfect circle —
+    // reads as an organic field rather than a drawn disc.
+    const lobe = 1 + 0.18 * Math.sin(angle * 3 + rnd() * 6.2831)
+    positions[i * 2] = Math.cos(angle) * radius * lobe
+    positions[i * 2 + 1] = Math.sin(angle) * radius * lobe * 0.86
+    colors[i] = Math.floor(rnd() * 3)
+  }
+  return {
+    positions,
+    colors,
+    aspect: 1,
+    box: { x0: 0, y0: 0, x1: 1, y1: 1 },
+  }
+}
+
+/** Stable small-int hash of a string, for seeding makeScatterCloud per
+ *  scene id so two scatter scenes don't produce identical clouds. */
+export function hashSeed(str: string): number {
+  let h = 0x811c9dc5
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i)
+    h = Math.imul(h, 0x01000193)
+  }
+  return h >>> 0
 }

@@ -193,6 +193,25 @@
 }
 
 
+/* ============================================================
+   LENIS — required companion styles.
+   `scroll-behavior: smooth` on <html> (kept below for anchor jumps
+   when Lenis is absent: reduced motion, JS disabled) re-animates
+   EVERY programmatic scroll per the CSS spec — including the
+   per-frame window.scrollTo calls Lenis makes each tick. The two
+   animations fight each other and the result is micro-judder, so
+   while Lenis is driving it must be forced off. These are the
+   official rules from the Lenis docs.
+   ============================================================ */
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+.lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
+.lenis.lenis-stopped { overflow: hidden; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -275,8 +294,8 @@
        hardened — that's what keeps brutalism and aurora-glass reading
        as one coherent style instead of two fighting each other. */
     background: color-mix(in srgb, var(--bg, var(--background)) var(--card-fill-opacity, 35%), transparent);
-    backdrop-filter: blur(var(--blur-card, 22px)) saturate(var(--blur-saturate, 180%));
-    -webkit-backdrop-filter: blur(var(--blur-card, 22px)) saturate(var(--blur-saturate, 180%));
+    backdrop-filter: blur(var(--blur-card, 16px)) saturate(var(--blur-saturate, 155%));
+    -webkit-backdrop-filter: blur(var(--blur-card, 16px)) saturate(var(--blur-saturate, 155%));
     border: var(--border-w-card, 4px) solid var(--ink, var(--border-panel));
     border-radius: var(--radius-card, var(--radius));
     box-shadow:
@@ -285,10 +304,17 @@
     position: relative;
     overflow: hidden;
     isolation: isolate;
-    transition: transform var(--transition-fast, 0.12s ease);
+    /* Hover lifts the card and tightens its offset shadow together —
+       one shared curve so the press reads as a single motion. */
+    transition:
+      transform 0.18s cubic-bezier(0.2, 0.9, 0.25, 1),
+      box-shadow 0.18s cubic-bezier(0.2, 0.9, 0.25, 1);
   }
-  /* Specular sheen — a faint diagonal band of light, kept subtle so the
-     hard ink border stays the dominant visual read. */
+  /* Specular sheen — a faint diagonal band of light. Deliberately a
+     plain translucent gradient, NOT mix-blend-mode: a blend mode on a
+     card-sized pseudo-element forces the browser to re-composite the
+     whole card region every frame the page scrolls, on every card at
+     once — one of the largest scroll costs on the landing page. */
   .brutal-block::before, .glass::before, .glass-strong::before,
   .glass-primary::before, .hw-panel::before {
     content: '';
@@ -298,18 +324,16 @@
     pointer-events: none;
     background: linear-gradient(
       115deg,
-      color-mix(in srgb, var(--text, var(--foreground)) 8%, transparent) 0%,
+      color-mix(in srgb, var(--text, var(--foreground)) 5%, transparent) 0%,
       transparent 22%,
       transparent 78%,
-      color-mix(in srgb, var(--text, var(--foreground)) 3%, transparent) 100%
+      color-mix(in srgb, var(--text, var(--foreground)) 2%, transparent) 100%
     );
-    opacity: 0.4;
-    mix-blend-mode: overlay;
+    opacity: 0.35;
   }
   [data-theme="dark"] .brutal-block::before, [data-theme="dark"] .glass::before, [data-theme="dark"] .glass-strong::before,
   [data-theme="dark"] .glass-primary::before, [data-theme="dark"] .hw-panel::before {
-    mix-blend-mode: soft-light;
-    opacity: 0.5;
+    opacity: 0.45;
   }
   /* Everything else in the panel renders above the sheen */
   .brutal-block > *, .glass > *, .glass-strong > *, .glass-primary > *, .hw-panel > * {
@@ -355,21 +379,17 @@
     pointer-events: none;
     background: linear-gradient(
       120deg,
-      color-mix(in srgb, var(--text, var(--foreground)) 7%, transparent) 0%,
+      color-mix(in srgb, var(--text, var(--foreground)) 5%, transparent) 0%,
       transparent 30%
     );
-    opacity: 0.5;
-    mix-blend-mode: overlay;
-  }
-  [data-theme="dark"] .brutal-block-lg::before {
-    mix-blend-mode: soft-light;
+    opacity: 0.4;
   }
   .brutal-block-lg > * {
     position: relative;
     z-index: 2;
   }
   .brutal-interactive {
-    transition: transform var(--transition-fast, 0.12s ease);
+    transition: transform 0.18s cubic-bezier(0.2, 0.9, 0.25, 1);
   }
   .brutal-interactive:hover {
     transform: translate(-2px, -2px);
@@ -410,6 +430,105 @@
     color: var(--primary);
     transform: rotate(-2deg);
     display: inline-block;
+  }
+
+  /* ----------------------------------------------------------------
+     EDUCATIONAL NOTEBOOK PASS — homepage only. Scoped under
+     `.edu-notebook` (wraps the landing page body) so the app's real
+     UI — console, settings, auth — keeps the functional Space
+     Grotesk/mono system. Everything below only fires inside that
+     wrapper: bold marker handwriting (Kalam) for headings, calmer
+     handwriting (Patrick Hand) for running copy, ruled-paper texture,
+     and pen/highlighter accent colors instead of flat palette tints.
+     ---------------------------------------------------------------- */
+  .edu-notebook {
+    font-family: var(--font-patrick-hand), cursive;
+    letter-spacing: normal;
+  }
+  .edu-notebook h1,
+  .edu-notebook h2,
+  .edu-notebook h3,
+  .edu-notebook h4 {
+    font-family: var(--font-kalam), cursive;
+    font-weight: 700;
+    letter-spacing: normal;
+    line-height: 1.15;
+  }
+  .edu-notebook p,
+  .edu-notebook li,
+  .edu-notebook a,
+  .edu-notebook span {
+    font-family: inherit;
+  }
+  /* Small uppercase-tracked UI chrome (kicker badges, step labels, the
+     footer legend) stays legible in the mono face — handwriting at 11px
+     with wide tracking just reads as noise, not "notebook". */
+  .edu-notebook .font-mono {
+    font-family: var(--font-monad-mono), ui-monospace, monospace;
+  }
+
+  /* Faint ruled-paper backdrop — three evenly spaced horizontal rules
+     per "line height" band, colored from the ink token so it stays
+     correct in both light and dark palettes. Applied as a background,
+     never intercepts clicks. */
+  .notebook-lines {
+    background-image: repeating-linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--foreground) 7%, transparent) 0,
+      color-mix(in srgb, var(--foreground) 7%, transparent) 1px,
+      transparent 1px,
+      transparent 42px
+    );
+  }
+  [data-theme="dark"] .notebook-lines {
+    background-image: repeating-linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--foreground) 5%, transparent) 0,
+      color-mix(in srgb, var(--foreground) 5%, transparent) 1px,
+      transparent 1px,
+      transparent 42px
+    );
+  }
+
+  /* Highlighter-marker swipe behind emphasized words — sits under the
+     text via a background gradient, like a real highlighter pass. */
+  .marker-highlight {
+    background-image: linear-gradient(
+      to top,
+      color-mix(in srgb, var(--accent) 55%, transparent) 0%,
+      color-mix(in srgb, var(--accent) 55%, transparent) 42%,
+      transparent 42%
+    );
+    padding: 0 0.15em;
+    border-radius: 2px;
+  }
+
+  /* Red-pen / blue-pen ink colors for handwritten emphasis, distinct
+     from the palette-driven --secondary/--primary text tints already
+     used elsewhere on the page. */
+  .ink-red { color: #c0392b; }
+  [data-theme="dark"] .ink-red { color: #e8876f; }
+  .ink-blue { color: #2b59d1; }
+  [data-theme="dark"] .ink-blue { color: #3ba4c7; }
+
+  /* Hand-drawn squiggly underline, drawn once as a wide SVG and tiled
+     horizontally — the "teacher underlined this" cue under emphasized
+     heading words. */
+  .doodle-underline {
+    position: relative;
+    display: inline-block;
+  }
+  .doodle-underline::after {
+    content: '';
+    position: absolute;
+    left: -2%;
+    right: -2%;
+    bottom: -0.12em;
+    height: 0.16em;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 12' preserveAspectRatio='none'><path d='M0 8 Q 15 0, 30 8 T 60 8 T 90 8 T 120 8' fill='none' stroke='%23df6448' stroke-width='4' stroke-linecap='round'/></svg>");
+    background-repeat: repeat-x;
+    background-size: 60px 100%;
+    pointer-events: none;
   }
 
   /* Palette swatch picker — Layer 2 of the theme system. Always visible
@@ -681,6 +800,23 @@
    ============================================================ */
 
 :root {
+  /* Fallback colour layer — same values as [data-theme="light"]
+     [data-palette="monad"] below. Every palette block overrides these,
+     but the palette attribute is only set client-side (see the
+     blocking script in layout.tsx), and if that script is ever
+     skipped, delayed, or the value in localStorage doesn't match a
+     known key, --ink/--bg/--primary etc. would otherwise be
+     *undefined* — not "default black", genuinely absent. An absent
+     var() with no static fallback invalidates the whole declaration
+     it's used in (border, box-shadow, background), which is exactly
+     what made cards render with no border, no shadow, no glow, no
+     accent colour: every rule using these tokens silently dropped.
+     Defining them here means the worst case is "monad on first paint
+     for a few ms", never "unstyled". */
+  --bg: #e8e2d5; --surface: #ffffff; --primary: #2b59d1; --secondary: #df6448;
+  --accent: #fbbf24; --text: #221f1e; --muted-text: #665f5a; --ink: #221f1e;
+  --border-panel: #221f1e; --border-strong: #221f1e;
+
   --radius-card: 18px;
   --radius-badge: 8px;
   --radius-badge2: 10px;
@@ -699,8 +835,8 @@
   --shadow-offset-btn-hover: 1px 1px 0;
   --shadow-offset-chip: 2px 2px 0;
 
-  --blur-card: 22px;
-  --blur-saturate: 180%;
+  --blur-card: 16px;
+  --blur-saturate: 155%;
   --glow-radius: 34px;
   --glow-opacity: 22%;
   --card-fill-opacity: 35%;

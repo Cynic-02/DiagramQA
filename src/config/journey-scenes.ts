@@ -52,6 +52,7 @@ export type IdlePreset =
   | 'breathe'
   | 'hover'
   | 'still'
+  | 'orbit'
 
 export interface JourneyScene {
   id: string
@@ -79,6 +80,35 @@ export interface JourneyScene {
   condense?: ErosionPreset
   /** multiplier on particle point size for this shape */
   density?: number
+  /**
+   * When set to 'scatter', the particle cloud for this scene never
+   * assembles into the asset's silhouette — it stays a loose, radially
+   * scattered field across the screen instead. `asset` is still needed
+   * (used as the cache key and, if crispAtRest is ever turned on, as
+   * the overlay image) but its shape is never sampled into points.
+   * Leave unset for the normal "particles assemble into the SVG"
+   * behaviour.
+   */
+  formation?: 'scatter'
+  /**
+   * Keeps this scene's particle depth spread on permanently instead of
+   * only during a morph — the field sits at varied depths at rest, like
+   * a suspended volumetric cloud, rather than lying flat on one plane.
+   * Only meaningful alongside `formation: 'scatter'`.
+   */
+  volumetric?: boolean
+  /**
+   * Optional detail list rendered under the caption card — three short
+   * fragments, same shape as the old static "How It Works" step rows.
+   * Leave unset for the plain title+caption card.
+   */
+  bullets?: [string, string, string]
+  /** Card eyebrow label. Defaults to 'Agent'. */
+  badgeLabel?: string
+  /** Card eyebrow number. Defaults to the scene's 1-based index. */
+  badgeNum?: string
+  /** DOM id placed on this scene's <section>, for #hash scroll targets. */
+  anchorId?: string
 }
 
 /* ------------------------------------------------------------------ */
@@ -105,6 +135,11 @@ export const IDLE_PRESETS: Record<IdlePreset, IdleSpec> = {
   breathe: { x: 1, y: 2, rot: 0.15, scale: 0.01, period: 5.5 },
   hover: { x: 1, y: 2, rot: 0.25, scale: 0.005, period: 6 },
   still: { x: 0.5, y: 1, rot: 0.1, scale: 0.004, period: 7 },
+  // Bigger reach, slower cycle — for a volumetric scatter field rather
+  // than a settled illustration. Reads as particles gently suspended
+  // and drifting through depth, closer to a free-floating field than
+  // a shape breathing in place.
+  orbit: { x: 7, y: 6, rot: 1.1, scale: 0.014, period: 11 },
 }
 
 /* ------------------------------------------------------------------ */
@@ -138,116 +173,43 @@ export const FLOW_PRESETS: Record<FlowPreset, FlowSpec> = {
 
 export const JOURNEY_SCENES: JourneyScene[] = [
   {
-    id: 'thinking-girl',
-    x: 0.34,
-    asset: '/images/thinking-girl.svg',
-    title: 'Curiosity',
-    caption: 'It starts with a question about a picture.',
-    idle: 'human',
-    flow: 'upward',
-    scale: 0.95,
-  },
-  {
-    id: 'spaceship',
-    x: -0.3,
-    asset: '/images/spaceship.svg',
-    title: 'Exploration',
-    caption: 'A question becomes a journey outward.',
-    idle: 'float',
-    flow: 'leftToRight',
-  },
-  {
-    id: 'galaxy',
-    x: 0.12,
-    asset: '/images/galaxy.svg',
-    title: 'Scale',
-    caption: 'Diagrams hold structures far larger than the page.',
-    idle: 'drift',
-    flow: 'gentleSpiral',
-    scale: 1.15,
-  },
-  {
     id: 'solar-system-2',
-    x: -0.34,
-    asset: '/images/solar-system-2.svg',
-    title: 'Systems',
-    caption: 'Bodies, orbits, relations — a graph in disguise.',
-    idle: 'drift',
-    flow: 'clockwise',
-  },
-  {
-    id: 'sun-2',
-    x: 0.3,
-    asset: '/images/sun-2.svg',
-    title: 'Energy',
-    caption: 'Every system runs on something.',
-    idle: 'pulse',
-    flow: 'centerExpansion',
-  },
-  {
-    id: 'astronaut',
-    x: -0.28,
-    asset: '/images/astronaut.svg',
-    title: 'Observation',
-    caption: 'Someone has to look, and then explain.',
-    idle: 'float',
-    flow: 'downward',
-  },
-  {
-    id: 'water-cycle',
+    // Distinct key from the real solar-system-2.svg cache entry used by
+    // circuit-board/spaceship below — same underlying file, but this
+    // scene never samples it (formation: 'scatter'), so it must not
+    // share a ShapeStore cache slot with the scenes that do.
+    asset: '/images/solar-system-2.svg?hero-scatter',
+    title: 'Vision Extraction',
+    caption:
+      'A vision model segments your diagram into entities, relations, and spatial topology.',
+    idle: 'orbit',
     x: 0.32,
-    asset: '/images/water-cycle.svg',
-    title: 'Process',
-    caption: 'Cycles are the first diagrams we all learn.',
-    idle: 'hover',
-    flow: 'counterClockwise',
-  },
-  {
-    id: 'food-chain',
-    x: -0.12,
-    asset: '/images/food-chain.svg',
-    title: 'Dependency',
-    caption: 'Arrows carry meaning, not just direction.',
-    idle: 'drift',
-    flow: 'downward',
-  },
-  {
-    id: 'mitochondria',
-    x: 0.34,
-    asset: '/images/mitochondria.svg',
-    title: 'Biology',
-    caption: 'Zoom in far enough and structure repeats.',
-    idle: 'breathe',
-    flow: 'centerContraction',
-  },
-  {
-    id: 'chemical-bond',
-    x: -0.32,
-    asset: '/images/chemical-bond.svg',
-    title: 'Bonds',
-    caption: 'Relations at the smallest scale we draw.',
-    idle: 'hover',
-    flow: 'gentleSpiral',
+    flow: 'clockwise',
+    erosion: 'OUTSIDE_IN',
+    condense: 'ORGANIC_NOISE',
+    formation: 'scatter',
+    volumetric: true,
   },
   {
     id: 'human',
-    x: 0.28,
     asset: '/images/human.svg',
-    title: 'Intelligence',
-    caption: 'Encoded biology becomes understanding.',
+    title: "Bloom's Taxonomy",
+    caption:
+      'Questions conditioned on six cognitive levels, from Remember through to Create.',
     idle: 'human',
+    x: -0.3,
     flow: 'centerContraction',
+    erosion: 'TOP_TO_BOTTOM',
+    condense: 'BRANCH_TO_CORE',
   },
   {
     id: 'biological-neuron',
-    x: -0.3,
     asset: '/images/biological-neuron.svg',
-    title: 'The Neuron',
-    caption: 'One cell: dendrites, soma, axon, terminal.',
+    title: 'Independent Answering',
+    caption:
+      'An isolated agent writes reference solutions without ever seeing the generator’s answers.',
     idle: 'breathe',
-    // Priority transition. Distal dendrites let go first, the soma holds
-    // longest, and the AI network then assembles from its core outward —
-    // organic intelligence reorganising into an artificial one.
+    x: 0.3,
     flow: 'leftToRight',
     flowStrength: 0.72,
     erosion: 'BRANCH_TO_CORE',
@@ -255,13 +217,12 @@ export const JOURNEY_SCENES: JourneyScene[] = [
   },
   {
     id: 'ai-neuron',
-    x: 0.3,
     asset: '/images/ai-neuron.svg',
-    title: 'The Model',
-    caption: 'The same idea, redrawn as layers and weights.',
+    title: 'Verification Loop',
+    caption:
+      'A verifier grounds every pair against the source diagram, or rejects it outright.',
     idle: 'still',
-    // Priority transition. Peripheral nodes and connection lines release
-    // first; the board then condenses from the outside in.
+    x: -0.28,
     flow: 'leftToRight',
     flowStrength: 0.62,
     erosion: 'OUTSIDE_IN',
@@ -269,23 +230,154 @@ export const JOURNEY_SCENES: JourneyScene[] = [
   },
   {
     id: 'circuit-board',
-    x: -0.26,
-    asset: '/images/circuit-board.svg',
-    title: 'The Machine',
-    caption: 'Where the model actually runs.',
+    // Assembles into the same "globe" silhouette as the hero (traced
+    // from solar-system-2.svg) instead of its own circuit-board mark.
+    asset: '/images/solar-system-2.svg',
+    title: 'Quality Assurance',
+    caption:
+      'Scored, ranked, filtered. Only verified items reach the export, with full provenance.',
     idle: 'hover',
+    x: 0.3,
     flow: 'upward',
     erosion: 'TOP_TO_BOTTOM',
     condense: 'BOTTOM_TO_TOP',
   },
   {
-    id: 'girl-studying',
-    x: 0.32,
-    asset: '/images/girl-studying.svg',
-    title: 'Understanding',
-    caption: 'And the question comes back answered.',
-    idle: 'human',
+    id: 'spaceship',
+    // Same globe shape as circuit-board above, per the design call to
+    // use one consistent formation for both closing chapters.
+    asset: '/images/solar-system-2.svg',
+    title: 'Live Progress',
+    caption:
+      'Watch every agent think in real time — streaming logs and stage transitions.',
+    idle: 'float',
+    x: -0.3,
     flow: 'upward',
+    erosion: 'BOTTOM_TO_TOP',
+    condense: 'ORGANIC_NOISE',
+  },
+
+  /**
+   * The former static "How It Works" section, folded into the same
+   * scroll-morph instead of sitting after it as a separate, flatly
+   * static block. Six user-facing steps continuing straight on from
+   * the six agent formations above — one uninterrupted journey down
+   * the whole front page.
+   */
+  {
+    id: 'step-upload',
+    asset: '/images/water-cycle.svg',
+    title: 'Upload',
+    caption:
+      'Drop in any diagram — architecture, schema, flowchart, ER model, anything visual.',
+    bullets: [
+      'Drag & drop or click to browse',
+      'Stored locally — no cloud upload',
+      'Sample diagrams provided',
+    ],
+    badgeLabel: 'Step',
+    badgeNum: '01',
+    anchorId: 'how-it-works',
+    idle: 'drift',
+    x: -0.3,
+    flow: 'downward',
+    erosion: 'ORGANIC_NOISE',
+    condense: 'LEFT_TO_RIGHT',
+  },
+  {
+    id: 'step-extract',
+    asset: '/images/circuit-board.svg',
+    title: 'Extract',
+    caption:
+      'The extraction agent parses the diagram into a structured knowledge graph.',
+    bullets: [
+      'Entities & relationships',
+      'Spatial topology preserved',
+      'Per-item confidence scores',
+    ],
+    badgeLabel: 'Step',
+    badgeNum: '02',
+    idle: 'still',
+    x: 0.3,
+    flow: 'rightToLeft',
+    erosion: 'LEFT_TO_RIGHT',
+    condense: 'TOP_TO_BOTTOM',
+  },
+  {
+    id: 'step-generate',
+    asset: '/images/galaxy.svg',
+    title: 'Generate',
+    caption:
+      'Questions are generated conditioned on Bloom’s level and target entities.',
+    bullets: [
+      'Six Bloom levels supported',
+      'Entity-targeted prompts',
+      'Difficulty calibrated',
+    ],
+    badgeLabel: 'Step',
+    badgeNum: '03',
+    idle: 'pulse',
+    x: -0.28,
+    flow: 'centerExpansion',
+    erosion: 'INSIDE_OUT',
+    condense: 'OUTSIDE_IN',
+  },
+  {
+    id: 'step-answer',
+    asset: '/images/chemical-bond.svg',
+    title: 'Answer',
+    caption:
+      'An isolated agent writes reference answers without seeing the generator’s work.',
+    bullets: [
+      'Leak-free by design',
+      'Structured responses',
+      'Step-by-step reasoning',
+    ],
+    badgeLabel: 'Step',
+    badgeNum: '04',
+    idle: 'breathe',
+    x: 0.3,
+    flow: 'leftToRight',
+    erosion: 'DIAGONAL_UP',
+    condense: 'DIAGONAL_DOWN',
+  },
+  {
+    id: 'step-verify',
+    asset: '/images/food-chain.svg',
+    title: 'Verify',
+    caption:
+      'Each Q&A pair is checked against the source diagram for accuracy and grounding.',
+    bullets: [
+      'Source-grounded checks',
+      'Flag or reject verdicts',
+      'Continuous 0–1 score',
+    ],
+    badgeLabel: 'Step',
+    badgeNum: '05',
+    idle: 'hover',
+    x: -0.3,
+    flow: 'counterClockwise',
+    erosion: 'TOP_TO_BOTTOM',
+    condense: 'BOTTOM_TO_TOP',
+  },
+  {
+    id: 'step-export',
+    asset: '/images/spaceship.svg',
+    title: 'Export',
+    caption:
+      'Download the verified set as JSON, copy individual cards, or replay any run.',
+    bullets: [
+      'JSON export with metadata',
+      'Copy-to-clipboard per card',
+      'Full run history replay',
+    ],
+    badgeLabel: 'Step',
+    badgeNum: '06',
+    idle: 'float',
+    x: 0.3,
+    flow: 'upward',
+    erosion: 'BOTTOM_TO_TOP',
+    condense: 'ORGANIC_NOISE',
   },
 ]
 
@@ -387,10 +479,10 @@ export const JOURNEY_CONFIG = {
       'neutral',
       'themePrimary',
       '#E8B44A',
-      '#D2603A',
-      '#7F8DE0',
+      '#8B7FD8',
+      '#4FB8A8',
     ] as string[],
-    weights: [0.44, 0.2, 0.15, 0.12, 0.09],
+    weights: [0.38, 0.22, 0.18, 0.12, 0.1],
   },
 
   /** used when paletteMode is 'ink' — black / red / yellow */
@@ -420,8 +512,8 @@ export const JOURNEY_CONFIG = {
    *   ease     — follow damping; higher is snappier
    */
   pointer: {
-    radius: 180,
-    strength: 78,
+    radius: 130,
+    strength: 20,
     ease: 0.22,
   },
 
@@ -431,10 +523,10 @@ export const JOURNEY_CONFIG = {
    *  counts are tuned for triangle mode; raise them if you switch
    *  particleShape back to 'dot'. */
   particles: {
-    high: 4200,
-    desktop: 3300,
-    tablet: 2400,
-    mobile: 1700,
+    high: 3000,
+    desktop: 2400,
+    tablet: 1800,
+    mobile: 1300,
   },
 
   /**
@@ -486,8 +578,12 @@ export const JOURNEY_CONFIG = {
   /** curl-noise spatial frequency */
   noiseFrequency: 2.1,
 
-  /** z displacement at mid-morph, fraction of object size */
-  depth: 0.16,
+  /** z displacement at mid-morph, fraction of object size.
+   *  Feeds a subtle size-only depth cue (see depthSize in the vertex
+   *  shader) — near shards render a bit bigger, far ones a bit
+   *  smaller. Kept moderate on purpose: too much and individual
+   *  triangles look randomly oversized instead of reading as depth. */
+  depth: 0.24,
 
   /** ambient drift of the whole formation, in CSS px. Small and slow. */
   ambient: 2.4,
