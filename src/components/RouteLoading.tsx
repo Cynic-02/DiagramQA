@@ -1,5 +1,7 @@
 'use client'
 
+import { LoaderFive } from '@/components/ui/loader'
+
 /* ============================================================
    RouteLoading — shown by Next.js automatically during route
    transitions/data-fetching (see loading.tsx files per route).
@@ -69,9 +71,7 @@ export default function RouteLoading() {
           ))}
         </svg>
 
-        <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.2em]" style={{ color: 'var(--text-muted)' }}>
-          Loading
-        </span>
+        <LoaderFive text="Loading..." />
       </div>
     </div>
   )

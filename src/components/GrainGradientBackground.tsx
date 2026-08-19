@@ -22,15 +22,20 @@ const LIGHT_COLORS = ['#ffd500', '#ff5470', '#00c2a8', '#fff8e6']
 export function GrainGradientBackground({
   className,
   fixed = false,
+  preset = 'default',
 }: {
   className?: string
   /** Render as a fixed full-viewport layer (site-wide background) instead
    *  of absolutely positioned within a relative parent (bounded card use). */
   fixed?: boolean
+  preset?: 'default' | 'cosmic'
 }) {
   const { resolvedTheme } = useTheme()
-  const colors = resolvedTheme === 'light' ? LIGHT_COLORS : DARK_COLORS
-  const colorBack = resolvedTheme === 'light' ? '#fff8e6' : '#0a0a0a'
+  const defaultColors = resolvedTheme === 'light' ? LIGHT_COLORS : DARK_COLORS
+  const defaultColorBack = resolvedTheme === 'light' ? '#fff8e6' : '#0a0a0a'
+
+  const colors = preset === 'cosmic' ? ['#7300ff', '#eba8ff', '#00bfff', '#2b00ff'] : defaultColors
+  const colorBack = preset === 'cosmic' ? '#000000' : defaultColorBack
 
   return (
     <div

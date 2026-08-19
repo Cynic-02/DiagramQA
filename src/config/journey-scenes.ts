@@ -11,6 +11,28 @@
  * happens between consecutive centres.
  */
 
+/**
+ * How a formation comes apart, and how the next one assembles. Low
+ * threshold = goes first, so EROSION picks which region peels away
+ * first and CONDENSE picks which region of the next shape appears
+ * first. Ids must match shapeField() in shaders.ts.
+ */
+export const EROSION_IDS = {
+  LEFT_TO_RIGHT: 0,
+  RIGHT_TO_LEFT: 1,
+  TOP_TO_BOTTOM: 2,
+  BOTTOM_TO_TOP: 3,
+  OUTSIDE_IN: 4,
+  BRANCH_TO_CORE: 4,
+  INSIDE_OUT: 5,
+  CORE_TO_BRANCH: 5,
+  DIAGONAL_UP: 6,
+  DIAGONAL_DOWN: 7,
+  ORGANIC_NOISE: 8,
+} as const
+
+export type ErosionPreset = keyof typeof EROSION_IDS
+
 export type FlowPreset =
   | 'upward'
   | 'downward'
@@ -51,6 +73,10 @@ export interface JourneyScene {
   flow?: FlowPreset
   /** multiplier on the global flow strength for that outgoing morph */
   flowStrength?: number
+  /** which region of THIS shape peels away first on the way out */
+  erosion?: ErosionPreset
+  /** which region of THIS shape condenses first on the way in */
+  condense?: ErosionPreset
   /** multiplier on particle point size for this shape */
   density?: number
 }
@@ -207,9 +233,13 @@ export const JOURNEY_SCENES: JourneyScene[] = [
     title: 'The Neuron',
     caption: 'One cell: dendrites, soma, axon, terminal.',
     idle: 'breathe',
-    // signature morph — organic branches straighten into geometry
+    // Priority transition. Distal dendrites let go first, the soma holds
+    // longest, and the AI network then assembles from its core outward —
+    // organic intelligence reorganising into an artificial one.
     flow: 'leftToRight',
     flowStrength: 0.72,
+    erosion: 'BRANCH_TO_CORE',
+    condense: 'ORGANIC_NOISE',
   },
   {
     id: 'ai-neuron',
@@ -217,9 +247,12 @@ export const JOURNEY_SCENES: JourneyScene[] = [
     title: 'The Model',
     caption: 'The same idea, redrawn as layers and weights.',
     idle: 'still',
-    // signature morph — connections straighten into copper traces
+    // Priority transition. Peripheral nodes and connection lines release
+    // first; the board then condenses from the outside in.
     flow: 'leftToRight',
     flowStrength: 0.62,
+    erosion: 'OUTSIDE_IN',
+    condense: 'INSIDE_OUT',
   },
   {
     id: 'circuit-board',
@@ -228,6 +261,8 @@ export const JOURNEY_SCENES: JourneyScene[] = [
     caption: 'Where the model actually runs.',
     idle: 'hover',
     flow: 'upward',
+    erosion: 'TOP_TO_BOTTOM',
+    condense: 'BOTTOM_TO_TOP',
   },
   {
     id: 'girl-studying',
@@ -284,6 +319,17 @@ export const JOURNEY_CONFIG = {
   sectionVh: 100,
 
   /**
+   * Trailing runway after the final scene, in vh.
+   *
+   * The last scene assembles at its section's centre, which is only half a
+   * viewport from the container's end — so without extra room the next
+   * section scrolls into view while the illustration is still pinned over
+   * it. This spacer gives the final shape somewhere to dissolve before the
+   * hand-off. Below ~60 the overlap comes back.
+   */
+  outroVh: 55,
+
+  /**
    * How the line art is treated on a dark theme.
    *   'none'   — leave the artwork exactly as authored (default). Dark
    *              outlines lose contrast on a dark paper, but the
@@ -294,16 +340,43 @@ export const JOURNEY_CONFIG = {
    */
   darkArtwork: 'none' as 'invert' | 'none' | 'dim',
 
-  /** particle counts by device tier */
+  /**
+   * The formation stays particle-built at every point, including at
+   * rest — the source SVGs are target data, never displayed directly.
+   * Set true only if you want the old crisp-image-at-rest behaviour.
+   */
+  crispAtRest: false,
+
+  /** particle counts by device tier. Higher than a crossfade design
+   *  needs, because the particles alone must carry the illustration. */
   particles: {
-    high: 16000,
-    desktop: 11000,
-    tablet: 7000,
-    mobile: 4500,
+    high: 20000,
+    desktop: 15000,
+    tablet: 9000,
+    mobile: 5500,
   },
 
   /** base point size in CSS px (before per-particle variation) */
-  particleSize: 1.9,
+  particleSize: 1.85,
+
+  /** Breakup / assembly shaping. Spread staggers particles across the
+   *  transition; window is how long a single particle takes to let go
+   *  or be claimed. Wider spread = more progressive peeling. */
+  erosion: {
+    releaseSpread: 0.34,
+    releaseWindow: 0.14,
+    condenseSpread: 0.28,
+    condenseWindow: 0.12,
+  },
+
+  /** how much of the silhouette never fully settles (§ stray halo) */
+  halo: {
+    fraction: 0.05,
+    amplitude: 7,
+  },
+
+  /** per-particle shimmer while a formation is held, px */
+  micro: 0.9,
 
   /** how far particles may stray from the direct morph path,
    *  as a fraction of object size (§36: 10–25%, not 300%) */

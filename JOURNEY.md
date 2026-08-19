@@ -62,6 +62,55 @@ All in `JOURNEY_CONFIG` at the bottom of the same file:
 - `sectionVh` — scroll distance per scene.
 - `darkArtwork` — how the line art is treated on a dark theme.
 
+## How a transition works
+
+The formation is **particle-built at every point**, including at rest. The
+SVGs are target data, never displayed directly — there is no crisp image
+swapped in when a shape settles. (`crispAtRest: true` restores the old
+crossfade behaviour if you ever want it.)
+
+Position is not a straight `mix(A, B, p)` — that reads as rubbery morphing.
+Each particle carries two thresholds derived from its position, noise and
+seed:
+
+- **release** — when it stops holding the source formation
+- **condensation** — when the target starts claiming it
+
+Between those it belongs to neither and drifts in a curl-noise field. The
+three weights always sum to 1, so formations are exact at both ends and
+genuinely free in the middle:
+
+```
+pos = source*srcHold + target*dstHold + freeField*free
+```
+
+Everything is a pure function of scroll progress, so scrubbing is exact and
+reverse scrolling reconstructs the previous shape precisely. Stopping
+anywhere holds that state — nothing continues animating toward the next
+shape.
+
+Note this is a positional model, not a velocity integrator. That is
+deliberate: true physics would make the result history-dependent and break
+the exact reversibility the brief requires. Scroll velocity still feeds in
+as a secondary influence (it loosens the halo and drift), capped so fast
+scrolling can never destroy a formation.
+
+### Per-scene breakup
+
+`erosion` picks which region of a shape peels away first, `condense` which
+region of the next shape appears first. Both take the same preset names:
+`LEFT_TO_RIGHT`, `RIGHT_TO_LEFT`, `TOP_TO_BOTTOM`, `BOTTOM_TO_TOP`,
+`OUTSIDE_IN`, `INSIDE_OUT`, `BRANCH_TO_CORE`, `CORE_TO_BRANCH`,
+`DIAGONAL_UP`, `DIAGONAL_DOWN`, `ORGANIC_NOISE`.
+
+Timing lives in `JOURNEY_CONFIG.erosion`: `releaseSpread` staggers particles
+across the transition, `releaseWindow` is how long one particle takes to let
+go. Wider spread = more progressive peeling.
+
+`?debug=1` shows the panel; the shader also has a `uDebugErosion` uniform
+that colours particles by release threshold (dark = leaves first) to verify
+breakup is progressive rather than random.
+
 ## Life at rest
 
 A settled illustration is never frozen: it floats, drifts, rotates a fraction

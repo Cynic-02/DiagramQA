@@ -20,6 +20,8 @@ import { ShaderLogo } from '@/components/shader-icons'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import DecryptedText from '@/components/reactbits/DecryptedText'
+import { Heatmap } from '@paper-design/shaders-react'
+import { Lens } from '@/components/ui/lens'
 
 /* ------------------------------------------------------------------ */
 /* Types & constants                                                  */
@@ -326,6 +328,23 @@ export default function LoginPage() {
 function VisualPanel({ reduce }: { reduce: boolean }) {
   return (
     <div className="relative hidden w-1/2 overflow-hidden border-r border-border/40 lg:flex">
+      <div className="absolute inset-0 z-0 opacity-60">
+        <Heatmap
+          width="100%"
+          height="100%"
+          image="https://shaders.paper.design/images/logos/diamond.svg"
+          colors={["#112069", "#1f3ca3", "#3265e7", "#6bd8ff", "#ffe77a", "#ff9a1f", "#ff4d00"]}
+          colorBack="#0e1219"
+          contour={0.5}
+          angle={0}
+          noise={0}
+          innerGlow={0.5}
+          outerGlow={0.5}
+          speed={1}
+          scale={0.75}
+          fit="cover"
+        />
+      </div>
       {/* Flat grid overlay */}
       <div
         className="grid-faint pointer-events-none absolute inset-0 opacity-40"
@@ -371,7 +390,9 @@ function VisualPanel({ reduce }: { reduce: boolean }) {
 
           {/* Animated graph motif */}
           <div className="mt-10">
-            <GraphMotif reduce={reduce} />
+            <Lens>
+              <GraphMotif reduce={reduce} />
+            </Lens>
           </div>
         </div>
 

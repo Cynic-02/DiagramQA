@@ -49,6 +49,10 @@ const ScienceJourney = dynamic(
 )
 
 const Strands = dynamic(() => import('@/components/reactbits/Strands'), { ssr: false })
+const Globe3DShowcase = dynamic(() => import('@/components/ui/3d-globe').then(m => ({ default: m.Globe3D })), { ssr: false })
+const GeminiTransition = dynamic(() => import('@/components/GeminiTransition'), { ssr: false })
+const ThreeDMarqueeShowcase = dynamic(() => import('@/components/ThreeDMarqueeShowcase'), { ssr: false })
+import { GrainGradientBackground } from '@/components/GrainGradientBackground'
 
 // Hidden for now (not deleted) — see ParticleMorphScene usage below.
 // const ParticleMorphScene = dynamic(() => import('@/components/three/ParticleMorphScene'), {
@@ -271,7 +275,10 @@ export default function LandingPage() {
 
       <div className="relative z-10 flex flex-1 flex-col">
         <FeaturesSection />
+        <GlobeShowcaseSection />
+        <GeminiTransition />
         <HowItWorksSection />
+        <ThreeDMarqueeShowcaseSection />
         <CTASection />
       </div>
 
@@ -366,6 +373,48 @@ function FeatureCard({ feature, index }: { feature: Feature; index: number }) {
   )
 }
 
+function GlobeShowcaseSection() {
+  const sampleMarkers = [
+    { lat: 40.7128, lng: -74.006, src: 'https://assets.aceternity.com/avatars/1.webp', label: 'New York' },
+    { lat: 51.5074, lng: -0.1278, src: 'https://assets.aceternity.com/avatars/2.webp', label: 'London' },
+    { lat: 35.6762, lng: 139.6503, src: 'https://assets.aceternity.com/avatars/3.webp', label: 'Tokyo' },
+    { lat: -33.8688, lng: 151.2093, src: 'https://assets.aceternity.com/avatars/4.webp', label: 'Sydney' },
+    { lat: 48.8566, lng: 2.3522, src: 'https://assets.aceternity.com/avatars/5.webp', label: 'Paris' },
+    { lat: 28.6139, lng: 77.209, src: 'https://assets.aceternity.com/avatars/6.webp', label: 'New Delhi' },
+  ]
+
+  return (
+    <section className="relative w-full px-6 py-16 sm:px-10 sm:py-20">
+      <div className="mx-auto max-w-7xl">
+        <RevealOnScroll direction="up" amount={0.3}>
+          <div className="brutal-block relative mx-auto h-[400px] w-full overflow-hidden">
+            <div className="relative z-10 p-6 md:p-12">
+              <h2 className="mb-4 max-w-2xl text-2xl font-extrabold tracking-tight text-balance text-foreground md:text-5xl">
+                Used by educators <span className="text-secondary">worldwide</span>.
+              </h2>
+              <p className="mt-2 max-w-lg text-balance text-muted-foreground md:text-lg">
+                DiagramMind helps educators across the globe create high-quality, diagram-driven assessments.
+              </p>
+            </div>
+            <div className="absolute -right-72 -bottom-96 z-10 size-160 md:-bottom-80 md:size-180">
+              <Globe3DShowcase
+                className="h-full w-full"
+                markers={sampleMarkers}
+                config={{
+                  atmosphereColor: '#4da6ff',
+                  atmosphereIntensity: 20,
+                  bumpScale: 5,
+                  autoRotateSpeed: 0.3,
+                }}
+              />
+            </div>
+          </div>
+        </RevealOnScroll>
+      </div>
+    </section>
+  )
+}
+
 /* ================================================================== */
 /* HOW IT WORKS                                                        */
 /* ================================================================== */
@@ -377,6 +426,9 @@ function HowItWorksSection() {
       aria-labelledby="how-heading"
       className="relative w-full px-6 py-24 sm:px-10 sm:py-32"
     >
+      <div className="absolute inset-0 z-0 opacity-15 pointer-events-none">
+        <Strands colors={['#7C3AED', '#06B6D4', '#EAB308']} count={3} speed={0.3} opacity={0.6} scale={1.4} />
+      </div>
       <div className="mx-auto max-w-7xl">
         {/* Heading block */}
         <RevealOnScroll direction="up" amount={0.4}>
@@ -474,6 +526,46 @@ function StepRow({ step, index }: { step: Step; index: number }) {
   )
 }
 
+function ThreeDMarqueeShowcaseSection() {
+  const images = [
+    'https://assets.aceternity.com/cloudinary_bkp/3d-card.png',
+    'https://assets.aceternity.com/animated-modal.png',
+    'https://assets.aceternity.com/animated-testimonials.webp',
+    'https://assets.aceternity.com/cloudinary_bkp/Tooltip_luwy44.png',
+    'https://assets.aceternity.com/github-globe.png',
+    'https://assets.aceternity.com/glare-card.png',
+    'https://assets.aceternity.com/layout-grid.png',
+    'https://assets.aceternity.com/flip-text.png',
+    'https://assets.aceternity.com/hero-highlight.png',
+    'https://assets.aceternity.com/carousel.webp',
+    'https://assets.aceternity.com/placeholders-and-vanish-input.png',
+    'https://assets.aceternity.com/shooting-stars-and-stars-background.png',
+    'https://assets.aceternity.com/signup-form.png',
+    'https://assets.aceternity.com/cloudinary_bkp/stars_sxle3d.png',
+    'https://assets.aceternity.com/spotlight-new.webp',
+    'https://assets.aceternity.com/cloudinary_bkp/Spotlight_ar5jpr.png',
+  ]
+
+  return (
+    <section className="relative w-full px-6 py-16 sm:px-10 sm:py-20">
+      <div className="mx-auto max-w-7xl">
+        <RevealOnScroll direction="up" amount={0.3}>
+          <div className="mx-auto max-w-3xl text-center mb-10">
+            <span className="brutal-block-sm inline-flex items-center gap-2 bg-secondary px-3 py-1 font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-foreground">
+              <span className="size-1.5 rounded-full bg-foreground" />
+              Showcase
+            </span>
+            <h2 className="mt-6 text-balance text-3xl font-black leading-tight tracking-tight text-foreground sm:text-4xl lg:text-5xl">
+              Crafted with <span className="text-secondary">care</span>.
+            </h2>
+          </div>
+          <ThreeDMarqueeShowcase images={images} className="brutal-block p-2" />
+        </RevealOnScroll>
+      </div>
+    </section>
+  )
+}
+
 /* ================================================================== */
 /* CTA                                                                 */
 /* ================================================================== */
@@ -487,14 +579,8 @@ function CTASection() {
       className="relative w-full px-6 py-24 sm:px-10 sm:py-32 overflow-hidden"
     >
       {/* Dynamic Strands background */}
-      <div className="absolute inset-0 z-0 opacity-20 pointer-events-none">
-        <Strands
-          colors={['#7C3AED', '#06B6D4', '#EAB308']}
-          count={3}
-          speed={0.3}
-          opacity={0.6}
-          scale={1.4}
-        />
+      <div className="absolute inset-0 z-0 opacity-30 pointer-events-none">
+        <GrainGradientBackground preset="cosmic" />
       </div>
 
       <div className="mx-auto max-w-5xl relative z-10">

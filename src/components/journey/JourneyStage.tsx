@@ -15,6 +15,7 @@ import { createPortal } from 'react-dom'
 import * as THREE from 'three'
 
 import {
+  EROSION_IDS,
   FLOW_PRESETS,
   IDLE_PRESETS,
   JOURNEY_CONFIG,
@@ -153,7 +154,16 @@ export default function JourneyStage({ scenes, containerRef }: Props) {
       uDstOffset: { value: new THREE.Vector2(0, 0) },
       uProgress: { value: 0 },
       uTime: { value: 0 },
-      uStagger: { value: reduceMotion ? 0.06 : C.stagger },
+      uErosion: { value: 0 },
+      uCondense: { value: 0 },
+      uRelSpread: { value: C.erosion.releaseSpread },
+      uRelWindow: { value: C.erosion.releaseWindow },
+      uConSpread: { value: C.erosion.condenseSpread },
+      uConWindow: { value: C.erosion.condenseWindow },
+      uMicro: { value: C.micro as number },
+      uHaloFrac: { value: C.halo.fraction as number },
+      uHaloAmp: { value: C.halo.amplitude as number },
+      uDebugErosion: { value: 0 },
       uFlow: { value: 0 },
       uNoiseFreq: { value: C.noiseFrequency },
       uDir: { value: new THREE.Vector2(0, 0) },
@@ -162,9 +172,6 @@ export default function JourneyStage({ scenes, containerRef }: Props) {
       uDepth: { value: 0 },
       uAmbient: { value: 0 },
       uAmbientSpeed: { value: C.restSpeed },
-      uRestAlpha: { value: 0 },
-      uRestFrac: { value: C.rest.fraction },
-      uRestDrift: { value: C.rest.drift },
       uSize: { value: C.particleSize },
       uPixelRatio: { value: dpr },
       uParallax: { value: new THREE.Vector2(0, 0) },
@@ -399,16 +406,17 @@ export default function JourneyStage({ scenes, containerRef }: Props) {
 
       // The canvas is fixed, so once the final scene has assembled it
       // would otherwise stay pinned over whatever section follows the
-      // journey. Fade the whole stage out across the tail of the last
-      // section instead of letting it hang over the next page.
+      // journey. The outro runway (JOURNEY_CONFIG.outroVh) gives it room
+      // to dissolve; this fade must be *finished* by the moment the next
+      // section first touches the bottom of the viewport, which is when
+      // the container's end reaches it.
+      const containerEnd = docTop + rect.height
       const lastCentre = docTop + (N - 1) * sectionH + sectionH / 2
-      const exit = smoothstep(
-        lastCentre + sectionH * 0.16,
-        docTop + N * sectionH - sectionH * 0.06,
-        viewCenter
-      )
-      wrap.style.opacity = String(1 - exit)
-      if (exit >= 1) return
+      const fadeStart = lastCentre + sectionH * 0.12
+      const fadeEnd = Math.max(fadeStart + 1, containerEnd - sectionH * 0.5)
+      const outro = smoothstep(fadeStart, fadeEnd, viewCenter)
+      wrap.style.opacity = String(1 - outro)
+      if (outro >= 1) return
 
       const targetG = Math.min(
         N - 1,
@@ -466,6 +474,14 @@ export default function JourneyStage({ scenes, containerRef }: Props) {
 
         uniforms.uProgress.value = p
         uniforms.uTime.value = time
+
+        // erosion belongs to the shape being left, condensation to the
+        // shape being assembled
+        uniforms.uErosion.value =
+          EROSION_IDS[scenes[i].erosion ?? 'ORGANIC_NOISE']
+        uniforms.uCondense.value =
+          EROSION_IDS[scenes[i + 1].condense ?? 'ORGANIC_NOISE']
+
         uniforms.uFlow.value = ref * 0.16 * fs * m
         uniforms.uDir.value.set(
           preset.dir[0] * ref * fs * m,
@@ -474,40 +490,43 @@ export default function JourneyStage({ scenes, containerRef }: Props) {
         uniforms.uSwirl.value = preset.swirl * ref * fs * m
         uniforms.uRadial.value = preset.radial * ref * fs * m
         uniforms.uDepth.value = C.depth * ref * m
-        // Ambient drift is what makes a settled shape feel alive, so it
-        // is strongest at rest and eases off once the morph takes over.
-        const stillness = 1 - Math.min(1, Math.abs(velocity) * 3)
-        const settled = Math.max(fade.idleSrc, fade.idleDst)
-        uniforms.uAmbient.value =
-          C.ambient * (0.35 + 0.65 * stillness) * (0.4 + 0.6 * settled) * m
-        uniforms.uOpacity.value = fade.particles
-        // Resting motes only exist on a settled shape, and only while the
-        // page is actually still.
-        uniforms.uRestAlpha.value =
-          C.rest.opacity * settled * stillness * m
+
+        // Scroll velocity is a secondary influence only — faster
+        // scrolling loosens the field slightly, capped so the formation
+        // can never be destroyed by flinging the page.
+        const speed = Math.min(1, Math.abs(velocity) * 0.6)
+        const stillness = 1 - speed
+        uniforms.uMicro.value = C.micro * m
+        uniforms.uHaloAmp.value = C.halo.amplitude * (1 + speed * 0.8) * m
+        uniforms.uAmbient.value = C.ambient * (0.4 + 0.6 * stillness) * m
+
+        // The formation is particle-built at every point in the scroll,
+        // so the cloud is simply always visible.
 
         // Entrance — advances only once the opening shapes are ready, so
         // it is never spent while the assets are still being sampled.
         if (!introStarted) introStarted = true
         if (intro < 1) intro = Math.min(1, intro + dt / C.intro.duration)
         const introE = 1 - Math.pow(1 - intro, 3) // easeOutCubic
-        uniforms.uIntro.value = introE
+        // Leaving reverses the entrance: the final formation scatters
+        // back into loose ink instead of merely dimming out.
+        uniforms.uIntro.value = Math.min(introE, 1 - outro)
         uniforms.uIntroScatter.value = ref * C.intro.scatter
         uniforms.uParallax.value.set(
           paraX * C.parallax.particles,
           -paraY * C.parallax.particles
         )
 
-        // during the entrance the ink is visible and the crisp art fades up
-        const introCloud = 1 - smoothstep(0.35, 0.95, introE)
-        const introCrisp = smoothstep(0.55, 1.0, introE)
-        uniforms.uOpacity.value = Math.max(fade.particles, introCloud)
+        uniforms.uOpacity.value = 1
 
+        // The SVGs are target data, not artwork to display: the crisp
+        // image stays hidden unless crispAtRest is explicitly turned on.
+        const crisp = C.crispAtRest ? smoothstep(0.55, 1.0, introE) : 0
         const idleA = applyOverlay(
           i,
           srcCloud,
           ps,
-          fade.src * introCrisp,
+          fade.src * crisp,
           fade.idleSrc,
           time
         )
@@ -515,7 +534,7 @@ export default function JourneyStage({ scenes, containerRef }: Props) {
           i + 1,
           dstCloud,
           pd,
-          fade.dst * introCrisp,
+          fade.dst * crisp,
           fade.idleDst,
           time
         )
@@ -537,7 +556,6 @@ export default function JourneyStage({ scenes, containerRef }: Props) {
           1 + (idleA.sc - 1) * wA + (idleB.sc - 1) * wB
       } else {
         uniforms.uOpacity.value = 0
-        uniforms.uRestAlpha.value = 0
         // show whichever crisp image we already have so the section is
         // never blank while its neighbour is still being processed
         if (srcCloud) {
@@ -607,6 +625,7 @@ export default function JourneyStage({ scenes, containerRef }: Props) {
     <div
       ref={wrapRef}
       aria-hidden
+      data-journey-stage=""
       className="pointer-events-none fixed inset-0 z-20"
       style={{ visibility: 'hidden' }}
     >

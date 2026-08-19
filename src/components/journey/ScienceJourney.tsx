@@ -143,6 +143,16 @@ export default function ScienceJourney({
         )
       )}
 
+      {/* Trailing runway. The final scene assembles half a viewport from
+          the container's end, so without this the next section scrolls up
+          underneath it while it is still pinned. This gives the last shape
+          room to dissolve before the hand-off. */}
+      <div
+        aria-hidden
+        style={{ height: `${JOURNEY_CONFIG.outroVh}vh` }}
+        className="relative z-30 w-full"
+      />
+
       {/* The graph paper stops dead at the container edge, which leaves a
           hard horizontal seam where the grid ends. Fade the grid out over
           the tail of the last section instead. Sits at z-10: above the
