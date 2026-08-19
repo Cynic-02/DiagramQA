@@ -290,10 +290,13 @@ export function HandArrow({
   const horizontal = dir === 'right'
   return (
     <svg
-      className={cn('flex-none overflow-visible text-[var(--red)]', className)}
+      className={cn(
+        'flex-none overflow-visible text-[var(--red)]',
+        horizontal ? 'h-6 w-16' : 'h-16 w-6',
+        className
+      )}
       viewBox={horizontal ? '0 0 64 24' : '0 0 24 64'}
-      width={horizontal ? 64 : 24}
-      height={horizontal ? 24 : 64}
+      preserveAspectRatio="none"
       fill="none"
       aria-hidden
     >

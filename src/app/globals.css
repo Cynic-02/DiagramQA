@@ -132,6 +132,11 @@
   --diagram-line: color-mix(in srgb, var(--ink) 18%, transparent);
   --diagram-node-bg: var(--surface);
 
+  /* Dashed graph-paper tiles. The stroke colour is baked into the data
+     URI, so there is one tile per mode rather than a color-mix. */
+  --grid-tile: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='34' height='34'%3E%3Cg fill='none' stroke='%230a0a0a' stroke-opacity='0.18' stroke-width='1' stroke-dasharray='5 6'%3E%3Cpath d='M0 .5H34'/%3E%3Cpath d='M.5 0V34' stroke-dashoffset='3'/%3E%3C/g%3E%3C/svg%3E");
+  --grid-tile-strong: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22'%3E%3Cg fill='none' stroke='%230a0a0a' stroke-opacity='0.28' stroke-width='1' stroke-dasharray='4 5'%3E%3Cpath d='M0 .5H22'/%3E%3Cpath d='M.5 0V22' stroke-dashoffset='2.5'/%3E%3C/g%3E%3C/svg%3E");
+
   /* structural constants — never change per mode */
   --bw-s: 2px;   /* inline elements */
   --bw:   3px;   /* cards           */
@@ -158,6 +163,9 @@
   --sidebar: var(--surface);
   --diagram-line: color-mix(in srgb, var(--ink) 22%, transparent);
   --diagram-node-bg: var(--surface);
+
+  --grid-tile: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='34' height='34'%3E%3Cg fill='none' stroke='%23f5f2ea' stroke-opacity='0.16' stroke-width='1' stroke-dasharray='5 6'%3E%3Cpath d='M0 .5H34'/%3E%3Cpath d='M.5 0V34' stroke-dashoffset='3'/%3E%3C/g%3E%3C/svg%3E");
+  --grid-tile-strong: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22'%3E%3Cg fill='none' stroke='%23f5f2ea' stroke-opacity='0.26' stroke-width='1' stroke-dasharray='4 5'%3E%3Cpath d='M0 .5H22'/%3E%3Cpath d='M.5 0V22' stroke-dashoffset='2.5'/%3E%3C/g%3E%3C/svg%3E");
 }
 
 /* ==================================================================
@@ -186,16 +194,16 @@
 
   /* The graph-paper ground. It was only inside one card; it is the
      surface the whole product is drawn on, so it belongs on the page
-     itself and stays identical on every route. Dots rather than rules:
-     a dot grid reads as paper, a line grid reads as a table. */
+     itself and stays identical on every route.
+
+     Broken rules — a grid of dashed lines, not solid ones and not dots.
+     Done as an SVG tile because two CSS gradients composite rather than
+     intersect, so gradients alone cannot break a line along its own
+     axis. */
   body {
     @apply bg-background text-foreground;
-    background-image: radial-gradient(
-      circle at 1px 1px,
-      color-mix(in srgb, var(--ink) 15%, transparent) 1.4px,
-      transparent 1.4px
-    );
-    background-size: 26px 26px;
+    background-image: var(--grid-tile);
+    background-size: 34px 34px;
     background-attachment: fixed;
     font-family: var(--font-instrument), "Helvetica Neue", system-ui, sans-serif;
     font-weight: 400;
@@ -377,15 +385,11 @@
   .bloom-6 { background: var(--bloom-6); color: var(--bloom-6-fg); }
 
   /* --- graph paper ground --- */
-  /* Same dot grid as the page, at a tighter pitch, for the inside of a
-     panel. One texture across the whole product. */
+  /* The same dashed grid as the page, tighter and stronger, for the
+     inside of a panel. One texture across the whole product. */
   .grid-faint, .grid-faint-lighter {
-    background-image: radial-gradient(
-      circle at 1px 1px,
-      color-mix(in srgb, var(--ink) 22%, transparent) 1.4px,
-      transparent 1.4px
-    );
-    background-size: 18px 18px;
+    background-image: var(--grid-tile-strong);
+    background-size: 22px 22px;
   }
 
   /* --- retired effects. Kept as no-ops so no component breaks. --- */
