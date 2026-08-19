@@ -93,7 +93,7 @@ export function EmptyState({
   icon?: LucideIcon
 }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-3 rounded-[var(--radius)] border border-dashed border-border bg-card px-6 py-16 text-center">
+    <div className="flex min-h-[340px] flex-col items-center justify-center gap-3 rounded-[var(--radius)] border border-dashed border-border bg-card px-6 py-24 text-center">
       {Icon && (
         <div className="flex size-12 items-center justify-center rounded-lg border border-border/70 bg-muted shadow-sm">
           <ShaderIcon icon={Icon} size={20} colorTint="#94a3b8" speed={0.35} />
@@ -174,7 +174,7 @@ export function StageFrame({
       initial={reduce ? false : { opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-      className="relative mx-auto w-full max-w-7xl p-6 md:p-8"
+      className="relative mx-auto w-full max-w-[1680px] px-6 py-6 md:px-8 md:py-8"
     >
       {showHeader && <StageHeader stageId={stageId} />}
       <motion.div

@@ -42,7 +42,6 @@ import { Switch } from '@/components/ui/switch'
 import { Slider } from '@/components/ui/slider'
 import { StageFrame, StageHeader, DataChip } from './shared'
 import { BloomWheel } from './BloomWheel'
-import TiltedCard from '@/components/TiltedCard'
 import { ProviderSelect, useProviderOptions } from '@/components/provider-select'
 
 /* ------------------------------------------------------------------ */
@@ -288,7 +287,7 @@ export function UploadStage() {
           The stage header lives inside the main column rather than spanning
           the full width, so the config panel starts level with it instead of
           being pushed below, which left a large empty block top-right. */}
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px] xl:items-start">
+      <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_420px] xl:items-start">
         {/* ---------------- Left Column: Dropzone / Preview ---------------- */}
         <div className="min-w-0 space-y-4">
           <StageHeader stageId="upload" />
@@ -303,8 +302,7 @@ export function UploadStage() {
               >
                 <Card className="brutal-block overflow-hidden p-0">
                   <div className="flex flex-col">
-                    {/* Thumbnail — TiltedCard lets you hover to zoom in and
-                        actually inspect the diagram. */}
+                    {/* The diagram, shown at rest and contained by its frame. */}
                     <div className="flex items-center justify-center bg-muted p-6 border-b border-border/40">
                       {previewUrl.startsWith('data:application/pdf') ? (
                         <div className="flex h-48 flex-col items-center justify-center gap-2 text-muted-foreground">
@@ -312,18 +310,10 @@ export function UploadStage() {
                           <span className="text-sm font-semibold">PDF source</span>
                         </div>
                       ) : (
-                        <TiltedCard
-                          imageSrc={previewUrl}
-                          altText={previewName ?? 'Diagram preview'}
-                          captionText="Hover to inspect"
-                          containerHeight="240px"
-                          containerWidth="100%"
-                          imageHeight="240px"
-                          imageWidth="280px"
-                          rotateAmplitude={6}
-                          scaleOnHover={1.6}
-                          showMobileWarning={false}
-                          showTooltip
+                        <img
+                          src={previewUrl}
+                          alt={previewName ?? 'Diagram preview'}
+                          className="max-h-[260px] w-auto max-w-full object-contain"
                         />
                       )}
                     </div>

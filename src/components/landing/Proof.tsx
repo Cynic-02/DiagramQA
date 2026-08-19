@@ -257,7 +257,7 @@ export function Proof() {
               aria-selected={i === active}
               onClick={() => setActive(i)}
               className={cn(
-                'lbl border-[3px] border-[var(--ink)] px-4 py-3 transition-colors duration-[90ms]',
+                'lbl border-[3px] border-[var(--line)] px-4 py-3 transition-colors duration-[90ms]',
                 i === active
                   ? 'bg-[var(--ink)] text-[var(--background)]'
                   : 'bg-[var(--card)] hover:bg-[var(--yellow)] hover:text-[#0a0a0a]'
@@ -282,7 +282,7 @@ export function Proof() {
                drawing grows into whatever height that leaves, so the
                two sides start and finish on the same lines instead of
                one ending halfway up the other. */}
-          <div className="flex min-h-full flex-col border-[3px] border-[var(--ink)] bg-[var(--card)] shadow-[5px_5px_0_var(--ink)]">
+          <div className="flex min-h-full flex-col border-[3px] border-[var(--line)] bg-[var(--card)] shadow-[5px_5px_0_var(--line)]">
             <div className="flex items-center justify-between gap-3 bg-[var(--ink)] px-3 py-2 text-[var(--background)]">
               <span className="lbl">Input · diagram</span>
               <span className="lbl opacity-70">{sample.label}</span>
@@ -290,7 +290,7 @@ export function Proof() {
             <div className="grid-faint flex min-h-[260px] flex-1 items-center justify-center p-3">
               {sample.svg}
             </div>
-            <div className="mt-auto border-t-2 border-[var(--ink)] px-3 py-2.5">
+            <div className="mt-auto border-t-2 border-[var(--line)] px-3 py-2.5">
               <span className="dat text-xs text-[var(--ink-2)]">
                 vision extraction → 14 nodes, 11 edges, 5 labels
               </span>
@@ -305,7 +305,7 @@ export function Proof() {
 
           {/* ---- the questions ---- */}
           <div className="flex min-w-0 flex-col gap-3">
-            <div className="flex items-center justify-between gap-3 border-[3px] border-[var(--ink)] bg-[var(--ink)] px-3 py-2 text-[var(--background)] shadow-[5px_5px_0_var(--red)]">
+            <div className="flex items-center justify-between gap-3 border-[3px] border-[var(--line)] bg-[var(--ink)] px-3 py-2 text-[var(--background)] shadow-[5px_5px_0_var(--red)]">
               <span className="lbl">Output · question set</span>
               <span className="lbl opacity-70">
                 {sample.questions.length} items · all verified
@@ -316,17 +316,17 @@ export function Proof() {
               <Wipe
                 key={`${sample.id}-${i}`}
                 delay={i * 60}
-                className="relative border-[3px] border-[var(--ink)] bg-[var(--card)] shadow-[4px_4px_0_var(--ink)]"
+                className="relative border-[3px] border-[var(--line)] bg-[var(--card)] shadow-[4px_4px_0_var(--line)]"
               >
                 <button
                   onClick={() => verify(i)}
                   className="w-full text-left transition-colors duration-[90ms] hover:bg-[var(--yellow)]/25"
                   aria-label={`Re-verify question ${i + 1}`}
                 >
-                  <span className="flex items-stretch border-b-2 border-[var(--ink)]">
+                  <span className="flex items-stretch border-b-2 border-[var(--line)]">
                     <span
                       className={cn(
-                        'lbl border-r-2 border-[var(--ink)] px-3 py-2',
+                        'lbl border-r-2 border-[var(--line)] px-3 py-2',
                         `bloom-${q.level}`
                       )}
                     >

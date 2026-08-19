@@ -25,10 +25,12 @@ const GraphEngine = dynamic(() => import('@/components/graph/GraphEngine'), { ss
    highest-intent page in the product.
 
    This is one object in an empty room. A faculty ID card, extruded,
-   hard ink borders, a hard offset shadow on the floor. It tilts to the
-   pointer (max 8°, damped). Sign in and Create account are the two
-   faces of the same card, so switching is a physical flip. Submit is
-   THE STAMP — education is marking, and marking is stamping.
+   hard borders, a hard offset shadow on the floor. It does not follow
+   the pointer — on the page where someone is aiming at two fields and a
+   button, a target that moves while you aim is a nuisance. Sign in and
+   Create account are the two faces of the same card, so switching is a
+   physical flip. Submit is THE STAMP — education is marking, and marking
+   is stamping.
 
    The form is real DOM inside a CSS 3D transform, not a texture, so it
    stays selectable, autofillable and screen-reader correct. No WebGL.
@@ -52,47 +54,13 @@ export default function LoginPage() {
 
   const stageRef = React.useRef<HTMLDivElement | null>(null)
   const cardRef = React.useRef<HTMLDivElement | null>(null)
-  const tilt = React.useRef({ x: 0, y: 0 })
 
   const flipped = mode === 'signup'
 
-  /* ---- pointer tilt. Max 8° each way, damped, never snapping. ---- */
-  React.useEffect(() => {
-    const stage = stageRef.current
-    const card = cardRef.current
-    if (!stage || !card) return
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-    if (!window.matchMedia('(pointer: fine)').matches) return
-
-    let raf = 0
-    const target = { x: 0, y: 0 }
-
-    const apply = () => {
-      raf = requestAnimationFrame(apply)
-      tilt.current.x += (target.x - tilt.current.x) * 0.09
-      tilt.current.y += (target.y - tilt.current.y) * 0.09
-      card.style.transform = `rotateY(${(flipped ? 180 : 0) + tilt.current.y}deg) rotateX(${tilt.current.x}deg)`
-    }
-
-    const move = (e: PointerEvent) => {
-      const r = stage.getBoundingClientRect()
-      target.y = ((e.clientX - r.left) / r.width - 0.5) * 16
-      target.x = -((e.clientY - r.top) / r.height - 0.5) * 16
-    }
-    const leave = () => {
-      target.x = 0
-      target.y = 0
-    }
-
-    stage.addEventListener('pointermove', move)
-    stage.addEventListener('pointerleave', leave)
-    raf = requestAnimationFrame(apply)
-    return () => {
-      cancelAnimationFrame(raf)
-      stage.removeEventListener('pointermove', move)
-      stage.removeEventListener('pointerleave', leave)
-    }
-  }, [flipped])
+  /* No pointer tilt. The card used to follow the cursor; on the one page
+     where someone is trying to hit two fields and a button, a target that
+     moves while you aim at it is a nuisance, not a delight. It flips, and
+     that is the whole 3D idea. */
 
   function switchMode(next: Mode) {
     if (next === mode) return
@@ -181,9 +149,9 @@ export default function LoginPage() {
   }
 
   const field =
-    'w-full border-2 border-[var(--ink)] bg-[var(--card)] px-3.5 py-3 font-mono text-sm ' +
+    'w-full border-2 border-[var(--line)] bg-[var(--card)] px-3.5 py-3 font-mono text-sm ' +
     'transition-[border-width,box-shadow,padding] duration-[90ms] outline-none ' +
-    'focus:border-[3px] focus:px-[13px] focus:py-[11px] focus:shadow-[4px_4px_0_var(--ink)] ' +
+    'focus:border-[3px] focus:px-[13px] focus:py-[11px] focus:shadow-[4px_4px_0_var(--line)] ' +
     'placeholder:text-[var(--ink-2)]'
 
   return (
@@ -193,7 +161,7 @@ export default function LoginPage() {
       </div>
 
       {/* chrome */}
-      <div className="relative z-10 flex items-center justify-between gap-4 border-b-2 border-[var(--ink)] px-6 py-3 sm:px-10">
+      <div className="relative z-10 flex items-center justify-between gap-4 border-b-2 border-[var(--line)] px-6 py-3 sm:px-10">
         <Link href="/" className="lbl hover:text-[var(--red)]">
           ← DiagramMind
         </Link>
@@ -349,7 +317,7 @@ function Face({
   return (
     <div
       aria-hidden={hidden}
-      className="border-[4px] border-[var(--ink)] bg-[var(--card)] shadow-[14px_14px_0_var(--ink)]"
+      className="border-[4px] border-[var(--line)] bg-[var(--card)] shadow-[14px_14px_0_var(--line)]"
       style={{
         backfaceVisibility: 'hidden',
         WebkitBackfaceVisibility: 'hidden',
@@ -359,7 +327,7 @@ function Face({
       }}
     >
       <Spectrum className="h-3 border-x-0 border-t-0 border-b-[3px]" reverse={reverse} />
-      <div className="flex items-center justify-between gap-3 border-b-2 border-[var(--ink)] px-4 py-2.5">
+      <div className="flex items-center justify-between gap-3 border-b-2 border-[var(--line)] px-4 py-2.5">
         <span className="lbl">DiagramMind</span>
         <span className="lbl text-[var(--ink-2)]">{badge}</span>
       </div>
@@ -391,7 +359,7 @@ function Submit({ loading, children }: { loading: boolean; children: React.React
     <button
       type="submit"
       disabled={loading}
-      className="dat mt-1 w-full border-[3px] border-[var(--ink)] bg-[var(--red)] px-6 py-3.5 text-xs font-bold uppercase tracking-[0.12em] text-white shadow-[6px_6px_0_var(--ink)] transition-[transform,box-shadow] duration-[90ms] ease-[cubic-bezier(.2,0,0,1)] hover:translate-x-[6px] hover:translate-y-[6px] hover:shadow-none disabled:opacity-60"
+      className="dat mt-1 w-full border-[3px] border-[var(--line)] bg-[var(--red)] px-6 py-3.5 text-xs font-bold uppercase tracking-[0.12em] text-white shadow-[6px_6px_0_var(--line)] transition-[transform,box-shadow] duration-[90ms] ease-[cubic-bezier(.2,0,0,1)] hover:translate-x-[6px] hover:translate-y-[6px] hover:shadow-none disabled:opacity-60"
     >
       {loading ? 'Working…' : children}
     </button>
@@ -404,7 +372,7 @@ function GoogleBtn({ onClick, loading }: { onClick: () => void; loading: boolean
       type="button"
       onClick={onClick}
       disabled={loading}
-      className="dat w-full border-2 border-[var(--ink)] bg-[var(--card)] px-6 py-3 text-xs font-bold uppercase tracking-[0.12em] shadow-[4px_4px_0_var(--ink)] transition-[transform,box-shadow] duration-[90ms] ease-[cubic-bezier(.2,0,0,1)] hover:translate-x-[4px] hover:translate-y-[4px] hover:shadow-none disabled:opacity-60"
+      className="dat w-full border-2 border-[var(--line)] bg-[var(--card)] px-6 py-3 text-xs font-bold uppercase tracking-[0.12em] shadow-[4px_4px_0_var(--line)] transition-[transform,box-shadow] duration-[90ms] ease-[cubic-bezier(.2,0,0,1)] hover:translate-x-[4px] hover:translate-y-[4px] hover:shadow-none disabled:opacity-60"
     >
       {loading ? 'Redirecting…' : 'Continue with Google'}
     </button>

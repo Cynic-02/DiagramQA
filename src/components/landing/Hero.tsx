@@ -52,7 +52,7 @@ export function Hero({
 
           {/* An opaque block, so copy is always a layer in FRONT of the
               graph rather than floating on top of it. */}
-          <div className="mt-8 max-w-[54ch] border-[3px] border-[var(--ink)] bg-[var(--card)] p-5 shadow-[6px_6px_0_var(--ink)]">
+          <div className="mt-8 max-w-[54ch] border-[3px] border-[var(--line)] bg-[var(--card)] p-5 shadow-[6px_6px_0_var(--line)]">
             <p className="leading-relaxed">
               Upload a diagram of the nitrogen cycle. Get twelve questions across all six
               Bloom levels — each one independently answered and{' '}

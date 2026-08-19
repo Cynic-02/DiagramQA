@@ -47,7 +47,7 @@ export default function AppPage() {
 
 
   return (
-    <div className="relative flex min-h-screen flex-col grid-faint-lighter">
+    <div className="relative flex min-h-screen flex-col">
       <ScrollProgress />
       <CommandPalette />
 

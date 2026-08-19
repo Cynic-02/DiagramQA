@@ -113,8 +113,13 @@
   --accent: var(--yellow);
   --accent-foreground: #0a0a0a;
   --destructive: #e5342a;
-  --border: var(--ink);
-  --input: var(--ink);
+  /* Borders are their own token. In dark mode the text ink is nearly
+     white, and a 3px near-white rule around every panel reads as a
+     glare rather than as structure — so the line colour is allowed to
+     part company with the type colour. */
+  --line: var(--ink);
+  --border: var(--line);
+  --input: var(--line);
   --ring: var(--blue);
 
   --chart-1: var(--bloom-1); --chart-2: var(--bloom-2); --chart-3: var(--bloom-3);
@@ -134,8 +139,8 @@
 
   /* Dashed graph-paper tiles. The stroke colour is baked into the data
      URI, so there is one tile per mode rather than a color-mix. */
-  --grid-tile: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='34' height='34'%3E%3Cg fill='none' stroke='%230a0a0a' stroke-opacity='0.18' stroke-width='1' stroke-dasharray='5 6'%3E%3Cpath d='M0 .5H34'/%3E%3Cpath d='M.5 0V34' stroke-dashoffset='3'/%3E%3C/g%3E%3C/svg%3E");
-  --grid-tile-strong: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22'%3E%3Cg fill='none' stroke='%230a0a0a' stroke-opacity='0.28' stroke-width='1' stroke-dasharray='4 5'%3E%3Cpath d='M0 .5H22'/%3E%3Cpath d='M.5 0V22' stroke-dashoffset='2.5'/%3E%3C/g%3E%3C/svg%3E");
+  --grid-tile: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='34' height='34'%3E%3Cg fill='none' stroke='%230a0a0a' stroke-opacity='0.11' stroke-width='1' stroke-dasharray='5 6'%3E%3Cpath d='M0 .5H34'/%3E%3Cpath d='M.5 0V34' stroke-dashoffset='3'/%3E%3C/g%3E%3C/svg%3E");
+  --grid-tile-strong: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22'%3E%3Cg fill='none' stroke='%230a0a0a' stroke-opacity='0.17' stroke-width='1' stroke-dasharray='4 5'%3E%3Cpath d='M0 .5H22'/%3E%3Cpath d='M.5 0V22' stroke-dashoffset='2.5'/%3E%3C/g%3E%3C/svg%3E");
 
   /* structural constants — never change per mode */
   --bw-s: 2px;   /* inline elements */
@@ -157,6 +162,11 @@
   --bloom-1-fg: #ffffff; --bloom-2-fg: #0a0a0a; --bloom-3-fg: #0a0a0a;
   --bloom-4-fg: #0a0a0a; --bloom-5-fg: #0a0a0a; --bloom-6-fg: #ffffff;
 
+  /* A warm mid-grey, not the text ink: structural without glaring. */
+  --line: #5c554c;
+  --border: var(--line);
+  --input: var(--line);
+
   --muted: #2a2724;
   --card: var(--surface);
   --popover: var(--surface);
@@ -164,9 +174,31 @@
   --diagram-line: color-mix(in srgb, var(--ink) 22%, transparent);
   --diagram-node-bg: var(--surface);
 
-  --grid-tile: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='34' height='34'%3E%3Cg fill='none' stroke='%23f5f2ea' stroke-opacity='0.16' stroke-width='1' stroke-dasharray='5 6'%3E%3Cpath d='M0 .5H34'/%3E%3Cpath d='M.5 0V34' stroke-dashoffset='3'/%3E%3C/g%3E%3C/svg%3E");
-  --grid-tile-strong: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22'%3E%3Cg fill='none' stroke='%23f5f2ea' stroke-opacity='0.26' stroke-width='1' stroke-dasharray='4 5'%3E%3Cpath d='M0 .5H22'/%3E%3Cpath d='M.5 0V22' stroke-dashoffset='2.5'/%3E%3C/g%3E%3C/svg%3E");
+  --grid-tile: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='34' height='34'%3E%3Cg fill='none' stroke='%23f5f2ea' stroke-opacity='0.10' stroke-width='1' stroke-dasharray='5 6'%3E%3Cpath d='M0 .5H34'/%3E%3Cpath d='M.5 0V34' stroke-dashoffset='3'/%3E%3C/g%3E%3C/svg%3E");
+  --grid-tile-strong: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22'%3E%3Cg fill='none' stroke='%23f5f2ea' stroke-opacity='0.18' stroke-width='1' stroke-dasharray='4 5'%3E%3Cpath d='M0 .5H22'/%3E%3Cpath d='M.5 0V22' stroke-dashoffset='2.5'/%3E%3C/g%3E%3C/svg%3E");
+
+  --bw-s: 1px;
+  --bw:   2px;
+  --bw-l: 2px;
 }
+
+/* A rule that reads as 3px of ink on cream reads as a slab of chalk on
+   near-black. Same structure, thinner line — the widths are written
+   inline across the components, so they are stepped down here rather
+   than threaded through every file. */
+[data-theme="dark"] .border-\[4px\] { border-width: 2px; }
+[data-theme="dark"] .border-\[3px\] { border-width: 2px; }
+[data-theme="dark"] .border-2       { border-width: 1px; }
+[data-theme="dark"] .border-b-2,
+[data-theme="dark"] .border-t-2,
+[data-theme="dark"] .border-r-2,
+[data-theme="dark"] .border-l-2     { border-width: 0; }
+[data-theme="dark"] .border-b-2 { border-bottom-width: 1px; }
+[data-theme="dark"] .border-t-2 { border-top-width: 1px; }
+[data-theme="dark"] .border-r-2 { border-right-width: 1px; }
+[data-theme="dark"] .border-l-2 { border-left-width: 1px; }
+[data-theme="dark"] .border-r-\[3px\] { border-right-width: 2px; }
+[data-theme="dark"] .border-b-\[3px\] { border-bottom-width: 2px; }
 
 /* ==================================================================
    BASE
@@ -297,23 +329,23 @@
   .glass, .glass-strong, .glass-primary,
   .hw-panel {
     background: var(--card);
-    border: var(--bw) solid var(--ink);
-    box-shadow: var(--sh) var(--sh) 0 var(--ink);
+    border: var(--bw) solid var(--line);
+    box-shadow: var(--sh) var(--sh) 0 var(--line);
     position: relative;
     transition: transform var(--snap), box-shadow var(--snap);
   }
 
   .brutal-block-sm {
     background: var(--card);
-    border: var(--bw-s) solid var(--ink);
-    box-shadow: 3px 3px 0 var(--ink);
+    border: var(--bw-s) solid var(--line);
+    box-shadow: 3px 3px 0 var(--line);
     transition: transform var(--snap), box-shadow var(--snap);
   }
 
   .brutal-block-lg {
     background: var(--card);
-    border: var(--bw-l) solid var(--ink);
-    box-shadow: var(--sh-l) var(--sh-l) 0 var(--ink);
+    border: var(--bw-l) solid var(--line);
+    box-shadow: var(--sh-l) var(--sh-l) 0 var(--line);
     transition: transform var(--snap), box-shadow var(--snap);
   }
 
@@ -330,11 +362,11 @@
   a.brutal-block:hover, button.brutal-block:hover,
   a.brutal-block-sm:hover, button.brutal-block-sm:hover {
     transform: translate(var(--sh), var(--sh));
-    box-shadow: 0 0 0 var(--ink);
+    box-shadow: 0 0 0 var(--line);
   }
   .press:active, .brutal-interactive:active {
     transform: translate(var(--sh), var(--sh));
-    box-shadow: 0 0 0 var(--ink);
+    box-shadow: 0 0 0 var(--line);
   }
 
   /* --- rule 5: everything is labelled --- */
@@ -352,8 +384,8 @@
   .joined > * { margin: 0 0 calc(var(--bw) * -1) calc(var(--bw) * -1); }
 
   /* --- rule 7: full-bleed section rules --- */
-  .rule-t { border-top: var(--bw-l) solid var(--ink); }
-  .rule-b { border-bottom: var(--bw-l) solid var(--ink); }
+  .rule-t { border-top: var(--bw-l) solid var(--line); }
+  .rule-b { border-bottom: var(--bw-l) solid var(--line); }
 
   /* --- app chrome: flat and opaque. No backdrop-filter anywhere. --- */
   .glass-chrome {
@@ -369,14 +401,14 @@
     display: grid;
     grid-template-columns: repeat(6, 1fr);
     align-items: stretch;
-    border: var(--bw) solid var(--ink);
+    border: var(--bw) solid var(--line);
     /* No height here. It used to be `height: 100%`, which beat the
        utility class setting the height and collapsed every spectrum bar
        on the site to its own 6px of border — a thin black sliver where
        six colours should be. The caller sets the height. */
   }
   .spectrum > * { display: block; min-height: 100%; }
-  .spectrum > * + * { border-left: var(--bw-s) solid var(--ink); }
+  .spectrum > * + * { border-left: var(--bw-s) solid var(--line); }
   .bloom-1 { background: var(--bloom-1); color: var(--bloom-1-fg); }
   .bloom-2 { background: var(--bloom-2); color: var(--bloom-2-fg); }
   .bloom-3 { background: var(--bloom-3); color: var(--bloom-3-fg); }

@@ -75,13 +75,13 @@ export function Btn({
     <button
       {...props}
       className={cn(
-        'dat inline-flex items-center justify-center gap-2 border-[3px] border-[var(--ink)] px-6 py-3.5',
+        'dat inline-flex items-center justify-center gap-2 border-[3px] border-[var(--line)] px-6 py-3.5',
         'text-xs font-bold uppercase tracking-[0.12em]',
         'transition-[transform,box-shadow] duration-[90ms] ease-[cubic-bezier(.2,0,0,1)]',
         variant === 'primary' &&
-          'bg-[var(--red)] text-white shadow-[6px_6px_0_var(--ink)] hover:translate-x-[6px] hover:translate-y-[6px] hover:shadow-none',
+          'bg-[var(--red)] text-white shadow-[6px_6px_0_var(--line)] hover:translate-x-[6px] hover:translate-y-[6px] hover:shadow-none',
         variant === 'default' &&
-          'bg-[var(--card)] text-[var(--ink)] shadow-[4px_4px_0_var(--ink)] hover:translate-x-[4px] hover:translate-y-[4px] hover:shadow-none',
+          'bg-[var(--card)] text-[var(--ink)] shadow-[4px_4px_0_var(--line)] hover:translate-x-[4px] hover:translate-y-[4px] hover:shadow-none',
         variant === 'invert' &&
           'bg-[var(--ink)] text-[var(--background)] shadow-[4px_4px_0_var(--red)] hover:translate-x-[4px] hover:translate-y-[4px] hover:shadow-none',
         variant === 'ghost' &&
@@ -116,7 +116,7 @@ export function Block({
   return (
     <div
       className={cn(
-        'border-[3px] border-[var(--ink)] shadow-[4px_4px_0_var(--ink)]',
+        'border-[3px] border-[var(--line)] shadow-[4px_4px_0_var(--line)]',
         tone === 'surface' && 'bg-[var(--card)]',
         tone === 'ink' && 'bg-[var(--ink)] text-[var(--background)]',
         tone === 'red' && 'bg-[var(--red)] text-white',
@@ -255,7 +255,7 @@ export function SectionHead({
         <span className="lbl bg-[var(--ink)] px-2.5 py-1.5 text-[var(--background)]">{n}</span>
         <h2 className="d-m">{title}</h2>
         {tag && (
-          <span className="lbl border-2 border-[var(--ink)] bg-[var(--yellow)] px-2.5 py-1.5 text-[#0a0a0a]">
+          <span className="lbl border-2 border-[var(--line)] bg-[var(--yellow)] px-2.5 py-1.5 text-[#0a0a0a]">
             {tag}
           </span>
         )}

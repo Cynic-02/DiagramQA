@@ -43,7 +43,7 @@ export function Bloom() {
           {TIERS.map((t, i) => {
             const isOpen = open === i
             return (
-              <li key={i} className="border-[3px] border-[var(--ink)] bg-[var(--card)]">
+              <li key={i} className="border-[3px] border-[var(--line)] bg-[var(--card)]">
                 <button
                   onClick={() => setOpen(isOpen ? null : i)}
                   aria-expanded={isOpen}
@@ -54,7 +54,7 @@ export function Bloom() {
                 >
                   <span
                     className={cn(
-                      'grid w-[76px] flex-none place-items-center border-r-[3px] border-[var(--ink)]',
+                      'grid w-[76px] flex-none place-items-center border-r-[3px] border-[var(--line)]',
                       `bloom-${i + 1}`
                     )}
                   >
@@ -93,7 +93,7 @@ export function Audiences({ onStart }: { onStart: () => void }) {
       className="relative z-10 rule-t"
     >
       <div className="grid lg:grid-cols-2">
-        <Wipe className="border-b-[4px] border-[var(--ink)] p-8 sm:p-12 lg:border-b-0 lg:border-r-[4px]">
+        <Wipe className="border-b-[4px] border-[var(--line)] p-8 sm:p-12 lg:border-b-0 lg:border-r-[4px]">
           <span className="lbl bg-[var(--ink)] px-2.5 py-1.5 text-[var(--background)]">
             For teachers
           </span>
@@ -168,7 +168,7 @@ export function Numbers() {
         <SectionHead n="06" title="NUMBERS" />
         <div className="joined grid sm:grid-cols-2 lg:grid-cols-4">
           {STATS.map((s) => (
-            <div key={s.label} className="border-[3px] border-[var(--ink)] bg-[var(--card)] p-6">
+            <div key={s.label} className="border-[3px] border-[var(--line)] bg-[var(--card)] p-6">
               <div className="d-l" style={{ fontSize: 'clamp(2.4rem,4vw,3.4rem)' }}>
                 <Odometer value={s.v} />
               </div>
@@ -224,7 +224,7 @@ export function Objections() {
           {FAQ.map((f, i) => {
             const isOpen = open === i
             return (
-              <li key={f.q} className="border-[3px] border-[var(--ink)] bg-[var(--card)]">
+              <li key={f.q} className="border-[3px] border-[var(--line)] bg-[var(--card)]">
                 <button
                   onClick={() => setOpen(isOpen ? null : i)}
                   aria-expanded={isOpen}
@@ -243,7 +243,7 @@ export function Objections() {
                   className="overflow-hidden transition-[max-height,opacity] duration-[320ms] ease-[cubic-bezier(.16,1,.3,1)]"
                   style={{ maxHeight: isOpen ? 320 : 0, opacity: isOpen ? 1 : 0 }}
                 >
-                  <p className="border-t-2 border-[var(--ink)] px-5 py-4 leading-relaxed text-[var(--ink-2)]">
+                  <p className="border-t-2 border-[var(--line)] px-5 py-4 leading-relaxed text-[var(--ink-2)]">
                     {f.a}
                   </p>
                 </div>
@@ -275,7 +275,7 @@ export function CloseCta({ onStart }: { onStart: () => void }) {
         <div className="mt-9 flex flex-wrap items-center gap-4">
           <button
             onClick={onStart}
-            className="dat border-[3px] border-[var(--ink)] bg-white px-7 py-4 text-xs font-bold uppercase tracking-[0.12em] text-[#0a0a0a] shadow-[6px_6px_0_var(--ink)] transition-[transform,box-shadow] duration-[90ms] ease-[cubic-bezier(.2,0,0,1)] hover:translate-x-[6px] hover:translate-y-[6px] hover:shadow-none"
+            className="dat border-[3px] border-[var(--line)] bg-white px-7 py-4 text-xs font-bold uppercase tracking-[0.12em] text-[#0a0a0a] shadow-[6px_6px_0_var(--line)] transition-[transform,box-shadow] duration-[90ms] ease-[cubic-bezier(.2,0,0,1)] hover:translate-x-[6px] hover:translate-y-[6px] hover:shadow-none"
           >
             Start free →
           </button>
@@ -313,7 +313,7 @@ export function SiteFooter() {
           </div>
         ))}
       </div>
-      <div className="mx-auto mt-12 flex max-w-[1200px] flex-wrap items-center justify-between gap-4 border-t-2 border-[var(--ink)] pt-6">
+      <div className="mx-auto mt-12 flex max-w-[1200px] flex-wrap items-center justify-between gap-4 border-t-2 border-[var(--line)] pt-6">
         <span className="lbl text-[var(--ink-2)]">DiagramMind · RUBRIC v1.0</span>
         <span className="lbl text-[var(--ink-2)]">Ink, paper, and a red marking pen.</span>
       </div>

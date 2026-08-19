@@ -32,11 +32,11 @@ function AgentCard({ a, i, step }: { a: (typeof AGENTS)[number]; i: number; step
   return (
     <li
       className={cn(
-        'flex min-h-[204px] min-w-0 flex-1 flex-col border-[3px] border-[var(--ink)] bg-[var(--card)]',
+        'flex min-h-[204px] min-w-0 flex-1 flex-col border-[3px] border-[var(--line)] bg-[var(--card)]',
         'transition-[transform,box-shadow] duration-[90ms] ease-[cubic-bezier(.2,0,0,1)]',
         live
-          ? 'translate-x-[-2px] translate-y-[-2px] shadow-[7px_7px_0_var(--ink)]'
-          : 'shadow-[3px_3px_0_var(--ink)]'
+          ? 'translate-x-[-2px] translate-y-[-2px] shadow-[7px_7px_0_var(--line)]'
+          : 'shadow-[3px_3px_0_var(--line)]'
       )}
     >
       <div
@@ -56,7 +56,7 @@ function AgentCard({ a, i, step }: { a: (typeof AGENTS)[number]; i: number; step
         </h3>
         <p className="mt-2 text-[13px] leading-snug text-[var(--ink-2)]">{a.blurb}</p>
 
-        <div className="mt-auto border-t-2 border-[var(--ink)] pt-2.5">
+        <div className="mt-auto border-t-2 border-[var(--line)] pt-2.5">
           {reached ? (
             <p className="dat text-[10px] leading-snug">
               <span className="text-[var(--red)]">›</span> {a.out}

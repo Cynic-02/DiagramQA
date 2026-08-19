@@ -21,7 +21,6 @@ import { StageFrame, EmptyState, DataChip } from './shared'
 import { AgentThinkingConsole } from './AgentThinkingConsole'
 import { MiniGraph } from './MiniGraph'
 import { CountUpText } from '@/hooks/use-count-up'
-import TiltedCard from '@/components/reactbits/TiltedCard'
 import { ExtractionEditor } from './ExtractionEditor'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
@@ -108,18 +107,10 @@ export function ExtractionStage() {
             <div className="grid gap-0 md:grid-cols-[260px_minmax(0,1fr)]">
               <div className="flex items-center justify-center border-b border-border/40 bg-muted p-4 md:border-b-0 md:border-r border-border/40">
                 {diagramDataUrl && diagramDataUrl.startsWith('data:image') ? (
-                  <TiltedCard
-                    imageSrc={diagramDataUrl}
-                    altText={diagramFilename ?? 'Source diagram'}
-                    captionText={diagramFilename ?? 'Source diagram'}
-                    containerHeight="176px"
-                    containerWidth="100%"
-                    imageHeight="176px"
-                    imageWidth="100%"
-                    rotateAmplitude={8}
-                    scaleOnHover={1.04}
-                    showMobileWarning={false}
-                    showTooltip
+                  <img
+                    src={diagramDataUrl}
+                    alt="Source diagram"
+                    className="max-h-[300px] w-auto max-w-full object-contain"
                   />
                 ) : (
                   <div className="flex h-32 flex-col items-center justify-center gap-2 text-muted-foreground">

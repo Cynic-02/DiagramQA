@@ -50,7 +50,7 @@ export function AppShell({
   return (
     <section
       id="console"
-      className="relative flex min-h-screen flex-col bg-background bg-gradient-to-b from-primary/[0.04] to-background"
+      className="relative flex min-h-screen flex-col"
     >
       {/* Top hairline accent — solid flat border, not a gradient thread */}
       <div
@@ -78,12 +78,6 @@ export function AppShell({
           <TopBar onOpenMobileSidebar={() => setMobileOpen(true)} />
 
           <main className="relative flex-1">
-            {/* Background: faint flat grid only — no atmospheric glow */}
-            <div
-              aria-hidden
-              className="grid-faint pointer-events-none absolute inset-0 opacity-[0.035]"
-            />
-
             {/* Active stage content (provided by the orchestrator) */}
             <div className="relative z-10">{children}</div>
 

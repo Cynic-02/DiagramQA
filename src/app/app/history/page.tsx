@@ -124,7 +124,7 @@ export default function HistoryPage() {
       {/* Nav */}
       <PageHeader title="Run History" />
 
-      <div className="relative z-10 mx-auto w-full max-w-5xl flex-1 p-6 md:p-8">
+      <div className="relative z-10 mx-auto w-full max-w-[1400px] flex-1 p-6 md:p-8">
         {/* Header */}
         <div className="mb-8 space-y-2">
           <div className="flex items-center gap-2.5">

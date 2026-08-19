@@ -28,7 +28,7 @@ export function AppearanceMenu({ className }: { className?: string }) {
       onClick={() => setTheme(isDark ? 'light' : 'dark')}
       aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
       className={cn(
-        'flex h-8 items-center gap-2 border-2 border-[var(--ink)] bg-[var(--card)] px-2.5',
+        'flex h-8 items-center gap-2 border-2 border-[var(--line)] bg-[var(--card)] px-2.5',
         'font-mono text-[11px] font-bold uppercase tracking-[0.12em]',
         'transition-colors duration-[90ms] hover:bg-[var(--yellow)] hover:text-[#0a0a0a]',
         className
