@@ -5,9 +5,15 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { signIn } from 'next-auth/react'
 
+import dynamic from 'next/dynamic'
+
 import { cn } from '@/lib/utils'
 import { Spectrum } from '@/components/landing/primitives'
 import { ThemeToggle } from '@/components/theme-toggle'
+
+/* The same graph as the landing page, held at its final formation —
+   the collapse into the wordmark. The scroll journey ends here. */
+const GraphEngine = dynamic(() => import('@/components/graph/GraphEngine'), { ssr: false })
 
 /* ==================================================================
    THE ID CARD
@@ -181,9 +187,13 @@ export default function LoginPage() {
     'placeholder:text-[var(--ink-2)]'
 
   return (
-    <main className="grid-faint relative flex min-h-screen flex-col bg-[var(--background)]">
+    <main className="relative flex min-h-screen flex-col bg-[var(--background)]">
+      <div className="pointer-events-none fixed inset-0 z-0 opacity-[0.38]" aria-hidden>
+        <GraphEngine className="h-full w-full" fixedBeat={3} />
+      </div>
+
       {/* chrome */}
-      <div className="flex items-center justify-between gap-4 border-b-2 border-[var(--ink)] px-6 py-3 sm:px-10">
+      <div className="relative z-10 flex items-center justify-between gap-4 border-b-2 border-[var(--ink)] px-6 py-3 sm:px-10">
         <Link href="/" className="lbl hover:text-[var(--red)]">
           ← DiagramMind
         </Link>
@@ -193,7 +203,7 @@ export default function LoginPage() {
       {/* the empty room */}
       <div
         ref={stageRef}
-        className="relative flex flex-1 items-center justify-center px-6 py-14"
+        className="relative z-10 flex flex-1 items-center justify-center px-6 py-14"
         style={{ perspective: '1400px' }}
       >
         <div
@@ -312,7 +322,7 @@ export default function LoginPage() {
         </span>
       </div>
 
-      <p className="px-6 pb-8 text-center text-xs leading-relaxed text-[var(--ink-2)]">
+      <p className="relative z-10 px-6 pb-8 text-center text-xs leading-relaxed text-[var(--ink-2)]">
         By continuing you agree to the Terms and acknowledge the Privacy Policy.
       </p>
     </main>

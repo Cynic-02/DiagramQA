@@ -64,7 +64,8 @@ export default function Landing() {
       const heroEnd = tops[1] || window.innerHeight
       const t = Math.min(Math.max((window.scrollY - heroEnd * 0.35) / (heroEnd * 0.5), 0), 1)
       if (graphRef.current) {
-        graphRef.current.style.opacity = String(1 - t * 0.84)
+        // it stays a live part of the page rather than vanishing
+        graphRef.current.style.opacity = String(1 - t * 0.62)
       }
 
       // document header — this is a page header on a printed paper

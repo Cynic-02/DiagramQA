@@ -14,7 +14,7 @@ import { graphBeat } from '@/lib/graph/beat'
    sprites: brutalist particles are chunky and opaque.
 
    Budget, held deliberately:
-     - one InstancedBufferGeometry for nodes      -> ONE draw call
+     - one Mesh for every node                    -> ONE draw call
      - one LineSegments for edges                 -> ONE draw call
      - targets generated from a few numbers       -> ZERO asset bytes
      - beat -> a single float uniform, lerp runs
@@ -88,7 +88,12 @@ const VERT = /* glsl */ `
 `
 
 const FRAG = /* glsl */ `
-  precision mediump float;
+  // No 'precision mediump float' here. three's vertex prefix declares
+  // highp, so a mediump fragment stage gives uInk two different
+  // precisions across the two stages and the program fails to LINK —
+  // silently, with only a console warning. That is why no node ever
+  // rendered while every edge did: the edge program only uses uInk in
+  // its fragment stage, so it linked fine.
   uniform vec3 uInk;
   varying vec2 vUv;
   varying vec3 vColor;
@@ -125,7 +130,6 @@ const EDGE_VERT = /* glsl */ `
 `
 
 const EDGE_FRAG = /* glsl */ `
-  precision mediump float;
   uniform vec3 uInk;
   uniform float uEdgeAlpha;
   void main() {
@@ -152,7 +156,15 @@ function supportsWebGL(): boolean {
   }
 }
 
-export default function GraphEngine({ className }: { className?: string }) {
+export default function GraphEngine({
+  className,
+  fixedBeat,
+}: {
+  className?: string
+  /** When set, the graph holds this formation instead of following
+      scroll — used on /login, where there is nothing to scrub. */
+  fixedBeat?: number
+}) {
   const hostRef = useRef<HTMLDivElement | null>(null)
   const [fallback, setFallback] = useState<string | null>(null)
 
@@ -227,34 +239,68 @@ export default function GraphEngine({ className }: { className?: string }) {
       dispose()
       data = buildGraph(W, H)
 
-      /* ---- nodes: one instanced draw call ----
-         The unit quad is built by hand rather than borrowed from a
-         PlaneGeometry. Disposing the source geometry to free it also
-         disposes the very BufferAttributes we had just handed to the
-         instanced geometry, so nothing rendered at all — the first
-         version of this drew only edges. */
-      const geo = new THREE.InstancedBufferGeometry()
-      geo.setAttribute(
-        'position',
-        new THREE.Float32BufferAttribute(
-          [-0.5, -0.5, 0, 0.5, -0.5, 0, 0.5, 0.5, 0, -0.5, 0.5, 0],
-          3
-        )
-      )
-      geo.setAttribute(
-        'uv',
-        new THREE.Float32BufferAttribute([0, 0, 1, 0, 1, 1, 0, 1], 2)
-      )
-      geo.setIndex([0, 1, 2, 0, 2, 3])
-      geo.instanceCount = data.count
-      geo.setAttribute('aT0', new THREE.InstancedBufferAttribute(data.t0, 3))
-      geo.setAttribute('aT1', new THREE.InstancedBufferAttribute(data.t1, 3))
-      geo.setAttribute('aT2', new THREE.InstancedBufferAttribute(data.t2, 3))
-      geo.setAttribute('aT3', new THREE.InstancedBufferAttribute(data.t3, 3))
-      geo.setAttribute('aBloom', new THREE.InstancedBufferAttribute(data.bloom, 3))
-      geo.setAttribute('aSeed', new THREE.InstancedBufferAttribute(data.seed, 1))
-      geo.setAttribute('aSize', new THREE.InstancedBufferAttribute(data.size, 1))
-      geo.setAttribute('aAccent', new THREE.InstancedBufferAttribute(data.accent, 1))
+      /* ---- nodes: one draw call ----
+         Deliberately NOT instanced. The instanced version rendered
+         nothing at all — every edge drew, no node ever did — and at
+         this node count instancing buys nothing anyway. Six plain
+         vertices per node, all attributes per-vertex, one non-indexed
+         Mesh. Same single draw call, no instancing plumbing to be
+         wrong about. Roughly 400 vertices total. */
+      const N = data.count
+      const V = N * 6
+      const corner = new Float32Array(V * 3)
+      const cuv = new Float32Array(V * 2)
+      const nT0 = new Float32Array(V * 3)
+      const nT1 = new Float32Array(V * 3)
+      const nT2 = new Float32Array(V * 3)
+      const nT3 = new Float32Array(V * 3)
+      const nBloom = new Float32Array(V * 3)
+      const nSeed = new Float32Array(V)
+      const nSize = new Float32Array(V)
+      const nAccent = new Float32Array(V)
+
+      // two triangles, wound so both faces show regardless of culling
+      const QX = [-0.5, 0.5, 0.5, -0.5, 0.5, -0.5]
+      const QY = [-0.5, -0.5, 0.5, -0.5, 0.5, 0.5]
+      const QU = [0, 1, 1, 0, 1, 0]
+      const QV = [0, 0, 1, 0, 1, 1]
+
+      for (let i = 0; i < N; i++) {
+        const s3 = i * 3
+        for (let v = 0; v < 6; v++) {
+          const k = i * 6 + v
+          const k3 = k * 3
+          corner[k3] = QX[v]
+          corner[k3 + 1] = QY[v]
+          corner[k3 + 2] = 0
+          cuv[k * 2] = QU[v]
+          cuv[k * 2 + 1] = QV[v]
+          nT0[k3] = data.t0[s3]; nT0[k3 + 1] = data.t0[s3 + 1]; nT0[k3 + 2] = 0
+          nT1[k3] = data.t1[s3]; nT1[k3 + 1] = data.t1[s3 + 1]; nT1[k3 + 2] = 0
+          nT2[k3] = data.t2[s3]; nT2[k3 + 1] = data.t2[s3 + 1]; nT2[k3 + 2] = 0
+          nT3[k3] = data.t3[s3]; nT3[k3 + 1] = data.t3[s3 + 1]; nT3[k3 + 2] = 0
+          nBloom[k3] = data.bloom[s3]
+          nBloom[k3 + 1] = data.bloom[s3 + 1]
+          nBloom[k3 + 2] = data.bloom[s3 + 2]
+          nSeed[k] = data.seed[i]
+          nSize[k] = data.size[i]
+          nAccent[k] = data.accent[i]
+        }
+      }
+
+      const geo = new THREE.BufferGeometry()
+      // `position` carries the corner offset; the real coordinates come
+      // from aT0..aT3 and are mixed in the vertex shader.
+      geo.setAttribute('position', new THREE.BufferAttribute(corner, 3))
+      geo.setAttribute('uv', new THREE.BufferAttribute(cuv, 2))
+      geo.setAttribute('aT0', new THREE.BufferAttribute(nT0, 3))
+      geo.setAttribute('aT1', new THREE.BufferAttribute(nT1, 3))
+      geo.setAttribute('aT2', new THREE.BufferAttribute(nT2, 3))
+      geo.setAttribute('aT3', new THREE.BufferAttribute(nT3, 3))
+      geo.setAttribute('aBloom', new THREE.BufferAttribute(nBloom, 3))
+      geo.setAttribute('aSeed', new THREE.BufferAttribute(nSeed, 1))
+      geo.setAttribute('aSize', new THREE.BufferAttribute(nSize, 1))
+      geo.setAttribute('aAccent', new THREE.BufferAttribute(nAccent, 1))
 
       nodes = new THREE.Mesh(
         geo,
@@ -265,6 +311,7 @@ export default function GraphEngine({ className }: { className?: string }) {
           blending: THREE.NoBlending,
           depthTest: false,
           depthWrite: false,
+          side: THREE.DoubleSide,
         })
       )
       nodes.frustumCulled = false
@@ -363,7 +410,8 @@ export default function GraphEngine({ className }: { className?: string }) {
       uniforms.uTime.value = (now - start) / 1000
       // damped toward the scroll-defined beat, so a fast flick loosens
       // the cloud instead of snapping it
-      shown += (graphBeat.value - shown) * 0.08
+      const want = fixedBeat ?? graphBeat.value
+      shown += (want - shown) * 0.08
       uniforms.uBeat.value = shown
       uniforms.uEdgeAlpha.value = 1 - Math.min(Math.max((shown - 1) / 0.8, 0), 1)
       renderer.render(scene, camera)
@@ -379,7 +427,7 @@ export default function GraphEngine({ className }: { className?: string }) {
       renderer.dispose()
       if (renderer.domElement.parentNode === host) host.removeChild(renderer.domElement)
     }
-  }, [])
+  }, [fixedBeat])
 
   return (
     <div

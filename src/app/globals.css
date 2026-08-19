@@ -184,8 +184,19 @@
     html { scroll-behavior: auto; }
   }
 
+  /* The graph-paper ground. It was only inside one card; it is the
+     surface the whole product is drawn on, so it belongs on the page
+     itself and stays identical on every route. Dots rather than rules:
+     a dot grid reads as paper, a line grid reads as a table. */
   body {
     @apply bg-background text-foreground;
+    background-image: radial-gradient(
+      circle at 1px 1px,
+      color-mix(in srgb, var(--ink) 15%, transparent) 1.4px,
+      transparent 1.4px
+    );
+    background-size: 26px 26px;
+    background-attachment: fixed;
     font-family: var(--font-instrument), "Helvetica Neue", system-ui, sans-serif;
     font-weight: 400;
     line-height: 1.6;
@@ -366,21 +377,19 @@
   .bloom-6 { background: var(--bloom-6); color: var(--bloom-6-fg); }
 
   /* --- graph paper ground --- */
+  /* Same dot grid as the page, at a tighter pitch, for the inside of a
+     panel. One texture across the whole product. */
   .grid-faint, .grid-faint-lighter {
-    background-size: 44px 44px;
-    background-image:
-      linear-gradient(to right,  color-mix(in srgb, var(--ink) 7%, transparent) 1px, transparent 1px),
-      linear-gradient(to bottom, color-mix(in srgb, var(--ink) 7%, transparent) 1px, transparent 1px);
-  }
-  [data-theme="dark"] .grid-faint,
-  [data-theme="dark"] .grid-faint-lighter {
-    background-image:
-      linear-gradient(to right,  color-mix(in srgb, var(--ink) 9%, transparent) 1px, transparent 1px),
-      linear-gradient(to bottom, color-mix(in srgb, var(--ink) 9%, transparent) 1px, transparent 1px);
+    background-image: radial-gradient(
+      circle at 1px 1px,
+      color-mix(in srgb, var(--ink) 22%, transparent) 1.4px,
+      transparent 1.4px
+    );
+    background-size: 18px 18px;
   }
 
   /* --- retired effects. Kept as no-ops so no component breaks. --- */
-  .bg-hero-void { background: var(--background); }
+  .bg-hero-void { background: transparent; }
   .aurora-mesh  { background: none; }
   .hw-orb-1, .hw-orb-2, .hw-orb-3, .hw-stripe { display: none !important; }
   .glow-accent, .glow-soft { box-shadow: none; }
@@ -552,7 +561,7 @@
    ================================================================== */
 @media print {
   :root { --paper: #fff; --surface: #fff; --ink: #000; --ink-2: #333; }
-  body { background: #fff; color: #000; font-size: 11pt; }
+  body { background: #fff; background-image: none; color: #000; font-size: 11pt; }
   .grain-overlay,
   nav, header, footer,
   [data-print-hide] { display: none !important; }

@@ -73,7 +73,7 @@ const SAMPLES: Sample[] = [
     id: 'nitrogen',
     label: 'Nitrogen cycle',
     svg: (
-      <svg viewBox="0 0 380 260" className="h-full w-full">
+      <svg viewBox="0 0 380 260" className="h-auto max-h-full w-full" preserveAspectRatio="xMidYMid meet">
         <Defs />
         <Node x={20} y={16} label="N₂ (air)" />
         <Node x={148} y={100} label="Nitrites" />
@@ -98,7 +98,7 @@ const SAMPLES: Sample[] = [
     id: 'circuit',
     label: 'Series circuit',
     svg: (
-      <svg viewBox="0 0 380 260" className="h-full w-full">
+      <svg viewBox="0 0 380 260" className="h-auto max-h-full w-full" preserveAspectRatio="xMidYMid meet">
         <Defs />
         <rect x={40} y={40} width={300} height={180} className="fill-none stroke-[var(--ink)]" strokeWidth={2.5} />
         <rect x={26} y={112} width={28} height={40} className="fill-[var(--card)] stroke-[var(--ink)]" strokeWidth={2.5} />
@@ -122,7 +122,7 @@ const SAMPLES: Sample[] = [
     id: 'neuron',
     label: 'Neuron',
     svg: (
-      <svg viewBox="0 0 380 260" className="h-full w-full">
+      <svg viewBox="0 0 380 260" className="h-auto max-h-full w-full" preserveAspectRatio="xMidYMid meet">
         <Defs />
         <circle cx={110} cy={130} r={40} className="fill-[var(--card)] stroke-[var(--ink)]" strokeWidth={2.5} />
         <text x={110} y={134} textAnchor="middle" className={S.txt} style={{ fontSize: 10.5 }}>soma</text>
@@ -149,7 +149,7 @@ const SAMPLES: Sample[] = [
     id: 'mitochondrion',
     label: 'Mitochondrion',
     svg: (
-      <svg viewBox="0 0 380 260" className="h-full w-full">
+      <svg viewBox="0 0 380 260" className="h-auto max-h-full w-full" preserveAspectRatio="xMidYMid meet">
         <Defs />
         <ellipse cx={190} cy={130} rx={150} ry={86} className="fill-[var(--card)] stroke-[var(--ink)]" strokeWidth={3} />
         <ellipse cx={190} cy={130} rx={132} ry={68} className="fill-none stroke-[var(--ink)]" strokeWidth={2} />
@@ -273,18 +273,24 @@ export function Proof() {
             the arrow make it a transformation. */}
         <div
           ref={hostRef}
-          className="relative grid items-start gap-7 lg:grid-cols-[minmax(0,42%)_auto_minmax(0,1fr)] lg:gap-5"
+          className="relative grid items-stretch gap-7 lg:grid-cols-[minmax(0,42%)_auto_minmax(0,1fr)] lg:gap-5"
         >
           <SeveredEdge play={play} />
 
-          {/* ---- the diagram ---- */}
-          <div className="border-[3px] border-[var(--ink)] bg-[var(--card)] shadow-[5px_5px_0_var(--ink)]">
+          {/* ---- the diagram ----
+               The column stretches to match the question set, and the
+               drawing grows into whatever height that leaves, so the
+               two sides start and finish on the same lines instead of
+               one ending halfway up the other. */}
+          <div className="flex min-h-full flex-col border-[3px] border-[var(--ink)] bg-[var(--card)] shadow-[5px_5px_0_var(--ink)]">
             <div className="flex items-center justify-between gap-3 bg-[var(--ink)] px-3 py-2 text-[var(--background)]">
               <span className="lbl">Input · diagram</span>
               <span className="lbl opacity-70">{sample.label}</span>
             </div>
-            <div className="grid-faint aspect-[380/260] w-full p-2">{sample.svg}</div>
-            <div className="border-t-2 border-[var(--ink)] px-3 py-2.5">
+            <div className="grid-faint flex min-h-[260px] flex-1 items-center justify-center p-3">
+              {sample.svg}
+            </div>
+            <div className="mt-auto border-t-2 border-[var(--ink)] px-3 py-2.5">
               <span className="dat text-xs text-[var(--ink-2)]">
                 vision extraction → 14 nodes, 11 edges, 5 labels
               </span>
