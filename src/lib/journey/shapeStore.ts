@@ -9,6 +9,7 @@
  */
 
 import { sampleSvg, type PointCloud } from './svgToPointCloud'
+import { JOURNEY_CONFIG } from '@/config/journey-scenes'
 
 export class ShapeStore {
   private cache = new Map<string, PointCloud>()
@@ -37,7 +38,10 @@ export class ShapeStore {
     const running = this.inflight.get(url)
     if (running) return running
 
-    const p = sampleSvg(url, { count: this.count })
+    const p = sampleSvg(url, {
+      count: this.count,
+      edgeShare: JOURNEY_CONFIG.edgeShare,
+    })
       .then((cloud) => {
         this.cache.set(url, cloud)
         this.onLoaded?.(url)

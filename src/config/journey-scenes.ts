@@ -139,6 +139,7 @@ export const FLOW_PRESETS: Record<FlowPreset, FlowSpec> = {
 export const JOURNEY_SCENES: JourneyScene[] = [
   {
     id: 'thinking-girl',
+    x: 0.34,
     asset: '/images/thinking-girl.svg',
     title: 'Curiosity',
     caption: 'It starts with a question about a picture.',
@@ -148,6 +149,7 @@ export const JOURNEY_SCENES: JourneyScene[] = [
   },
   {
     id: 'spaceship',
+    x: -0.3,
     asset: '/images/spaceship.svg',
     title: 'Exploration',
     caption: 'A question becomes a journey outward.',
@@ -156,6 +158,7 @@ export const JOURNEY_SCENES: JourneyScene[] = [
   },
   {
     id: 'galaxy',
+    x: 0.12,
     asset: '/images/galaxy.svg',
     title: 'Scale',
     caption: 'Diagrams hold structures far larger than the page.',
@@ -165,6 +168,7 @@ export const JOURNEY_SCENES: JourneyScene[] = [
   },
   {
     id: 'solar-system-2',
+    x: -0.34,
     asset: '/images/solar-system-2.svg',
     title: 'Systems',
     caption: 'Bodies, orbits, relations — a graph in disguise.',
@@ -173,6 +177,7 @@ export const JOURNEY_SCENES: JourneyScene[] = [
   },
   {
     id: 'sun-2',
+    x: 0.3,
     asset: '/images/sun-2.svg',
     title: 'Energy',
     caption: 'Every system runs on something.',
@@ -181,6 +186,7 @@ export const JOURNEY_SCENES: JourneyScene[] = [
   },
   {
     id: 'astronaut',
+    x: -0.28,
     asset: '/images/astronaut.svg',
     title: 'Observation',
     caption: 'Someone has to look, and then explain.',
@@ -189,6 +195,7 @@ export const JOURNEY_SCENES: JourneyScene[] = [
   },
   {
     id: 'water-cycle',
+    x: 0.32,
     asset: '/images/water-cycle.svg',
     title: 'Process',
     caption: 'Cycles are the first diagrams we all learn.',
@@ -197,6 +204,7 @@ export const JOURNEY_SCENES: JourneyScene[] = [
   },
   {
     id: 'food-chain',
+    x: -0.12,
     asset: '/images/food-chain.svg',
     title: 'Dependency',
     caption: 'Arrows carry meaning, not just direction.',
@@ -205,6 +213,7 @@ export const JOURNEY_SCENES: JourneyScene[] = [
   },
   {
     id: 'mitochondria',
+    x: 0.34,
     asset: '/images/mitochondria.svg',
     title: 'Biology',
     caption: 'Zoom in far enough and structure repeats.',
@@ -213,6 +222,7 @@ export const JOURNEY_SCENES: JourneyScene[] = [
   },
   {
     id: 'chemical-bond',
+    x: -0.32,
     asset: '/images/chemical-bond.svg',
     title: 'Bonds',
     caption: 'Relations at the smallest scale we draw.',
@@ -221,6 +231,7 @@ export const JOURNEY_SCENES: JourneyScene[] = [
   },
   {
     id: 'human',
+    x: 0.28,
     asset: '/images/human.svg',
     title: 'Intelligence',
     caption: 'Encoded biology becomes understanding.',
@@ -229,6 +240,7 @@ export const JOURNEY_SCENES: JourneyScene[] = [
   },
   {
     id: 'biological-neuron',
+    x: -0.3,
     asset: '/images/biological-neuron.svg',
     title: 'The Neuron',
     caption: 'One cell: dendrites, soma, axon, terminal.',
@@ -243,6 +255,7 @@ export const JOURNEY_SCENES: JourneyScene[] = [
   },
   {
     id: 'ai-neuron',
+    x: 0.3,
     asset: '/images/ai-neuron.svg',
     title: 'The Model',
     caption: 'The same idea, redrawn as layers and weights.',
@@ -256,6 +269,7 @@ export const JOURNEY_SCENES: JourneyScene[] = [
   },
   {
     id: 'circuit-board',
+    x: -0.26,
     asset: '/images/circuit-board.svg',
     title: 'The Machine',
     caption: 'Where the model actually runs.',
@@ -266,6 +280,7 @@ export const JOURNEY_SCENES: JourneyScene[] = [
   },
   {
     id: 'girl-studying',
+    x: 0.32,
     asset: '/images/girl-studying.svg',
     title: 'Understanding',
     caption: 'And the question comes back answered.',
@@ -348,16 +363,35 @@ export const JOURNEY_CONFIG = {
   crispAtRest: false,
 
   /**
-   * Where particle colours come from.
-   *   'theme'  — follow the site's tokens, so the mode toggle and the
-   *              palette switcher recolour the sculptures (default).
-   *              Note this means a palette's own hues win: on a blue
-   *              primary the neuron reads blue, not red.
-   *   'ink'    — the fixed scientific triad below, regardless of theme.
-   *              Paper and copy still follow the theme; only the
-   *              particles are pinned.
+   * Where shard colours come from.
+   *   'curated'  — a designed five-colour set, assigned per particle by
+   *                seed and NOT taken from the illustration's own pixels
+   *                (default). This is what keeps the field looking
+   *                composed instead of inheriting whatever colours the
+   *                source SVG happened to use.
+   *   'artwork'  — quantise each shard to the colour of the pixel it was
+   *                sampled from. Faithful, but muddy.
+   *   'ink'      — the fixed black/red/yellow triad.
    */
-  paletteMode: 'theme' as 'theme' | 'ink',
+  paletteMode: 'curated' as 'curated' | 'artwork' | 'ink',
+
+  /**
+   * The curated set. `themePrimary` is substituted with the live
+   * `--primary` token so the field still answers the palette switcher,
+   * while the remaining hues keep the composition from going monochrome
+   * on single-hue palettes. Weights must sum to 1 — the neutral leads,
+   * accents are sprinkled, exactly as in the reference.
+   */
+  shardPalette: {
+    colors: [
+      'neutral',
+      'themePrimary',
+      '#E8B44A',
+      '#D2603A',
+      '#7F8DE0',
+    ] as string[],
+    weights: [0.44, 0.2, 0.15, 0.12, 0.09],
+  },
 
   /** used when paletteMode is 'ink' — black / red / yellow */
   inkPalette: ['#111111', '#C52A30', '#F2C45C'] as [string, string, string],
@@ -397,14 +431,34 @@ export const JOURNEY_CONFIG = {
    *  counts are tuned for triangle mode; raise them if you switch
    *  particleShape back to 'dot'. */
   particles: {
-    high: 4800,
-    desktop: 3600,
-    tablet: 2600,
-    mobile: 1800,
+    high: 4200,
+    desktop: 3300,
+    tablet: 2400,
+    mobile: 1700,
   },
+
+  /**
+   * Share of shards drawn from edge pixels rather than the interior.
+   * High on purpose: sampling the interior evenly turns a filled
+   * illustration into a solid slab of triangles. Weighting the
+   * silhouette makes the shape read as contour and structure, with far
+   * fewer shards doing the work.
+   */
+  edgeShare: 0.62,
 
   /** base shard size in CSS px (before per-particle variation) */
   particleSize: 7.5,
+
+  /**
+   * Mid-transition behaviour. The field is meant to thin out and spread
+   * across the page rather than stay a tight travelling clump.
+   *   spread  — extra scatter at full free, multiple of object size
+   *   opacity — shard opacity at full free (1 = no fade)
+   */
+  freeField: {
+    spread: 0.55,
+    opacity: 0.42,
+  },
 
   /** Breakup / assembly shaping. Spread staggers particles across the
    *  transition; window is how long a single particle takes to let go
@@ -472,7 +526,10 @@ export const JOURNEY_CONFIG = {
   /** damped-lerp factor toward the scroll-defined progress */
   smoothing: 0.14,
 
-  /** artwork placement (fraction of half-viewport) */
+  /** artwork placement (fraction of half-viewport).
+   *  Only the default — scenes that set their own `x` override it, and
+   *  most do, so the composition moves around the page instead of
+   *  parking on the right for fifteen screens. */
   layout: {
     desktopX: 0.3,
     desktopY: 0.0,

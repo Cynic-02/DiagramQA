@@ -91,6 +91,18 @@ uniform vec3 uC0;
 uniform vec3 uC1;
 uniform vec3 uC2;
 
+// curated shard palette + cumulative weight thresholds
+uniform vec3  uP0;
+uniform vec3  uP1;
+uniform vec3  uP2;
+uniform vec3  uP3;
+uniform vec3  uP4;
+uniform vec4  uPW;        // cumulative cut points
+uniform float uCurated;   // 1 = curated palette, 0 = artwork slots
+
+uniform float uFreeSpread;   // extra scatter at full free, px
+uniform float uFreeOpacity;  // shard opacity at full free
+
 // debug: colour by release threshold instead of palette
 uniform float uDebugErosion;
 
@@ -208,6 +220,12 @@ void main() {
     + tangent * uSwirl
     + radialDir * uRadial;
 
+  // Thin the field out across the page rather than carrying a tight
+  // clump from one shape to the next. Each shard takes its own
+  // direction, so the spread reads as dispersal, not as a blast.
+  float sang = aRandom.z * 6.2831 + aRandom.x * 2.7;
+  freePos += vec2(cos(sang), sin(sang)) * (0.35 + aRandom.y) * uFreeSpread;
+
   /* ---- blend: weights always sum to 1 --------------------------- */
 
   vec2 pos = s * srcHold + d * dstHold + freePos * free;
@@ -267,18 +285,34 @@ void main() {
 
   /* ---- colour ---------------------------------------------------- */
 
-  // discrete palette switch — never interpolate red into yellow
+  // Artwork slots: quantised from the pixel each shard was sampled from.
   float cp = smoothstep(0.26, 0.74, p);
   float pick = step(aRandom.y, cp);
   float idx = mix(aColSrc, aColDst, pick);
-  vec3 col = mix(uC0, uC1, step(0.5, idx));
-  col = mix(col, uC2, step(1.5, idx));
+  vec3 artCol = mix(uC0, uC1, step(0.5, idx));
+  artCol = mix(artCol, uC2, step(1.5, idx));
+
+  // Curated: a designed set assigned by seed, independent of whatever
+  // colours the source illustration happened to use. Each shard keeps
+  // its colour through the whole journey.
+  float r = aRandom.y;
+  vec3 curCol = uP0;
+  curCol = mix(curCol, uP1, step(uPW.x, r));
+  curCol = mix(curCol, uP2, step(uPW.y, r));
+  curCol = mix(curCol, uP3, step(uPW.z, r));
+  curCol = mix(curCol, uP4, step(uPW.w, r));
+
+  vec3 col = mix(artCol, curCol, uCurated);
 
   // debug view: dark = releases early, light = releases late
   col = mix(col, vec3(relT), uDebugErosion);
 
   vColor = col;
-  vAlpha = uOpacity * (1.0 - abs(z) / max(uDepth, 1.0) * 0.18);
+
+  // The field thins out as it loses its shape and comes back up as the
+  // next one is claimed.
+  float freeFade = mix(1.0, uFreeOpacity, free);
+  vAlpha = uOpacity * freeFade * (1.0 - abs(z) / max(uDepth, 1.0) * 0.18);
 
   // Each shard keeps its own orientation and turns slowly. Spin picks up
   // while the particle is free and settles again once it is claimed.

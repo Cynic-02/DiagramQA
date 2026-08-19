@@ -82,6 +82,18 @@ export default function JourneyStage({ scenes, containerRef }: Props) {
     const C = JOURNEY_CONFIG
     const N = scenes.length
 
+    // weights -> cumulative cut points the shader compares a seed against
+    const cumulativeWeights = (() => {
+      const w = C.shardPalette.weights
+      const out: number[] = []
+      let acc = 0
+      for (let k = 0; k < 4; k++) {
+        acc += w[k] ?? 0
+        out.push(acc)
+      }
+      return out as [number, number, number, number]
+    })()
+
     /* ---------------- three.js ---------------- */
 
     let vw = window.innerWidth
@@ -192,6 +204,15 @@ export default function JourneyStage({ scenes, containerRef }: Props) {
       uC0: { value: new THREE.Vector3(...PALETTE_RGB[0]) },
       uC1: { value: new THREE.Vector3(...PALETTE_RGB[1]) },
       uC2: { value: new THREE.Vector3(...PALETTE_RGB[2]) },
+      uP0: { value: new THREE.Vector3(1, 1, 1) },
+      uP1: { value: new THREE.Vector3(1, 1, 1) },
+      uP2: { value: new THREE.Vector3(1, 1, 1) },
+      uP3: { value: new THREE.Vector3(1, 1, 1) },
+      uP4: { value: new THREE.Vector3(1, 1, 1) },
+      uPW: { value: new THREE.Vector4(...cumulativeWeights) },
+      uCurated: { value: C.paletteMode === 'curated' ? 1 : 0 },
+      uFreeSpread: { value: 0 },
+      uFreeOpacity: { value: C.freeField.opacity as number },
     }
 
     const material = new THREE.ShaderMaterial({
@@ -216,6 +237,16 @@ export default function JourneyStage({ scenes, containerRef }: Props) {
       const t = readJourneyTheme()
       const slots = [uniforms.uC0, uniforms.uC1, uniforms.uC2]
       t.particles.forEach((c, idx) => slots[idx].value.set(c[0], c[1], c[2]))
+      const pal = [
+        uniforms.uP0,
+        uniforms.uP1,
+        uniforms.uP2,
+        uniforms.uP3,
+        uniforms.uP4,
+      ]
+      t.shards.forEach((c, idx) => {
+        if (pal[idx]) pal[idx].value.set(c[0], c[1], c[2])
+      })
       for (const img of imgRefs.current) {
         if (img) img.style.filter = t.artFilter
       }
@@ -526,6 +557,7 @@ export default function JourneyStage({ scenes, containerRef }: Props) {
         uniforms.uSwirl.value = preset.swirl * ref * fs * m
         uniforms.uRadial.value = preset.radial * ref * fs * m
         uniforms.uDepth.value = C.depth * ref * m
+        uniforms.uFreeSpread.value = C.freeField.spread * ref * m
 
         // Scroll velocity is a secondary influence only — faster
         // scrolling loosens the field slightly, capped so the formation

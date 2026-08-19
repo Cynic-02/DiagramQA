@@ -37,8 +37,10 @@ export interface JourneyTheme {
   accent: string
   /** supporting copy */
   muted: string
-  /** three particle colours, normalised 0..1 */
+  /** three artwork-derived colours, normalised 0..1 */
   particles: [number, number, number][]
+  /** five curated shard colours, normalised 0..1 */
+  shards: [number, number, number][]
   /** CSS filter that keeps dark line art legible on a dark paper */
   artFilter: string
 }
@@ -124,6 +126,24 @@ export function readJourneyTheme(): JourneyTheme {
       ? JOURNEY_CONFIG.inkPalette.map((hex) => norm(resolve(hex, hex)))
       : [norm(ink), norm(slot1), norm(slot2)]
 
+  // The curated set. 'neutral' and 'themePrimary' are resolved against
+  // the live theme so the field still answers the switcher; the fixed
+  // hues stop single-hue palettes collapsing the whole field into one
+  // colour, which is what made it look muddy.
+  const shards: [number, number, number][] =
+    JOURNEY_CONFIG.shardPalette.colors.map((c) => {
+      if (c === 'neutral') {
+        // a touch softer than pure foreground so it reads as ink, not glare
+        return norm(mix(ink, paper, isDark ? 0.12 : 0.05))
+      }
+      if (c === 'themePrimary') return norm(primary)
+      const col = resolve(c, c)
+      // keep fixed hues legible on very light or very dark paper
+      return norm(
+        Math.abs(luminance(col) - paperL) < 0.1 ? mix(col, ink, 0.45) : col
+      )
+    }) as [number, number, number][]
+
   return {
     isDark,
     paper: rgbCss(paper),
@@ -133,6 +153,7 @@ export function readJourneyTheme(): JourneyTheme {
     accent: rgbCss(primary),
     muted: rgbCss(muted),
     particles,
+    shards,
     artFilter: isDark ? DARK_ART_FILTERS[JOURNEY_CONFIG.darkArtwork] : 'none',
   }
 }

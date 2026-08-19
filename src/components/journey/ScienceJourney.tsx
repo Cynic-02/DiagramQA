@@ -129,7 +129,11 @@ export default function ScienceJourney({
             key={scene.id}
             style={sectionStyle}
             aria-label={scene.title}
-            className="relative z-30 flex items-end px-6 pb-16 sm:px-10 lg:items-center lg:px-16 lg:pb-0"
+            className={`relative z-30 flex items-end px-6 pb-16 sm:px-10 lg:items-center lg:px-16 lg:pb-0 ${
+              // sit opposite the formation, so the copy is never buried
+              // under the shards
+              (scene.x ?? 0) < 0 ? 'lg:justify-end' : 'lg:justify-start'
+            }`}
           >
             <RevealOnScroll direction="up" amount={0.5} className="max-w-[420px]">
               <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.28em] text-primary">
