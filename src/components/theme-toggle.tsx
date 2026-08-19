@@ -2,40 +2,34 @@
 
 import * as React from 'react'
 import { useTheme } from 'next-themes'
-import { Sun, Moon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 /**
- * ThemeToggle — simple light/dark mode switch (Layer 1 of the
- * Neo-Brutal Aurora two-layer theme system). Palette selection
- * (Layer 2) is a separate control — see PaletteSwitcher.
+ * Light / dark. That is the whole theme system now — the eleven-palette
+ * switcher is gone. A palette picker on a marketing page is a
+ * confession that the brand has no colour, and it forced every
+ * component to survive eleven contexts, which is why nothing could
+ * ever be properly designed.
  */
 export function ThemeToggle({ className }: { className?: string }) {
   const { resolvedTheme, setTheme } = useTheme()
   const [mounted, setMounted] = React.useState(false)
-
   React.useEffect(() => setMounted(true), [])
 
-  if (!mounted) {
-    return (
-      <div className={cn('size-8 rounded-full border border-border/40 bg-muted/30 animate-pulse', className)} />
-    )
-  }
-
-  const isDark = resolvedTheme === 'dark'
+  const isDark = mounted && resolvedTheme === 'dark'
 
   return (
     <button
       type="button"
       onClick={() => setTheme(isDark ? 'light' : 'dark')}
+      aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
       className={cn(
-        'flex size-8 items-center justify-center rounded-full border border-border/60 bg-card/90 shadow-sm transition-all hover:bg-muted/50 active:scale-[0.98]',
+        'lbl border-2 border-current px-2.5 py-1.5 transition-colors duration-[90ms]',
+        'hover:bg-[var(--yellow)] hover:text-[#0a0a0a] hover:border-[#0a0a0a]',
         className
       )}
-      aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-      title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
     >
-      {isDark ? <Moon className="size-3.5 text-primary" /> : <Sun className="size-3.5 text-secondary" />}
+      {mounted ? (isDark ? 'DARK' : 'LIGHT') : 'THEME'}
     </button>
   )
 }
