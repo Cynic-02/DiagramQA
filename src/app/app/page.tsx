@@ -71,7 +71,7 @@ export default function AppPage() {
 
 function Footer() {
   return (
-    <footer className="mt-auto border-t border-border/40 bg-background">
+    <footer className="mt-auto border-t border-border/40">
       <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-4 px-6 py-6 text-sm text-muted-foreground sm:flex-row sm:items-center">
         <div className="flex items-center gap-2">
           <span className="font-mono text-xs font-bold tracking-widest text-foreground/80">

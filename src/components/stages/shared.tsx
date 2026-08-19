@@ -174,14 +174,14 @@ export function StageFrame({
       initial={reduce ? false : { opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-      className="relative mx-auto w-full max-w-[1680px] px-6 py-6 md:px-8 md:py-8"
+      className="relative mx-auto w-full max-w-[1500px] px-6 py-5 md:px-8 md:py-6"
     >
       {showHeader && <StageHeader stageId={stageId} />}
       <motion.div
         initial={reduce ? false : { opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
-        className={showHeader ? 'mt-6 md:mt-8' : undefined}
+        className={showHeader ? 'mt-5 md:mt-6' : undefined}
       >
         {children}
       </motion.div>

@@ -40,6 +40,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Switch } from '@/components/ui/switch'
 import { Slider } from '@/components/ui/slider'
+import { Lens } from '@/components/ui/lens'
 import { StageFrame, StageHeader, DataChip } from './shared'
 import { BloomWheel } from './BloomWheel'
 import { ProviderSelect, useProviderOptions } from '@/components/provider-select'
@@ -287,9 +288,9 @@ export function UploadStage() {
           The stage header lives inside the main column rather than spanning
           the full width, so the config panel starts level with it instead of
           being pushed below, which left a large empty block top-right. */}
-      <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_420px] xl:items-start">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px] xl:items-start">
         {/* ---------------- Left Column: Dropzone / Preview ---------------- */}
-        <div className="min-w-0 space-y-4">
+        <div className="min-w-0 space-y-3">
           <StageHeader stageId="upload" />
           <AnimatePresence mode="wait" initial={false}>
             {previewUrl ? (
@@ -310,11 +311,13 @@ export function UploadStage() {
                           <span className="text-sm font-semibold">PDF source</span>
                         </div>
                       ) : (
-                        <img
-                          src={previewUrl}
-                          alt={previewName ?? 'Diagram preview'}
-                          className="max-h-[260px] w-auto max-w-full object-contain"
-                        />
+                        <Lens lensSize={340} zoomFactor={2.1}>
+                          <img
+                            src={previewUrl}
+                            alt={previewName ?? 'Diagram preview'}
+                            className="max-h-[260px] w-auto max-w-full object-contain"
+                          />
+                        </Lens>
                       )}
                     </div>
 
@@ -362,7 +365,7 @@ export function UploadStage() {
                   onDrop={onDrop}
                   aria-label="Upload diagram"
                   className={cn(
-                    'group relative flex w-full flex-col items-center justify-center gap-3 border-2 border-dashed px-6 py-16 text-center transition-all rounded-[var(--radius)]',
+                    'group relative flex w-full flex-col items-center justify-center gap-3 border-2 border-dashed px-6 py-10 text-center transition-all rounded-[var(--radius)]',
                     dragOver
                       ? 'border-accent bg-accent/10'
                       : 'border-border bg-card hover:border-accent',
@@ -370,7 +373,7 @@ export function UploadStage() {
                 >
                   <div
                     className={cn(
-                      'flex size-14 items-center justify-center border transition-all rounded-lg',
+                      'flex size-12 items-center justify-center border transition-all rounded-lg',
                       dragOver
                         ? 'border-border bg-accent text-accent-foreground'
                         : 'border-border bg-muted text-muted-foreground group-hover:text-accent group-hover:scale-105',
@@ -464,7 +467,7 @@ export function UploadStage() {
         </div>
 
         {/* ---------------- Right Column: Configuration ---------------- */}
-        <div className="min-w-0 space-y-5">
+        <div className="scroll-slim min-w-0 space-y-4 xl:sticky xl:top-[4.75rem] xl:max-h-[calc(100vh-6.5rem)] xl:overflow-y-auto xl:pr-1">
           {hasRunDiagram ? (
             <Card className="brutal-block p-5 space-y-4">
               <div className="space-y-1">
@@ -515,12 +518,9 @@ export function UploadStage() {
                   </p>
                 </div>
 
-                <Card className="brutal-block p-4 space-y-4">
-                  <div className="flex justify-center">
-                    <BloomWheel
-                      value={bloomLevel}
-                      onChange={setBloomLevel}
-                    />
+                <Card className="brutal-block p-3.5 space-y-3">
+                  <div className="mx-auto aspect-square w-full max-w-[218px]">
+                    <BloomWheel value={bloomLevel} onChange={setBloomLevel} />
                   </div>
 
                   <div className="space-y-2 border-t border-border/40 pt-4">
@@ -555,7 +555,7 @@ export function UploadStage() {
                   <h3 className="text-sm font-bold text-foreground">Question Settings</h3>
                 </div>
 
-                <Card className="brutal-block space-y-4 p-4">
+                <Card className="brutal-block space-y-3 p-3.5">
                   {/* MCQ toggle */}
                   <div className="flex items-start justify-between gap-4">
                     <div className="space-y-0.5">
@@ -653,15 +653,15 @@ function DashboardStats() {
       <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
         Workspace Dashboard Metrics
       </div>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
         {/* Total Runs Card */}
-        <Card className="p-3 bg-muted/10 border-border/30 space-y-1 rounded-xl">
+        <Card className="p-2.5 bg-muted/10 border-border/30 space-y-1 rounded-xl">
           <div className="text-[9px] font-mono text-muted-foreground uppercase tracking-wide">Total Runs</div>
           <div className="text-base font-black leading-none">{stats.runs.total}</div>
         </Card>
 
         {/* Success Rate Card */}
-        <Card className="p-3 bg-muted/10 border-border/30 space-y-1 rounded-xl">
+        <Card className="p-2.5 bg-muted/10 border-border/30 space-y-1 rounded-xl">
           <div className="text-[9px] font-mono text-muted-foreground uppercase tracking-wide">Success Rate</div>
           <div className="text-base font-black leading-none text-emerald-500">
             {Math.round(stats.runs.successRate * 100)}%
@@ -669,7 +669,7 @@ function DashboardStats() {
         </Card>
 
         {/* Avg Duration Card */}
-        <Card className="p-3 bg-muted/10 border-border/30 space-y-1 rounded-xl">
+        <Card className="p-2.5 bg-muted/10 border-border/30 space-y-1 rounded-xl">
           <div className="text-[9px] font-mono text-muted-foreground uppercase tracking-wide">Avg Duration</div>
           <div className="text-base font-black leading-none">
             {formatDuration(stats.runs.averageDurationMs)}
@@ -677,7 +677,7 @@ function DashboardStats() {
         </Card>
 
         {/* Custom Agents Card */}
-        <Card className="p-3 bg-muted/10 border-border/30 space-y-1 rounded-xl">
+        <Card className="p-2.5 bg-muted/10 border-border/30 space-y-1 rounded-xl">
           <div className="text-[9px] font-mono text-muted-foreground uppercase tracking-wide">Saved Agents</div>
           <div className="text-base font-black leading-none text-primary">
             {stats.agents}

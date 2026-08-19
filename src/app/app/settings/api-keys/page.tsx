@@ -54,10 +54,10 @@ export default function ApiKeysSettingsPage() {
   const custom = providers.filter((p) => p.isCustom)
 
   return (
-    <div className="relative flex min-h-screen flex-col grid-faint-lighter">
+    <div className="relative flex min-h-screen flex-col">
       <PageHeader title="API Keys" />
 
-      <div className="relative z-10 mx-auto w-full max-w-[1680px] flex-1 p-6 md:p-8">
+      <div className="relative z-10 mx-auto w-full max-w-[1500px] flex-1 p-6 md:p-8">
         <div className="mb-6 space-y-1.5">
           <div className="flex items-center gap-2">
             <div className="flex size-9 items-center justify-center border border-primary/45 bg-primary/10 text-primary rounded-lg">

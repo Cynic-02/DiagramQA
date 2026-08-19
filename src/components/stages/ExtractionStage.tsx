@@ -17,6 +17,7 @@ import { Loader2, FileText, ScanEye, ArrowRight } from 'lucide-react'
 import { usePipelineStore } from '@/lib/store'
 import { Card } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Lens } from '@/components/ui/lens'
 import { StageFrame, EmptyState, DataChip } from './shared'
 import { AgentThinkingConsole } from './AgentThinkingConsole'
 import { MiniGraph } from './MiniGraph'
@@ -107,11 +108,13 @@ export function ExtractionStage() {
             <div className="grid gap-0 md:grid-cols-[260px_minmax(0,1fr)]">
               <div className="flex items-center justify-center border-b border-border/40 bg-muted p-4 md:border-b-0 md:border-r border-border/40">
                 {diagramDataUrl && diagramDataUrl.startsWith('data:image') ? (
-                  <img
-                    src={diagramDataUrl}
-                    alt="Source diagram"
-                    className="max-h-[300px] w-auto max-w-full object-contain"
-                  />
+                  <Lens lensSize={340} zoomFactor={2.1}>
+                    <img
+                      src={diagramDataUrl}
+                      alt="Source diagram"
+                      className="max-h-[300px] w-auto max-w-full object-contain"
+                    />
+                  </Lens>
                 ) : (
                   <div className="flex h-32 flex-col items-center justify-center gap-2 text-muted-foreground">
                     <FileText className="size-8" />

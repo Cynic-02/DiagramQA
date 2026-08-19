@@ -155,7 +155,7 @@ export default function LoginPage() {
     'placeholder:text-[var(--ink-2)]'
 
   return (
-    <main className="relative flex min-h-screen flex-col bg-[var(--background)]">
+    <main className="relative flex min-h-screen flex-col">
       <div className="pointer-events-none fixed inset-0 z-0 opacity-[0.38]" aria-hidden>
         <GraphEngine className="h-full w-full" fixedBeat={3} />
       </div>

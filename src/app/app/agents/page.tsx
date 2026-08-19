@@ -93,7 +93,7 @@ export default function AgentsPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen flex-col grid-faint-lighter bg-background text-foreground">
+    <div className="relative flex min-h-screen flex-col text-foreground">
       <PageHeader title="Agents & Prompt Editor" />
 
       <div className="relative z-10 mx-auto w-full max-w-[1400px] flex-1 p-6 md:p-8">

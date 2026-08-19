@@ -120,7 +120,7 @@ export default function HistoryPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen flex-col grid-faint-lighter bg-background text-foreground">
+    <div className="relative flex min-h-screen flex-col text-foreground">
       {/* Nav */}
       <PageHeader title="Run History" />
 
