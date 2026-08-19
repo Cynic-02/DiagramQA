@@ -189,10 +189,9 @@
 [data-theme="dark"] .border-\[4px\] { border-width: 2px; }
 [data-theme="dark"] .border-\[3px\] { border-width: 2px; }
 [data-theme="dark"] .border-2       { border-width: 1px; }
-[data-theme="dark"] .border-b-2,
-[data-theme="dark"] .border-t-2,
-[data-theme="dark"] .border-r-2,
-[data-theme="dark"] .border-l-2     { border-width: 0; }
+/* Per-side only. Setting `border-width: 0` here would also wipe the
+   other three sides on any element that carries a full border AND a
+   thicker single edge. */
 [data-theme="dark"] .border-b-2 { border-bottom-width: 1px; }
 [data-theme="dark"] .border-t-2 { border-top-width: 1px; }
 [data-theme="dark"] .border-r-2 { border-right-width: 1px; }
