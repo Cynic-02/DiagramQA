@@ -364,11 +364,12 @@ export function UploadStage() {
                   onDragLeave={() => setDragOver(false)}
                   onDrop={onDrop}
                   aria-label="Upload diagram"
+                  data-fast={dragOver || undefined}
                   className={cn(
-                    'group relative flex w-full flex-col items-center justify-center gap-3 border-2 border-dashed px-6 py-10 text-center transition-all rounded-[var(--radius)]',
+                    'dropzone-march group relative flex w-full flex-col items-center justify-center gap-3 border-2 border-dashed px-6 py-10 text-center transition-all rounded-[var(--radius)]',
                     dragOver
                       ? 'border-accent bg-accent/10'
-                      : 'border-border bg-card hover:border-accent',
+                      : 'border-transparent bg-card',
                   )}
                 >
                   <div

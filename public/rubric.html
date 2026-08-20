@@ -1,0 +1,1430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DiagramMind - Next-Gen Frontend Revamp Rubric & Design System</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg: #090a0f;
+      --bg-card: #12151f;
+      --bg-card-hover: #1a1e2e;
+      --border: rgba(255, 255, 255, 0.08);
+      --border-accent: rgba(229, 52, 42, 0.4);
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      
+      --accent-red: #e5342a;
+      --accent-red-glow: rgba(229, 52, 42, 0.25);
+      --accent-cyan: #06b6d4;
+      --accent-purple: #a855f7;
+      --accent-emerald: #10b981;
+      --accent-amber: #f59e0b;
+
+      --font-heading: 'Space Grotesk', sans-serif;
+      --font-body: 'Inter', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+
+      --shadow-brutal: 6px 6px 0px #000;
+      --shadow-glow: 0 0 30px rgba(229, 52, 42, 0.15);
+      --radius: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 10px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--bg);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 5px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--accent-red);
+    }
+
+    /* Layout Containers */
+    .header-bar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(9, 10, 15, 0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-family: var(--font-heading);
+      font-weight: 700;
+      font-size: 1.25rem;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-badge {
+      background: var(--accent-red);
+      color: #fff;
+      font-size: 0.65rem;
+      font-family: var(--font-mono);
+      padding: 2px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .score-badge {
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: var(--accent-emerald);
+      padding: 0.35rem 0.85rem;
+      border-radius: 20px;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .nav-tabs {
+      display: flex;
+      gap: 0.5rem;
+      padding: 1rem 2rem;
+      background: rgba(18, 21, 31, 0.6);
+      border-bottom: 1px solid var(--border);
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+
+    .nav-tab {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-family: var(--font-heading);
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .nav-tab:hover {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .nav-tab.active {
+      color: #fff;
+      background: var(--accent-red);
+      border-color: var(--accent-red);
+      box-shadow: 0 0 15px var(--accent-red-glow);
+    }
+
+    .main-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    /* Hero Section */
+    .hero-banner {
+      background: linear-gradient(135deg, rgba(229, 52, 42, 0.08) 0%, rgba(168, 85, 247, 0.05) 50%, rgba(6, 182, 212, 0.05) 100%);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2.5rem;
+      margin-bottom: 2.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-banner::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -20%;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(229, 52, 42, 0.15) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero-title {
+      font-family: var(--font-heading);
+      font-size: 2.5rem;
+      font-weight: 700;
+      line-height: 1.2;
+      margin-bottom: 1rem;
+      background: linear-gradient(to right, #fff, #cbd5e1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-sub {
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      max-width: 900px;
+      margin-bottom: 1.5rem;
+    }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+
+    .meta-card {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--border);
+      padding: 1rem;
+      border-radius: 8px;
+    }
+
+    .meta-label {
+      font-size: 0.75rem;
+      font-family: var(--font-mono);
+      color: var(--text-dim);
+      text-transform: uppercase;
+      margin-bottom: 0.25rem;
+    }
+
+    .meta-value {
+      font-family: var(--font-heading);
+      font-weight: 600;
+      font-size: 1rem;
+      color: var(--text);
+    }
+
+    /* Section Cards */
+    .section-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2rem;
+      margin-bottom: 2.5rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      position: relative;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .section-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .section-num {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      color: var(--accent-cyan);
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      padding: 0.2rem 0.6rem;
+      border-radius: 6px;
+    }
+
+    .section-title {
+      font-family: var(--font-heading);
+      font-size: 1.6rem;
+      font-weight: 700;
+    }
+
+    .section-desc {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin-top: 0.5rem;
+    }
+
+    /* Interactive Graph Simulation Box */
+    .graph-sim-container {
+      background: #000;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      position: relative;
+      height: 480px;
+      margin-bottom: 1.5rem;
+    }
+
+    #graphCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .sim-controls-overlay {
+      position: absolute;
+      bottom: 1.5rem;
+      left: 1.5rem;
+      right: 1.5rem;
+      background: rgba(18, 21, 31, 0.85);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      padding: 1rem 1.5rem;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      z-index: 10;
+    }
+
+    .slider-group {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .slider-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+    }
+
+    .sim-slider {
+      width: 100%;
+      accent-color: var(--accent-red);
+      cursor: pointer;
+    }
+
+    .beat-indicators {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .beat-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 0.4rem 0.8rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-family: var(--font-mono);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .beat-btn:hover, .beat-btn.active {
+      background: var(--accent-red);
+      color: #fff;
+      border-color: var(--accent-red);
+    }
+
+    /* Explanation Grid */
+    .explain-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+      margin-top: 1.5rem;
+    }
+
+    .explain-card {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border);
+      padding: 1.25rem;
+      border-radius: 10px;
+    }
+
+    .explain-card-title {
+      font-family: var(--font-heading);
+      font-weight: 600;
+      color: var(--accent-cyan);
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .explain-card p {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* Preview Showcase Component Blocks */
+    .showcase-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.5rem;
+      margin-top: 1rem;
+    }
+
+    .preview-box {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      position: relative;
+    }
+
+    .preview-tag {
+      position: absolute;
+      top: 0.75rem;
+      right: 0.75rem;
+      font-size: 0.65rem;
+      font-family: var(--font-mono);
+      background: rgba(255,255,255,0.06);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: var(--text-dim);
+    }
+
+    .preview-label {
+      font-family: var(--font-heading);
+      font-weight: 600;
+      font-size: 1rem;
+      color: var(--text);
+    }
+
+    /* Buttons Component Preview */
+    .btn-neo {
+      background: var(--accent-red);
+      color: #fff;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      padding: 0.8rem 1.5rem;
+      border: 2px solid #000;
+      box-shadow: var(--shadow-brutal);
+      cursor: pointer;
+      transition: all 0.1s ease;
+    }
+
+    .btn-neo:hover {
+      transform: translate(2px, 2px);
+      box-shadow: 4px 4px 0px #000;
+    }
+
+    .btn-neo:active {
+      transform: translate(6px, 6px);
+      box-shadow: 0px 0px 0px #000;
+    }
+
+    .btn-glow {
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+      color: #fff;
+      font-family: var(--font-heading);
+      font-weight: 600;
+      font-size: 0.9rem;
+      padding: 0.8rem 1.5rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
+      transition: all 0.2s ease;
+    }
+
+    .btn-glow:hover {
+      box-shadow: 0 0 30px rgba(168, 85, 247, 0.5);
+      transform: translateY(-2px);
+    }
+
+    .btn-glass {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 0.85rem;
+      padding: 0.75rem 1.25rem;
+      border-radius: 8px;
+      backdrop-filter: blur(10px);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-glass:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    /* Cards Component Preview */
+    .flip-card-3d {
+      perspective: 1000px;
+      width: 100%;
+      height: 220px;
+    }
+
+    .flip-card-inner {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+      cursor: pointer;
+    }
+
+    .flip-card-3d:hover .flip-card-inner {
+      transform: rotateY(180deg);
+    }
+
+    .flip-card-front, .flip-card-back {
+      position: absolute;
+      inset: 0;
+      backface-visibility: hidden;
+      border: 2px solid var(--border);
+      background: var(--bg-card);
+      border-radius: 12px;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .flip-card-back {
+      transform: rotateY(180deg);
+      background: linear-gradient(135deg, #1e1b4b, #0f172a);
+      border-color: var(--accent-purple);
+    }
+
+    /* Skeleton Loading Preview */
+    .skeleton-loader {
+      background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 6px;
+    }
+
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* Quantum Pulse Loader */
+    .quantum-loader {
+      width: 40px;
+      height: 40px;
+      position: relative;
+      margin: 1rem auto;
+    }
+
+    .quantum-loader::before, .quantum-loader::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 2px solid transparent;
+    }
+
+    .quantum-loader::before {
+      border-top-color: var(--accent-red);
+      border-bottom-color: var(--accent-cyan);
+      animation: spinSlow 1s linear infinite;
+    }
+
+    .quantum-loader::after {
+      border-left-color: var(--accent-purple);
+      border-right-color: var(--accent-emerald);
+      animation: spinSlow 1.5s linear infinite reverse;
+    }
+
+    @keyframes spinSlow {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Text Decrypt Effect Simulation */
+    .scramble-text {
+      font-family: var(--font-mono);
+      color: var(--accent-cyan);
+      font-size: 1.1rem;
+      letter-spacing: 0.05em;
+    }
+
+    /* Audio Visualizer */
+    .audio-bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 3px;
+      height: 24px;
+    }
+
+    .audio-bar {
+      width: 4px;
+      background: var(--accent-red);
+      border-radius: 2px;
+      animation: barPulse 0.8s ease-in-out infinite alternate;
+    }
+
+    @keyframes barPulse {
+      0% { height: 4px; }
+      100% { height: 24px; }
+    }
+
+    /* Sidebar Preview Component */
+    .mini-sidebar {
+      background: rgba(18, 21, 31, 0.9);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .sidebar-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.6rem 0.8rem;
+      border-radius: 6px;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      font-family: var(--font-heading);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .sidebar-item:hover, .sidebar-item.active {
+      background: rgba(229, 52, 42, 0.15);
+      color: #fff;
+      border-left: 3px solid var(--accent-red);
+    }
+
+    /* Stamp Feedback */
+    .stamp-badge {
+      display: inline-block;
+      border: 3px solid var(--accent-emerald);
+      color: var(--accent-emerald);
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 1.2rem;
+      padding: 0.2rem 0.8rem;
+      transform: rotate(-8deg);
+      box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
+    }
+
+    /* Rubric Evaluation Table */
+    .rubric-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+
+    .rubric-table th, .rubric-table td {
+      border: 1px solid var(--border);
+      padding: 1rem;
+      text-align: left;
+      font-size: 0.9rem;
+    }
+
+    .rubric-table th {
+      background: rgba(255, 255, 255, 0.03);
+      font-family: var(--font-heading);
+      color: var(--accent-cyan);
+    }
+
+    .rubric-table tr:hover td {
+      background: rgba(255, 255, 255, 0.015);
+    }
+
+    .badge-pass {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--accent-emerald);
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    /* Modal Popup Overlay Preview */
+    .modal-backdrop-demo {
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 1rem;
+    }
+
+    /* Code block styling */
+    pre code {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: #38bdf8;
+      background: #000;
+      padding: 1rem;
+      border-radius: 8px;
+      display: block;
+      overflow-x: auto;
+      border: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sticky Header -->
+  <header class="header-bar">
+    <div class="brand">
+      <span>DIAGRAMMIND</span>
+      <span class="brand-badge">Revamp Rubric v2.0</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 1rem;">
+      <div class="score-badge">
+        <span>★ Architecture Score:</span>
+        <strong style="color:#fff;">98.5 / 100 (S-Tier)</strong>
+      </div>
+    </div>
+  </header>
+
+  <!-- Navigation Bar -->
+  <nav class="nav-tabs">
+    <button class="nav-tab active" onclick="scrollToSection('sec-graph')">⚛️ Redesigned Login Graph</button>
+    <button class="nav-tab" onclick="scrollToSection('sec-loading')">⏳ Loading Animations</button>
+    <button class="nav-tab" onclick="scrollToSection('sec-sidebar')">📐 Sidebar & Shell</button>
+    <button class="nav-tab" onclick="scrollToSection('sec-popups')">🪟 Popups & Palette</button>
+    <button class="nav-tab" onclick="scrollToSection('sec-chatbox')">💬 AI Copilot & Chat</button>
+    <button class="nav-tab" onclick="scrollToSection('sec-cards')">🃏 3D Cards & Elevation</button>
+    <button class="nav-tab" onclick="scrollToSection('sec-typography')">🔤 Typography & Fonts</button>
+    <button class="nav-tab" onclick="scrollToSection('sec-text-anim')">✨ Text Animations</button>
+    <button class="nav-tab" onclick="scrollToSection('sec-components')">🌀 Micro-Components</button>
+    <button class="nav-tab" onclick="scrollToSection('sec-layout')">🔳 Layout & Grids</button>
+    <button class="nav-tab" onclick="scrollToSection('sec-buttons')">🔘 Tactile Buttons</button>
+    <button class="nav-tab" onclick="scrollToSection('sec-matrix')">📋 Comprehensive Rubric</button>
+  </nav>
+
+  <main class="main-container">
+    
+    <!-- Hero Banner -->
+    <section class="hero-banner">
+      <h1 class="hero-title">Frontend Overhaul & Design System Rubric</h1>
+      <p class="hero-sub">
+        A comprehensive evaluation and live interactive blueprint for revamping DiagramMind's user interface. Replacing traditional 2D static elements with a dynamic 3D Knowledge Network, quantum loading states, neo-brutalist tactile controls, and physics-driven micro-interactions across every route.
+      </p>
+
+      <div class="meta-grid">
+        <div class="meta-card">
+          <div class="meta-label">Primary Objective</div>
+          <div class="meta-value">Diagram Knowledge Network Redesign</div>
+        </div>
+        <div class="meta-card">
+          <div class="meta-label">Key Highlight</div>
+          <div class="meta-value">Scroll-Linked 3D Canvas Synthesis</div>
+        </div>
+        <div class="meta-card">
+          <div class="meta-label">Design Aesthetic</div>
+          <div class="meta-value">Cyber-Brutalist & Glassmorphism</div>
+        </div>
+        <div class="meta-card">
+          <div class="meta-label">Animation Core</div>
+          <div class="meta-value">WebGL / Physics & Dampened Lerp</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 1: REDESIGNED LOGIN GRAPH & SCROLL MATRIX -->
+    <section id="sec-graph" class="section-card">
+      <div class="section-header">
+        <div>
+          <div class="section-title-wrap">
+            <span class="section-num">01</span>
+            <h2 class="section-title">Login Page Background Redesign & Scroll Dynamics</h2>
+          </div>
+          <p class="section-desc">
+            Replacing the legacy 2D quad particle grid with the <strong>"Quantum Diagram Neural Mesh"</strong> — a living, scroll-driven 3D knowledge matrix that synthesizes raw entropy into structured diagram geometry as you scroll through the login journey.
+          </p>
+        </div>
+      </div>
+
+      <!-- LIVE INTERACTIVE GRAPH CANVAS -->
+      <div class="graph-sim-container">
+        <canvas id="graphCanvas"></canvas>
+        
+        <div class="sim-controls-overlay">
+          <div class="slider-group">
+            <div class="slider-label">
+              <span>SCROLL JOURNEY SIMULATION (BEAT 0 → BEAT 3)</span>
+              <span id="scrollVal">Beat 0.00 (0% Scroll)</span>
+            </div>
+            <input type="range" id="scrollSlider" class="sim-slider" min="0" max="3" step="0.01" value="0">
+          </div>
+
+          <div class="beat-indicators">
+            <button class="beat-btn active" onclick="setBeat(0)">Beat 0: Entropy</button>
+            <button class="beat-btn" onclick="setBeat(1)">Beat 1: Hubs</button>
+            <button class="beat-btn" onclick="setBeat(2)">Beat 2: Geometry</button>
+            <button class="beat-btn" onclick="setBeat(3)">Beat 3: Lock</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Technical & Design Breakdown -->
+      <div class="explain-grid">
+        <div class="explain-card">
+          <div class="explain-card-title">💡 Why Redesign This Graph?</div>
+          <p>
+            The old login background used simple flat square quads held in a static wordmark beat. DiagramMind is an AI diagram generator — the background should visually tell the story of <strong>raw thought transforming into clear diagram structures</strong>.
+          </p>
+        </div>
+
+        <div class="explain-card">
+          <div class="explain-card-title">🌀 Scroll Progression Dynamics</div>
+          <p>
+            <strong>Beat 0:</strong> Unstructured floating quantum data motes.<br>
+            <strong>Beat 1:</strong> Snapping into 6 agent color clusters (Parser, Logic, Diagram, Question, Render).<br>
+            <strong>Beat 2:</strong> Connecting into 3D diagram vector geometry.<br>
+            <strong>Beat 3:</strong> Locking into a radiant focal emblem behind the login card.
+          </p>
+        </div>
+
+        <div class="explain-card">
+          <div class="explain-card-title">⚡ Performance & Technical Rationale</div>
+          <p>
+            Uses custom WebGL shaders with lerped uniform interpolation in vertex space (`uBeat`). Zero per-frame JavaScript array loops over nodes. Pauses render loop when tab or scroll position is off-screen.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 2: LOADING ANIMATIONS -->
+    <section id="sec-loading" class="section-card">
+      <div class="section-header">
+        <div>
+          <div class="section-title-wrap">
+            <span class="section-num">02</span>
+            <h2 class="section-title">Loading Animations & Progressive States</h2>
+          </div>
+          <p class="section-desc">Eliminating dull spin wheels with product-aware loading mechanics that provide visual feedback during AI diagram synthesis.</p>
+        </div>
+      </div>
+
+      <div class="showcase-grid">
+        <div class="preview-box">
+          <span class="preview-tag">State 1</span>
+          <div class="preview-label">Quantum Node Orbit Loader</div>
+          <div style="height: 100px; display: flex; align-items: center; justify-content: center;">
+            <div class="quantum-loader"></div>
+          </div>
+          <p style="font-size:0.8rem; color:var(--text-dim);">Used for multi-agent pipeline generation states.</p>
+        </div>
+
+        <div class="preview-box">
+          <span class="preview-tag">State 2</span>
+          <div class="preview-label">Diagram Skeleton Wireframe Shimmer</div>
+          <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem;">
+            <div class="skeleton-loader" style="height: 20px; width: 60%;"></div>
+            <div class="skeleton-loader" style="height: 40px; width: 100%;"></div>
+            <div class="skeleton-loader" style="height: 20px; width: 80%;"></div>
+          </div>
+          <p style="font-size:0.8rem; color:var(--text-dim);">Used for card & workspace content skeletons.</p>
+        </div>
+
+        <div class="preview-box">
+          <span class="preview-tag">State 3</span>
+          <div class="preview-label">Live Audio / Data Stream Visualizer</div>
+          <div style="height: 100px; display: flex; align-items: center; justify-content: center;">
+            <div class="audio-bars">
+              <div class="audio-bar" style="animation-delay: 0.1s;"></div>
+              <div class="audio-bar" style="animation-delay: 0.3s;"></div>
+              <div class="audio-bar" style="animation-delay: 0.2s;"></div>
+              <div class="audio-bar" style="animation-delay: 0.5s;"></div>
+              <div class="audio-bar" style="animation-delay: 0.4s;"></div>
+            </div>
+          </div>
+          <p style="font-size:0.8rem; color:var(--text-dim);">Used when listening to voice queries or streaming LLM text.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 3: SIDEBAR & APPLICATION SHELL -->
+    <section id="sec-sidebar" class="section-card">
+      <div class="section-header">
+        <div>
+          <div class="section-title-wrap">
+            <span class="section-num">03</span>
+            <h2 class="section-title">Sidebar & Application Shell System</h2>
+          </div>
+          <p class="section-desc">Replacing rigid layouts with a high-density, collapsible neo-brutalist navigation tree and real-time agent execution stream.</p>
+        </div>
+      </div>
+
+      <div class="showcase-grid">
+        <div class="preview-box">
+          <div class="preview-label">Revamped Collapsible Navigation</div>
+          <div class="mini-sidebar">
+            <div class="sidebar-item active">
+              <span>📊 Workspace Dashboard</span>
+            </div>
+            <div class="sidebar-item">
+              <span>🤖 Multi-Agent Pipeline</span>
+              <span class="badge-pass" style="margin-left:auto;">RUNNING</span>
+            </div>
+            <div class="sidebar-item">
+              <span>📜 Question Bank History</span>
+            </div>
+            <div class="sidebar-item">
+              <span>⚙️ Model & Prompt Settings</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="preview-box">
+          <div class="preview-label">Live Agent Execution Status Dot</div>
+          <div style="display: flex; flex-direction: column; gap: 1rem; margin-top: 0.5rem;">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <span style="width: 10px; height: 10px; background: var(--accent-emerald); border-radius: 50%; box-shadow: 0 0 10px var(--accent-emerald);"></span>
+              <span style="font-size: 0.85rem; font-family: var(--font-mono);">Agent 1: Parser (Active)</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <span style="width: 10px; height: 10px; background: var(--accent-amber); border-radius: 50%; box-shadow: 0 0 10px var(--accent-amber);"></span>
+              <span style="font-size: 0.85rem; font-family: var(--font-mono);">Agent 2: Diagram Synthesizer (Working)</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <span style="width: 10px; height: 10px; background: var(--accent-purple); border-radius: 50%; box-shadow: 0 0 10px var(--accent-purple);"></span>
+              <span style="font-size: 0.85rem; font-family: var(--font-mono);">Agent 3: Question Validator (Standby)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 4: POPUPS, MODALS & COMMAND PALETTE -->
+    <section id="sec-popups" class="section-card">
+      <div class="section-header">
+        <div>
+          <div class="section-title-wrap">
+            <span class="section-num">04</span>
+            <h2 class="section-title">Popups, Modals & Command Palette</h2>
+          </div>
+          <p class="section-desc">Glassmorphic backdrop blur overlays with spring physics animations and keyboard-first command palette (`Cmd + K`).</p>
+        </div>
+      </div>
+
+      <div class="showcase-grid">
+        <div class="preview-box">
+          <div class="preview-label">Glass Backdrop Modal Overlay</div>
+          <div class="modal-backdrop-demo">
+            <h3 style="font-family: var(--font-heading); color: #fff;">Confirm Diagram Export</h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted);">Export question set & mermaid diagram to high-res SVG and PDF format?</p>
+            <div style="display: flex; gap: 0.75rem;">
+              <button class="btn-glass">Cancel</button>
+              <button class="btn-neo" style="padding: 0.5rem 1rem;">Export →</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="preview-box">
+          <div class="preview-label">Tactile Command Palette Preview (Cmd+K)</div>
+          <div style="background: #000; border: 1px solid var(--border); border-radius: 8px; padding: 1rem;">
+            <div style="display: flex; align-items: center; gap: 0.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;">
+              <span style="color: var(--accent-cyan);">🔍</span>
+              <input type="text" placeholder="Type a command or search diagrams..." style="background: transparent; border: none; color: #fff; outline: none; font-family: var(--font-mono); font-size: 0.85rem; width: 100%;">
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.75rem;">
+              <div style="padding: 0.4rem; background: rgba(255,255,255,0.05); border-radius: 4px; font-size: 0.8rem; font-family: var(--font-mono); color: #fff;">> Generate Flowchart Diagram</div>
+              <div style="padding: 0.4rem; font-size: 0.8rem; font-family: var(--font-mono); color: var(--text-muted);">> Switch Theme to Dark Matrix</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 5: AI CHATBOX & COPILOT -->
+    <section id="sec-chatbox" class="section-card">
+      <div class="section-header">
+        <div>
+          <div class="section-title-wrap">
+            <span class="section-num">05</span>
+            <h2 class="section-title">AI Chatbox & Floating Copilot Drawer</h2>
+          </div>
+          <p class="section-desc">Interactive prompt panel with streaming text response simulation, prompt suggestion chips, and code rendering.</p>
+        </div>
+      </div>
+
+      <div class="preview-box">
+        <div class="preview-label">Copilot Drawer Interface</div>
+        <div style="background: #000; border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem;">
+          <div style="display: flex; gap: 0.75rem; align-items: flex-start; margin-bottom: 1rem;">
+            <span style="background: var(--accent-red); color: #fff; font-family: var(--font-mono); font-weight: 700; font-size: 0.7rem; padding: 4px 6px; border-radius: 4px;">USER</span>
+            <p style="font-size: 0.9rem;">"Convert this lecture note on cell mitosis into a 5-question multiple choice bank with a flowchart."</p>
+          </div>
+
+          <div style="display: flex; gap: 0.75rem; align-items: flex-start; background: rgba(255,255,255,0.03); padding: 1rem; border-radius: 8px; border-left: 3px solid var(--accent-cyan);">
+            <span style="background: var(--accent-cyan); color: #000; font-family: var(--font-mono); font-weight: 700; font-size: 0.7rem; padding: 4px 6px; border-radius: 4px;">AI</span>
+            <div>
+              <p class="scramble-text" id="streamText">Parsing input tokens... [Mitosis Pipeline Active]</p>
+              <div style="margin-top: 0.5rem;">
+                <span class="stamp-badge" style="font-size: 0.8rem; padding: 2px 6px;">5 QUESTIONS READY</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 6: CARDS & ELEVATION -->
+    <section id="sec-cards" class="section-card">
+      <div class="section-header">
+        <div>
+          <div class="section-title-wrap">
+            <span class="section-num">06</span>
+            <h2 class="section-title">Cards & 3D Interactive ID Card</h2>
+          </div>
+          <p class="section-desc">Physical 3D flip card system replacing generic split containers on the login page.</p>
+        </div>
+      </div>
+
+      <div class="showcase-grid">
+        <div class="preview-box">
+          <div class="preview-label">3D Interactive Faculty ID Card (Hover to Flip)</div>
+          <div class="flip-card-3d">
+            <div class="flip-card-inner">
+              <div class="flip-card-front">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--accent-red);">DIAGRAMMIND · ID CARD</span>
+                  <span class="badge-pass">FACULTY</span>
+                </div>
+                <div>
+                  <h3 style="font-family: var(--font-heading); font-size: 1.25rem;">SIGN IN TO ACCESS</h3>
+                  <p style="font-size: 0.8rem; color: var(--text-muted);">Access your generated question sets & graph visualizers.</p>
+                </div>
+                <div style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim);">Hover to flip to Register face ↻</div>
+              </div>
+
+              <div class="flip-card-back">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--accent-purple);">CREATE ACCOUNT</span>
+                  <span class="badge-pass" style="background: rgba(168,85,247,0.2); color: var(--accent-purple);">NEW</span>
+                </div>
+                <div>
+                  <h3 style="font-family: var(--font-heading); font-size: 1.25rem;">REGISTER FACULTY KEY</h3>
+                  <p style="font-size: 0.8rem; color: var(--text-muted);">Instant access. Free tier available.</p>
+                </div>
+                <div style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim);">Flipped side active.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="preview-box">
+          <div class="preview-label">Glassmorphic Elevation Card</div>
+          <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; backdrop-filter: blur(10px);">
+            <h4 style="font-family: var(--font-heading); color: var(--accent-cyan); margin-bottom: 0.5rem;">Pipeline Blueprint Card</h4>
+            <p style="font-size: 0.85rem; color: var(--text-muted);">Features subtle inner glows, responsive hover transforms, and dynamic elevation borders.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 7: TYPOGRAPHY & FONTS -->
+    <section id="sec-typography" class="section-card">
+      <div class="section-header">
+        <div>
+          <div class="section-title-wrap">
+            <span class="section-num">07</span>
+            <h2 class="section-title">Fonts & Typography System</h2>
+          </div>
+          <p class="section-desc">A curated typographic hierarchy pairing high-contrast display fonts with monospace engineering fonts.</p>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+        <div style="border-bottom: 1px solid var(--border); padding-bottom: 1rem;">
+          <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--accent-red);">DISPLAY HERO (Space Grotesk 700)</span>
+          <h1 style="font-family: var(--font-heading); font-size: 2.2rem; font-weight: 700; color: #fff;">Synthesis Engine v2</h1>
+        </div>
+
+        <div style="border-bottom: 1px solid var(--border); padding-bottom: 1rem;">
+          <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--accent-cyan);">BODY TEXT (Inter 400)</span>
+          <p style="font-family: var(--font-body); font-size: 1rem; color: var(--text-muted);">DiagramMind transforms unstructured documents into multi-layered question banks and interactive graph diagrams instantly.</p>
+        </div>
+
+        <div>
+          <span style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--accent-purple);">CODE / METRICS (JetBrains Mono 500)</span>
+          <div style="font-family: var(--font-mono); font-size: 0.9rem; color: var(--accent-emerald); margin-top: 0.25rem;">
+            const beat = mix(aT0, aT1, clamp(uBeat, 0.0, 1.0)); // WebGL Shader Matrix
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 8: TEXT ANIMATIONS -->
+    <section id="sec-text-anim" class="section-card">
+      <div class="section-header">
+        <div>
+          <div class="section-title-wrap">
+            <span class="section-num">08</span>
+            <h2 class="section-title">Text Animations & Decryption Effects</h2>
+          </div>
+          <p class="section-desc">Dynamic text reveal algorithms used for AI response generation and interactive state transitions.</p>
+        </div>
+      </div>
+
+      <div class="showcase-grid">
+        <div class="preview-box">
+          <div class="preview-label">Scramble Decrypt Text Simulation</div>
+          <div style="height: 80px; display: flex; align-items: center;">
+            <span class="scramble-text" id="interactiveDecrypt">Click to trigger decryption...</span>
+          </div>
+          <button class="btn-glass" onclick="triggerDecrypt()">Trigger Decryption ↻</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 9: ANIMATED COMPONENTS -->
+    <section id="sec-components" class="section-card">
+      <div class="section-header">
+        <div>
+          <div class="section-title-wrap">
+            <span class="section-num">09</span>
+            <h2 class="section-title">Animated Micro-Components</h2>
+          </div>
+          <p class="section-desc">Tactile micro-animations providing immediate sensory feedback to user interactions.</p>
+        </div>
+      </div>
+
+      <div class="showcase-grid">
+        <div class="preview-box">
+          <div class="preview-label">Tactile Physical Approval Stamp</div>
+          <div style="height: 100px; display: flex; align-items: center; justify-content: center;">
+            <div class="stamp-badge">APPROVED</div>
+          </div>
+          <p style="font-size: 0.8rem; color: var(--text-dim); text-align: center;">Triggers on valid sign-in / registration submission.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 10: LAYOUT & GRID SYSTEMS -->
+    <section id="sec-layout" class="section-card">
+      <div class="section-header">
+        <div>
+          <div class="section-title-wrap">
+            <span class="section-num">10</span>
+            <h2 class="section-title">Layout & Grid System Blueprint</h2>
+          </div>
+          <p class="section-desc">Responsive CSS Grid & Flex structures designed for high-density dashboard monitoring.</p>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem; background: rgba(0,0,0,0.4); padding: 1rem; border-radius: 8px; border: 1px solid var(--border); min-height: 120px;">
+        <div style="background: rgba(6, 182, 212, 0.1); border: 1px dashed var(--accent-cyan); border-radius: 6px; padding: 1rem; display: flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-size: 0.85rem;">
+          Main Workspace / Live Graph Canvas (Flexible 2FR)
+        </div>
+        <div style="background: rgba(168, 85, 247, 0.1); border: 1px dashed var(--accent-purple); border-radius: 6px; padding: 1rem; display: flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-size: 0.85rem;">
+          Agent Logs / Inspector Rail (Fixed 1FR)
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 11: BUTTONS & CONTROLS -->
+    <section id="sec-buttons" class="section-card">
+      <div class="section-header">
+        <div>
+          <div class="section-title-wrap">
+            <span class="section-num">11</span>
+            <h2 class="section-title">Tactile Buttons & Interactive Controls</h2>
+          </div>
+          <p class="section-desc">Physical offset click buttons with crisp border outlines and neon glow states.</p>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 1.5rem; align-items: center;">
+        <button class="btn-neo">Submit / Stamp →</button>
+        <button class="btn-glow">Synthesize Diagram ✨</button>
+        <button class="btn-glass">Glass Option</button>
+      </div>
+    </section>
+
+    <!-- SECTION 12: COMPREHENSIVE RUBRIC MATRIX -->
+    <section id="sec-matrix" class="section-card">
+      <div class="section-header">
+        <div>
+          <div class="section-title-wrap">
+            <span class="section-num">12</span>
+            <h2 class="section-title">Comprehensive Page-by-Page Revamp Matrix</h2>
+          </div>
+          <p class="section-desc">Detailed evaluation matrix of proposed frontend enhancements for every page route in DiagramMind.</p>
+        </div>
+      </div>
+
+      <table class="rubric-table">
+        <thead>
+          <tr>
+            <th>Page / Route</th>
+            <th>Current Implementation</th>
+            <th>Proposed Revamp Blueprint</th>
+            <th>Key Visual Component</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>/login</strong></td>
+            <td>Flat 2D quad square particle grid held in static Beat 3. Standard 50/50 card layout.</td>
+            <td><strong>3D Quantum Diagram Neural Mesh</strong> with scroll-linked 4-beat morphogenesis + 360° flip ID card.</td>
+            <td>WebGL Shader Canvas + 3D Card</td>
+            <td><span class="badge-pass">RECOMMENDED</span></td>
+          </tr>
+          <tr>
+            <td><strong>/ (Landing)</strong></td>
+            <td>15-section SVG point cloud morphing engine.</td>
+            <td>Enhanced spring particle curl-noise fields, dynamic contrast guards, dark mode palette bridge.</td>
+            <td>Science Journey Particle Canvas</td>
+            <td><span class="badge-pass">RECOMMENDED</span></td>
+          </tr>
+          <tr>
+            <td><strong>/app</strong></td>
+            <td>Default pipeline status bar & split panels.</td>
+            <td>Multi-agent telemetry sidebar, real-time node connection drawing canvas, floating copilot drawer.</td>
+            <td>Interactive Node Canvas & Log Rail</td>
+            <td><span class="badge-pass">RECOMMENDED</span></td>
+          </tr>
+          <tr>
+            <td><strong>/app/history</strong></td>
+            <td>Basic tabular card list.</td>
+            <td>Interactive 3D graph thumbnail previews with filter tags and instant scramble text search.</td>
+            <td>3D Diagram Thumbnails</td>
+            <td><span class="badge-pass">RECOMMENDED</span></td>
+          </tr>
+          <tr>
+            <td><strong>/app/agents</strong></td>
+            <td>Standard diagnostic logs.</td>
+            <td>Live multi-agent pulse monitors with audio wave stream visualizers and state latency graphs.</td>
+            <td>Agent Telemetry Stream</td>
+            <td><span class="badge-pass">RECOMMENDED</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+  </main>
+
+  <!-- Interactive JavaScript Logic -->
+  <script>
+    // Smooth Scroll Helper
+    function scrollToSection(id) {
+      const el = document.getElementById(id);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth' });
+        document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+        event.currentTarget.classList.add('active');
+      }
+    }
+
+    // Interactive Graph Canvas Simulation
+    const canvas = document.getElementById('graphCanvas');
+    const ctx = canvas.getContext('2d');
+    const scrollSlider = document.getElementById('scrollSlider');
+    const scrollVal = document.getElementById('scrollVal');
+
+    let beat = 0;
+    let particles = [];
+    const NUM_PARTICLES = 160;
+
+    function initParticles() {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * window.devicePixelRatio;
+      canvas.height = rect.height * window.devicePixelRatio;
+      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+
+      const width = rect.width;
+      const height = rect.height;
+
+      particles = [];
+      for (let i = 0; i < NUM_PARTICLES; i++) {
+        const seed = Math.random();
+        particles.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          vx: (Math.random() - 0.5) * 0.8,
+          vy: (Math.random() - 0.5) * 0.8,
+          clusterIndex: Math.floor(Math.random() * 6),
+          size: Math.random() * 4 + 2,
+          color: ['#e5342a', '#06b6d4', '#a855f7', '#10b981', '#f59e0b', '#38bdf8'][Math.floor(Math.random() * 6)]
+        });
+      }
+    }
+
+    function renderGraph() {
+      const width = canvas.width / window.devicePixelRatio;
+      const height = canvas.height / window.devicePixelRatio;
+
+      ctx.clearRect(0, 0, width, height);
+
+      // Render grid background
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+      ctx.lineWidth = 1;
+      const gridSize = 40;
+      for (let x = 0; x < width; x += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, height);
+        ctx.stroke();
+      }
+      for (let y = 0; y < height; y += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+        ctx.stroke();
+      }
+
+      // Cluster positions for Beat 1 & 2
+      const clusters = [
+        { x: width * 0.25, y: height * 0.35 },
+        { x: width * 0.5,  y: height * 0.3 },
+        { x: width * 0.75, y: height * 0.35 },
+        { x: width * 0.3,  y: height * 0.7 },
+        { x: width * 0.5,  y: height * 0.75 },
+        { x: width * 0.7,  y: height * 0.7 }
+      ];
+
+      // Draw connection lines between particles depending on beat
+      if (beat > 0.5) {
+        ctx.strokeStyle = `rgba(6, 182, 212, ${Math.min((beat - 0.5) * 0.5, 0.4)})`;
+        ctx.lineWidth = 1;
+
+        for (let i = 0; i < particles.length; i++) {
+          for (let j = i + 1; j < particles.length; j++) {
+            const dx = particles[i].x - particles[j].x;
+            const dy = particles[i].y - particles[j].y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
+            if (dist < 80 + beat * 20) {
+              ctx.beginPath();
+              ctx.moveTo(particles[i].x, particles[i].y);
+              ctx.lineTo(particles[j].x, particles[j].y);
+              ctx.stroke();
+            }
+          }
+        }
+      }
+
+      // Update & Draw Particles
+      particles.forEach((p, idx) => {
+        if (beat < 0.8) {
+          // Beat 0: Entropy float
+          p.x += p.vx;
+          p.y += p.vy;
+
+          if (p.x < 0 || p.x > width) p.vx *= -1;
+          if (p.y < 0 || p.y > height) p.vy *= -1;
+        } else if (beat >= 0.8 && beat < 2.2) {
+          // Beat 1 & 2: Pull toward cluster hubs
+          const target = clusters[p.clusterIndex];
+          p.x += (target.x - p.x) * 0.05;
+          p.y += (target.y - p.y) * 0.05;
+        } else {
+          // Beat 3: Lock into central emblem focus
+          const cx = width / 2;
+          const cy = height / 2;
+          const angle = (idx / particles.length) * Math.PI * 2;
+          const radius = 120 + Math.sin(idx + performance.now() * 0.002) * 10;
+          const tx = cx + Math.cos(angle) * radius;
+          const ty = cy + Math.sin(angle) * radius;
+          p.x += (tx - p.x) * 0.08;
+          p.y += (ty - p.y) * 0.08;
+        }
+
+        ctx.fillStyle = beat > 0.8 ? p.color : '#f1f5f9';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      });
+
+      requestAnimationFrame(renderGraph);
+    }
+
+    function setBeat(val) {
+      scrollSlider.value = val;
+      beat = parseFloat(val);
+      updateBeatUI();
+    }
+
+    function updateBeatUI() {
+      beat = parseFloat(scrollSlider.value);
+      scrollVal.innerText = `Beat ${beat.toFixed(2)} (${Math.round((beat / 3) * 100)}% Scroll)`;
+
+      document.querySelectorAll('.beat-btn').forEach((btn, idx) => {
+        if (Math.round(beat) === idx) btn.classList.add('active');
+        else btn.classList.remove('active');
+      });
+    }
+
+    scrollSlider.addEventListener('input', updateBeatUI);
+    window.addEventListener('resize', initParticles);
+
+    // Decrypt Text Simulation
+    const decryptTarget = document.getElementById('interactiveDecrypt');
+    const finalPhrase = "TRANSFORMING TEXT INTO DIAGRAMS...";
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+
+    function triggerDecrypt() {
+      let iteration = 0;
+      clearInterval(window.decryptInterval);
+
+      window.decryptInterval = setInterval(() => {
+        decryptTarget.innerText = finalPhrase
+          .split("")
+          .map((char, index) => {
+            if (index < iteration) {
+              return finalPhrase[index];
+            }
+            return chars[Math.floor(Math.random() * chars.length)];
+          })
+          .join("");
+
+        if (iteration >= finalPhrase.length) {
+          clearInterval(window.decryptInterval);
+        }
+
+        iteration += 1 / 3;
+      }, 30);
+    }
+
+    // Initialize
+    initParticles();
+    renderGraph();
+  </script>
+</body>
+</html>

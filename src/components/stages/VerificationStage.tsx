@@ -19,7 +19,6 @@ import {
   X,
   AlertTriangle,
   ShieldCheck,
-  Loader2,
   RotateCcw,
   type LucideIcon,
 } from 'lucide-react'
@@ -28,6 +27,7 @@ import type { VerificationVerdict, GeneratedQuestion } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { PenScribble } from '@/components/ui/pen-scribble'
 import { StageFrame, EmptyState, DataChip } from './shared'
 import { AgentThinkingConsole } from './AgentThinkingConsole'
 
@@ -130,7 +130,7 @@ export function VerificationStage() {
 
         {status === 'running' && (
           <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground">
-            <Loader2 className="size-3 animate-spin text-foreground" />
+            <PenScribble size={18} className="text-muted-foreground" />
             <span>Critic still reviewing…</span>
           </div>
         )}
@@ -201,7 +201,13 @@ function VerdictRow({
                 amber: 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400',
                 coral: 'border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400',
               }[tone],
+              tone === 'emerald' && 'stamp-pop',
             )}
+            style={
+              tone === 'emerald'
+                ? { animationDelay: `${Math.min(index, 8) * 55}ms` }
+                : undefined
+            }
           >
             <Icon className="size-3.5" strokeWidth={3} />
           </div>

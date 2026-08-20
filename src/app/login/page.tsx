@@ -4,36 +4,32 @@ import * as React from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { signIn } from 'next-auth/react'
+import { useTheme } from 'next-themes'
 
-import dynamic from 'next/dynamic'
-
-import { cn } from '@/lib/utils'
-import { Spectrum } from '@/components/landing/primitives'
-import { ThemeToggle } from '@/components/theme-toggle'
-
-/* The same graph as the landing page, held at its final formation —
-   the collapse into the wordmark. The scroll journey ends here. */
-const GraphEngine = dynamic(() => import('@/components/graph/GraphEngine'), { ssr: false })
+import type { PlateHandle } from '@/lib/plate/engine'
 
 /* ==================================================================
-   THE ID CARD
+   /login — THE PLATE
 
-   The old /login wrapped a stock form in a Heatmap shader, a
-   DecryptedText scramble, a Lens magnifier and a shader logo, inside
-   the most-copied layout on the internet: 50/50 split, form left,
-   marketing right. Four unrelated effects and no idea, on the
-   highest-intent page in the product.
+   Two panes.
 
-   This is one object in an empty room. A faculty ID card, extruded,
-   hard borders, a hard offset shadow on the floor. It does not follow
-   the pointer — on the page where someone is aiming at two fields and a
-   button, a target that moves while you aim is a nuisance. Sign in and
-   Create account are the two faces of the same card, so switching is a
-   physical flip. Submit is THE STAMP — education is marking, and marking
-   is stamping.
+   LEFT is a live plate. It is the same engine, the same eight
+   diagrams and the same ink the homepage draws with — but pinned to
+   one anchor and walked by a clock instead of a scroll, so the globe
+   becomes the cell becomes the atom becomes the circuit while you
+   type. That is the product's whole claim, running unattended: it
+   does not care what the diagram is, only what its structure is.
 
-   The form is real DOM inside a CSS 3D transform, not a texture, so it
-   stays selectable, autofillable and screen-reader correct. No WebGL.
+   The plate answers the form, too. Focusing a field steps the drawing
+   back so the fields carry the contrast; it is a backdrop that knows
+   when it is not the subject.
+
+   RIGHT is one card. Sign in on the front, create account on the back,
+   and switching between them is a physical flip rather than a tab.
+
+   The form is the real thing: same endpoints, same Google provider,
+   same ?from= redirect as before. The drawing is decoration; the
+   authentication is not.
    ================================================================== */
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -43,34 +39,77 @@ type Mode = 'signin' | 'signup'
 export default function LoginPage() {
   const router = useRouter()
 
+  const stageRef = React.useRef<HTMLDivElement | null>(null)
+  const plateRef = React.useRef<PlateHandle | null>(null)
+
+  const [plate, setPlate] = React.useState('THE GLOBE')
   const [mode, setMode] = React.useState<Mode>('signin')
   const [name, setName] = React.useState('')
   const [email, setEmail] = React.useState('')
   const [password, setPassword] = React.useState('')
   const [error, setError] = React.useState<string | null>(null)
+  const [shake, setShake] = React.useState(0)
   const [loading, setLoading] = React.useState(false)
   const [googleLoading, setGoogleLoading] = React.useState(false)
-  const [stamp, setStamp] = React.useState<'none' | 'ok' | 'no'>('none')
-
-  const stageRef = React.useRef<HTMLDivElement | null>(null)
-  const cardRef = React.useRef<HTMLDivElement | null>(null)
+  const [stamp, setStamp] = React.useState<{ kind: 'ok' | 'no'; seq: number } | null>(null)
+  const [wipe, setWipe] = React.useState(false)
 
   const flipped = mode === 'signup'
 
-  /* No pointer tilt. The card used to follow the cursor; on the one page
-     where someone is trying to hit two fields and a button, a target that
-     moves while you aim at it is a nuisance, not a delight. It flips, and
-     that is the whole 3D idea. */
+  /* ---- the live plate ----
+     autoplay walks the sequence on a clock; anchorX pins every plate to
+     one spot so the morph happens in place; chips are off because the
+     card column belongs to a page with room for it. */
+  React.useEffect(() => {
+    const host = stageRef.current
+    if (!host) return
+    let handle: PlateHandle | null = null
+    let dead = false
 
+    import('@/lib/plate/engine')
+      .then(({ mountPlateStage }) => {
+        if (dead || !stageRef.current) return
+        handle = mountPlateStage(stageRef.current, {
+          autoplay: 6,
+          anchorX: 800,
+          chips: false,
+          viewBox: '300 30 1000 844',
+          preserveAspectRatio: 'xMidYMid meet',
+          flight: 'premium',
+          onScene: (_i, sceneName) => setPlate(sceneName),
+        })
+        plateRef.current = handle
+      })
+      .catch((err) => {
+        // A backdrop is never worth a blank sign-in page.
+        console.warn('[plate] login stage unavailable', err)
+      })
+
+    return () => {
+      dead = true
+      handle?.destroy()
+      plateRef.current = null
+    }
+  }, [])
+
+  /* Focusing a field steps the drawing back — the fields are the
+     subject while someone is aiming at them. */
+  const focusProps = {
+    onFocus: () => plateRef.current?.setPresence(0.25),
+    onBlur: () => plateRef.current?.setPresence(1),
+  }
+
+  /* ---- form ---- */
   function switchMode(next: Mode) {
     if (next === mode) return
     setMode(next)
     setError(null)
   }
 
-  function fireStamp(kind: 'ok' | 'no') {
-    setStamp(kind)
-    window.setTimeout(() => setStamp('none'), 1700)
+  function fail(msg: string) {
+    setError(msg)
+    setShake((s) => s + 1)
+    setStamp({ kind: 'no', seq: Date.now() })
   }
 
   async function handleGoogle() {
@@ -79,8 +118,7 @@ export default function LoginPage() {
       await signIn('google', { callbackUrl: '/app' })
     } catch {
       setGoogleLoading(false)
-      setError('Could not start Google sign-in. Please try again.')
-      fireStamp('no')
+      fail('Could not start Google sign-in. Please try again.')
     }
   }
 
@@ -88,25 +126,14 @@ export default function LoginPage() {
     e.preventDefault()
     setError(null)
 
+    if (!email.trim()) return fail('Please enter your email or username.')
     if (email.includes('@') && !EMAIL_RE.test(email)) {
-      setError('Please enter a valid email address.')
-      return fireStamp('no')
+      return fail('That email address does not look right.')
     }
-    if (!email.trim()) {
-      setError('Please enter your email or username.')
-      return fireStamp('no')
-    }
-    if (mode === 'signup' && !name.trim()) {
-      setError('Please enter your name.')
-      return fireStamp('no')
-    }
+    if (mode === 'signup' && !name.trim()) return fail('Please enter your name.')
+    if (!password) return fail('Please enter your password.')
     if (mode === 'signup' && password.length < 6) {
-      setError('Password must be at least 6 characters.')
-      return fireStamp('no')
-    }
-    if (!password) {
-      setError('Please enter your password.')
-      return fireStamp('no')
+      return fail('Password must be at least 6 characters.')
     }
 
     setLoading(true)
@@ -125,268 +152,292 @@ export default function LoginPage() {
 
       if (!res.ok) {
         const data = (await res.json().catch(() => null)) as { error?: string } | null
-        setError(data?.error ?? 'Something went wrong. Please try again.')
-        fireStamp('no')
+        fail(data?.error ?? 'Something went wrong. Please try again.')
         return
       }
 
-      fireStamp('ok')
+      setStamp({ kind: 'ok', seq: Date.now() })
 
       const params = new URLSearchParams(window.location.search)
       const from = params.get('from')
       const dest = from && from.startsWith('/') && !from.startsWith('//') ? from : '/app'
-      // let the stamp land before the route changes
+
+      // the stamp lands, then the wipe closes over it, then we route
+      window.setTimeout(() => setWipe(true), 620)
       window.setTimeout(() => {
         router.push(dest)
         router.refresh()
-      }, 620)
+      }, 1180)
     } catch {
-      setError('Network error. Please check your connection and try again.')
-      fireStamp('no')
+      fail('Network error. Please check your connection and try again.')
     } finally {
       setLoading(false)
     }
   }
 
-  const field =
-    'w-full border-2 border-[var(--line)] bg-[var(--card)] px-3.5 py-3 font-mono text-sm ' +
-    'transition-[border-width,box-shadow,padding] duration-[90ms] outline-none ' +
-    'focus:border-[3px] focus:px-[13px] focus:py-[11px] focus:shadow-[4px_4px_0_var(--line)] ' +
-    'placeholder:text-[var(--ink-2)]'
-
   return (
-    <main className="relative flex min-h-screen flex-col">
-      <div className="pointer-events-none fixed inset-0 z-0 opacity-[0.38]" aria-hidden>
-        <GraphEngine className="h-full w-full" fixedBeat={3} />
+    <div className="plate-login">
+      {/* ---- chrome ---- */}
+      <div className="chrome">
+        <Link href="/">← DiagramMind</Link>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
+          <span className="lbl beatread">PLATE · {plate}</span>
+          <ThemeBtn />
+        </div>
+        <div className="chromeprog" />
       </div>
 
-      {/* chrome */}
-      <div className="relative z-10 flex items-center justify-between gap-4 border-b-2 border-[var(--line)] px-6 py-3 sm:px-10">
-        <Link href="/" className="lbl hover:text-[var(--red)]">
-          ← DiagramMind
-        </Link>
-        <ThemeToggle />
-      </div>
-
-      {/* the empty room */}
-      <div
-        ref={stageRef}
-        className="relative z-10 flex flex-1 items-center justify-center px-6 py-14"
-        style={{ perspective: '1400px' }}
-      >
-        <div
-          ref={cardRef}
-          className="relative w-full max-w-[400px]"
-          style={{
-            transformStyle: 'preserve-3d',
-            transform: `rotateY(${flipped ? 180 : 0}deg)`,
-            transition: 'transform 600ms cubic-bezier(.16,1,.3,1)',
-          }}
-        >
-          <Face
-            hidden={flipped}
-            title="SIGN IN"
-            sub="Access your question sets."
-            badge="ID · 2026"
-            reverse={false}
-          >
-            <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
-              <ErrorNote error={error} />
-              <label className="block">
-                <span className="lbl mb-2 block">Email or username</span>
-                <input
-                  className={field}
-                  type="text"
-                  autoComplete="username"
-                  placeholder="you@school.edu"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </label>
-              <label className="block">
-                <span className="lbl mb-2 flex items-center justify-between gap-3">
-                  Password
-                  <Link
-                    href="/forgot-password"
-                    className="lbl normal-case tracking-normal text-[var(--ink-2)] hover:text-[var(--red)]"
-                  >
-                    forgot?
-                  </Link>
-                </span>
-                <input
-                  className={field}
-                  type="password"
-                  autoComplete="current-password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </label>
-              <Submit loading={loading}>Sign in →</Submit>
-              <GoogleBtn onClick={handleGoogle} loading={googleLoading} />
-              <FlipLink onClick={() => switchMode('signup')}>
-                New here? Create account ↻
-              </FlipLink>
-            </form>
-          </Face>
-
-          <Face
-            hidden={!flipped}
-            title="CREATE"
-            sub="Free. No card needed."
-            badge="NEW · 2026"
-            reverse
-          >
-            <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
-              <ErrorNote error={error} />
-              <label className="block">
-                <span className="lbl mb-2 block">Name</span>
-                <input
-                  className={field}
-                  type="text"
-                  autoComplete="name"
-                  placeholder="Your name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                />
-              </label>
-              <label className="block">
-                <span className="lbl mb-2 block">Email</span>
-                <input
-                  className={field}
-                  type="email"
-                  autoComplete="email"
-                  placeholder="you@school.edu"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </label>
-              <label className="block">
-                <span className="lbl mb-2 block">Password</span>
-                <input
-                  className={field}
-                  type="password"
-                  autoComplete="new-password"
-                  placeholder="min. 6 characters"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </label>
-              <Submit loading={loading}>Create account →</Submit>
-              <FlipLink onClick={() => switchMode('signin')}>
-                Already have one? Sign in ↻
-              </FlipLink>
-            </form>
-          </Face>
+      {/* ---- left: the live plate ---- */}
+      <section className="stagepane">
+        <div>
+          <div className="brandrow">
+            <span className="mark" aria-hidden>
+              ◆
+            </span>
+            <span className="lbl" style={{ color: 'var(--ink)' }}>
+              DiagramMind · multi-agent pipeline
+            </span>
+          </div>
+          <h2 className="pitch">
+            FROM DIAGRAM
+            <br />
+            TO <em>VERIFIED</em>
+            <br />
+            QUESTION SET.
+          </h2>
+          <p className="pitchsub">
+            Eight plates, one pipeline. The model has no idea what a cell is — it reads
+            structure, which is why the same six agents work on a membrane, a circuit and an
+            orbit without one subject-specific rule between them.
+          </p>
         </div>
 
-        {/* THE STAMP */}
-        <span
-          className={cn('stamp', stamp !== 'none' && 'stamp-hit')}
+        <div ref={stageRef} className="plate-stage" aria-hidden />
+
+        <div className="statusrow">
+          <span className="lbl" style={{ color: 'var(--ink)' }}>
+            <span className="live" aria-hidden />
+            Live · {plate}
+          </span>
+          <span className="lbl">6 agents standby</span>
+          <div className="spectrum" aria-hidden>
+            <i />
+            <i />
+            <i />
+            <i />
+            <i />
+            <i />
+          </div>
+        </div>
+      </section>
+
+      {/* ---- right: the card ---- */}
+      <section className="formpane">
+        <div className="cardslot">
+          <div className={`card3d${flipped ? ' flipped' : ''}`}>
+            {/* ── FRONT · SIGN IN ── */}
+            <div className="face" inert={flipped}>
+              <Spectrum />
+              <div className="facehead">
+                <span className="lbl" style={{ color: 'var(--ink)' }}>
+                  DiagramMind
+                </span>
+                <span className="lbl">ID · 2026</span>
+              </div>
+              <div className="facebody">
+                <h1>SIGN IN</h1>
+                <p className="sub">Access your question sets.</p>
+                <form
+                  onSubmit={handleSubmit}
+                  noValidate
+                  className={shake ? 'shake' : undefined}
+                  key={`in-${shake}`}
+                >
+                  {!flipped && error && (
+                    <p className="err" role="alert">
+                      {error}
+                    </p>
+                  )}
+                  <label className="f">
+                    <span className="lbl">Email or username</span>
+                    <input
+                      className="field"
+                      type="text"
+                      autoComplete="username"
+                      placeholder="you@school.edu"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      {...focusProps}
+                    />
+                  </label>
+                  <label className="f">
+                    <span className="lbl">
+                      Password
+                      <Link
+                        href="/forgot-password"
+                        style={{ color: 'var(--ink-3)', textDecoration: 'none' }}
+                      >
+                        forgot?
+                      </Link>
+                    </span>
+                    <input
+                      className="field"
+                      type="password"
+                      autoComplete="current-password"
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      {...focusProps}
+                    />
+                  </label>
+                  <button className="btn" type="submit" disabled={loading}>
+                    {loading ? 'Working…' : 'Sign in →'}
+                  </button>
+                  <button
+                    className="btn sec"
+                    type="button"
+                    onClick={handleGoogle}
+                    disabled={googleLoading}
+                  >
+                    {googleLoading ? 'Redirecting…' : 'Continue with Google'}
+                  </button>
+                  <button className="fliplink" type="button" onClick={() => switchMode('signup')}>
+                    New here? Create account ↻
+                  </button>
+                </form>
+              </div>
+            </div>
+
+            {/* ── BACK · CREATE ── */}
+            <div className="face back" inert={!flipped}>
+              <Spectrum />
+              <div className="facehead">
+                <span className="lbl" style={{ color: 'var(--ink)' }}>
+                  DiagramMind
+                </span>
+                <span className="lbl">NEW · 2026</span>
+              </div>
+              <div className="facebody">
+                <h1>CREATE</h1>
+                <p className="sub">Free. No card needed.</p>
+                <form
+                  onSubmit={handleSubmit}
+                  noValidate
+                  className={shake ? 'shake' : undefined}
+                  key={`up-${shake}`}
+                >
+                  {flipped && error && (
+                    <p className="err" role="alert">
+                      {error}
+                    </p>
+                  )}
+                  <label className="f">
+                    <span className="lbl">Name</span>
+                    <input
+                      className="field"
+                      type="text"
+                      autoComplete="name"
+                      placeholder="Your name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      {...focusProps}
+                    />
+                  </label>
+                  <label className="f">
+                    <span className="lbl">Email</span>
+                    <input
+                      className="field"
+                      type="email"
+                      autoComplete="email"
+                      placeholder="you@school.edu"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      {...focusProps}
+                    />
+                  </label>
+                  <label className="f">
+                    <span className="lbl">Password</span>
+                    <input
+                      className="field"
+                      type="password"
+                      autoComplete="new-password"
+                      placeholder="min. 6 characters"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      {...focusProps}
+                    />
+                  </label>
+                  <button className="btn" type="submit" disabled={loading}>
+                    {loading ? 'Working…' : 'Create account →'}
+                  </button>
+                  <button className="fliplink" type="button" onClick={() => switchMode('signin')}>
+                    Already have one? Sign in ↻
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <p className="terms">
+          By continuing you agree to the Terms and acknowledge the Privacy Policy.
+        </p>
+      </section>
+
+      {/* ---- THE STAMP ---- */}
+      {stamp && (
+        <div
+          key={stamp.seq}
+          className="platestamp hit"
           aria-hidden
-          style={{ zIndex: 50 }}
+          style={
+            stamp.kind === 'ok'
+              ? { color: 'var(--b2)', borderColor: 'var(--b2)' }
+              : { color: 'var(--red)', borderColor: 'var(--red)' }
+          }
         >
-          {stamp === 'no' ? 'REJECTED' : 'APPROVED'}
-        </span>
-      </div>
+          {stamp.kind === 'ok' ? 'APPROVED' : 'REJECTED'}
+        </div>
+      )}
 
-      <p className="relative z-10 px-6 pb-8 text-center text-xs leading-relaxed text-[var(--ink-2)]">
-        By continuing you agree to the Terms and acknowledge the Privacy Policy.
-      </p>
-    </main>
-  )
-}
-
-/* ------------------------------------------------------------------ */
-
-function Face({
-  hidden,
-  title,
-  sub,
-  badge,
-  reverse,
-  children,
-}: {
-  hidden: boolean
-  title: string
-  sub: string
-  badge: string
-  reverse: boolean
-  children: React.ReactNode
-}) {
-  return (
-    <div
-      aria-hidden={hidden}
-      className="border-[4px] border-[var(--line)] bg-[var(--card)] shadow-[14px_14px_0_var(--line)]"
-      style={{
-        backfaceVisibility: 'hidden',
-        WebkitBackfaceVisibility: 'hidden',
-        transform: reverse ? 'rotateY(180deg)' : undefined,
-        position: reverse ? 'absolute' : 'relative',
-        inset: reverse ? 0 : undefined,
-      }}
-    >
-      <Spectrum className="h-3 border-x-0 border-t-0 border-b-[3px]" reverse={reverse} />
-      <div className="flex items-center justify-between gap-3 border-b-2 border-[var(--line)] px-4 py-2.5">
-        <span className="lbl">DiagramMind</span>
-        <span className="lbl text-[var(--ink-2)]">{badge}</span>
-      </div>
-      <div className="p-6">
-        <h1 className="d-l" style={{ fontSize: '2.1rem' }}>
-          {title}
-        </h1>
-        <p className="mb-6 mt-1.5 text-sm text-[var(--ink-2)]">{sub}</p>
-        {children}
+      {/* ---- success wipe ---- */}
+      <div className={`authwipe${wipe ? ' on' : ''}`} aria-hidden>
+        <div>
+          <span className="lbl">Authenticated</span>
+          <h2 style={{ fontSize: 'clamp(28px,6vw,64px)', marginTop: 10 }}>ENTERING CONSOLE</h2>
+        </div>
       </div>
     </div>
   )
 }
 
-function ErrorNote({ error }: { error: string | null }) {
-  if (!error) return null
+function Spectrum() {
   return (
-    <p
-      role="alert"
-      className="border-2 border-[var(--red)] bg-[var(--red)] px-3 py-2.5 text-sm font-semibold text-white"
-    >
-      {error}
-    </p>
+    <div className="spectrum" aria-hidden>
+      <i />
+      <i />
+      <i />
+      <i />
+      <i />
+      <i />
+    </div>
   )
 }
 
-function Submit({ loading, children }: { loading: boolean; children: React.ReactNode }) {
-  return (
-    <button
-      type="submit"
-      disabled={loading}
-      className="dat mt-1 w-full border-[3px] border-[var(--line)] bg-[var(--red)] px-6 py-3.5 text-xs font-bold uppercase tracking-[0.12em] text-white shadow-[6px_6px_0_var(--line)] transition-[transform,box-shadow] duration-[90ms] ease-[cubic-bezier(.2,0,0,1)] hover:translate-x-[6px] hover:translate-y-[6px] hover:shadow-none disabled:opacity-60"
-    >
-      {loading ? 'Working…' : children}
-    </button>
-  )
-}
+function ThemeBtn() {
+  const { resolvedTheme, setTheme } = useTheme()
+  const [mounted, setMounted] = React.useState(false)
+  React.useEffect(() => setMounted(true), [])
+  const dark = mounted && resolvedTheme === 'dark'
 
-function GoogleBtn({ onClick, loading }: { onClick: () => void; loading: boolean }) {
   return (
     <button
       type="button"
-      onClick={onClick}
-      disabled={loading}
-      className="dat w-full border-2 border-[var(--line)] bg-[var(--card)] px-6 py-3 text-xs font-bold uppercase tracking-[0.12em] shadow-[4px_4px_0_var(--line)] transition-[transform,box-shadow] duration-[90ms] ease-[cubic-bezier(.2,0,0,1)] hover:translate-x-[4px] hover:translate-y-[4px] hover:shadow-none disabled:opacity-60"
+      onClick={() => setTheme(dark ? 'light' : 'dark')}
+      title="Toggle theme"
+      aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
     >
-      {loading ? 'Redirecting…' : 'Continue with Google'}
-    </button>
-  )
-}
-
-function FlipLink({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="lbl w-full py-2 text-[var(--ink-2)] transition-colors duration-[90ms] hover:text-[var(--red)]"
-    >
-      {children}
+      {mounted ? (dark ? '☀ Theme' : '☾ Theme') : '☾ Theme'}
     </button>
   )
 }

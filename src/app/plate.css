@@ -1,0 +1,792 @@
+/* ==================================================================
+   THE PLATE — page styles for / and /login.
+
+   Lifted from the two authored HTML prototypes (diagrammind-homepage
+   and login-the-plate) and scoped, so nothing here can reach the
+   console at /app or the shared components. Two roots:
+
+     .plate-home   the homepage: eight plates, eight sections
+     .plate-login  the sign-in page: one plate, five beats
+
+   Both stand in for what was `body` in the prototypes, so the tokens
+   they override (--bw, --ink-3, --surface-2) are set on the root
+   element instead of :root and stay inside the page that asked for
+   them. Everything else — --paper, --surface, --ink, --red, --yellow,
+   --line, --b1..--b6 — already comes from globals.css, at identical
+   values, so the two systems agree by construction rather than by
+   duplication.
+
+   Fonts arrive as next/font CSS variables rather than global family
+   names, which is why every family here is a var().
+   ================================================================== */
+
+/* ------------------------------------------------------------------
+   Shared base. This is the prototypes' `body` rule.
+   ------------------------------------------------------------------ */
+.plate-home,
+.plate-login {
+  --surface-2: #f6f1e6;
+  --ink-3: #8a827a;
+  --bw: 2px;
+  --bw-l: 4px;
+
+  position: relative;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-instrument), system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
+  transition: background-color 300ms ease, color 300ms ease;
+}
+
+[data-theme='dark'] .plate-home,
+[data-theme='dark'] .plate-login {
+  --surface-2: #221f1c;
+  --ink-3: #6f6862;
+  --bw: 1px;
+  --bw-l: 2px;
+}
+
+.plate-home *,
+.plate-login * {
+  box-sizing: border-box;
+}
+
+.plate-home h1,
+.plate-home h2,
+.plate-home h3 {
+  font-family: var(--font-archivo), 'Arial Black', sans-serif;
+  font-weight: 900;
+  letter-spacing: -0.035em;
+  text-transform: uppercase;
+  line-height: 0.96;
+  margin: 0;
+}
+
+.plate-login h1,
+.plate-login h2,
+.plate-login h3 {
+  font-family: var(--font-archivo), 'Arial Black', sans-serif;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+  line-height: 1;
+  margin: 0;
+}
+
+.plate-home .lbl,
+.plate-login .lbl {
+  font-family: var(--font-jetbrains), ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.plate-home .hand,
+.plate-login .hand {
+  font-family: var(--font-caveat), cursive;
+  font-size: 22px;
+  color: var(--red);
+  display: inline-block;
+  transform: rotate(-2.2deg);
+  line-height: 1.25;
+}
+
+.plate-login .hand {
+  font-size: 21px;
+}
+
+.plate-home .mono,
+.plate-login .mono {
+  font-family: var(--font-jetbrains), ui-monospace, monospace;
+}
+
+/* ------------------------------------------------------------------
+   Layer 0 — the drafting paper. Shared by both pages.
+   ------------------------------------------------------------------ */
+.plate-stage {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  color: var(--ink);
+}
+.plate-stage .plate-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* The SVG's own type. Presentation attributes cannot carry a var(), so
+   the stage labels its text by class instead of by font-family. */
+.plate-stage .pf-mono { font-family: var(--font-jetbrains), ui-monospace, monospace; }
+.plate-stage .pf-sans { font-family: var(--font-instrument), system-ui, sans-serif; }
+.plate-stage .pf-disp { font-family: var(--font-archivo), 'Arial Black', sans-serif; }
+.plate-stage .pf-hand { font-family: var(--font-caveat), cursive; }
+
+/* ==================================================================
+   HOMEPAGE
+   ================================================================== */
+
+/* ---- the document header ---- */
+.plate-home .chrome {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 22px;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--font-jetbrains), ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.plate-home .chrome button,
+.plate-home .chrome a {
+  font: inherit;
+  letter-spacing: 0.16em;
+  background: none;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  padding: 4px 6px;
+  text-decoration: none;
+}
+.plate-home .chrome button:hover,
+.plate-home .chrome a:hover { color: var(--red); }
+.plate-home .chrome .sign { border: 1px solid currentColor; padding: 5px 12px; }
+.plate-home .chrome .sign:hover { background: var(--red); border-color: var(--red); color: #fff; }
+.plate-home .chromeprog { position: absolute; left: 0; bottom: 0; height: 2px; background: var(--red); width: 0; }
+.plate-home .crumb { opacity: 0.9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ---- content sections ---- */
+.plate-home main { position: relative; z-index: 10; }
+.plate-home section.scn {
+  min-height: 136vh;
+  display: flex;
+  align-items: center;
+  padding: 110px clamp(20px, 4vw, 72px) 90px;
+}
+/* alternating editorial rhythm — art right ⇄ text left, and back */
+.plate-home section.scn[data-side='right'] { justify-content: flex-start; }
+.plate-home section.scn[data-side='left'] { justify-content: flex-end; text-align: left; }
+
+.plate-home .col { width: min(45%, 600px); pointer-events: auto; will-change: opacity, transform; }
+.plate-home .col .kick { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.plate-home .col .rule {
+  height: var(--bw);
+  background: var(--line);
+  flex: 1;
+  max-width: 70px;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 620ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.plate-home .on .col .rule { transform: scaleX(1); }
+.plate-home .col h1 { font-size: clamp(38px, 6.4vw, 82px); }
+.plate-home .col h2 { font-size: clamp(28px, 4.4vw, 54px); }
+.plate-home .col p.lead {
+  font-size: clamp(15px, 1.5vw, 18px);
+  color: var(--ink-2);
+  max-width: 46ch;
+  margin: 18px 0 0;
+}
+.plate-home .mask { overflow: hidden; display: block; }
+.plate-home .mask > span {
+  display: block;
+  transform: translateY(112%);
+  transition: transform 760ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.plate-home .on .mask > span { transform: none; }
+.plate-home .on .mask:nth-of-type(2) > span { transition-delay: 70ms; }
+.plate-home .on .mask:nth-of-type(3) > span { transition-delay: 140ms; }
+.plate-home .fade {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 620ms cubic-bezier(0.16, 1, 0.3, 1) 180ms,
+              transform 620ms cubic-bezier(0.16, 1, 0.3, 1) 180ms;
+}
+.plate-home .on .fade { opacity: 1; transform: none; }
+.plate-home .marker {
+  background-image: linear-gradient(var(--yellow), var(--yellow));
+  background-repeat: no-repeat;
+  background-size: 0 60%;
+  background-position: 0 66%;
+  transition: background-size 640ms cubic-bezier(0.16, 1, 0.3, 1) 420ms;
+  color: var(--ink);
+}
+.plate-home .on .marker { background-size: 100% 60%; }
+
+/* ---- THE PRESS: the only hover in the system ---- */
+.plate-home .btn {
+  display: inline-block;
+  font-family: var(--font-jetbrains), ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  padding: 14px 22px;
+  border: 3px solid var(--line);
+  background: var(--red);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 6px 6px 0 var(--line);
+  text-decoration: none;
+  transition: transform 90ms cubic-bezier(0.2, 0, 0, 1), box-shadow 90ms cubic-bezier(0.2, 0, 0, 1);
+}
+.plate-home .btn:hover { transform: translate(6px, 6px); box-shadow: none; }
+.plate-home .btn.sec {
+  background: var(--surface);
+  color: var(--ink);
+  border-width: var(--bw);
+  box-shadow: 4px 4px 0 var(--line);
+}
+.plate-home .btn.sec:hover { transform: translate(4px, 4px); }
+.plate-home .cta { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 30px; }
+
+/* ---- the numbered stack ---- */
+.plate-home .stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-top: 26px;
+  border-top: var(--bw) solid var(--line);
+}
+.plate-home .stack .row {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 12px 0;
+  border-bottom: var(--bw) solid var(--line);
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 520ms cubic-bezier(0.16, 1, 0.3, 1), transform 520ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.plate-home .on .stack .row { opacity: 1; transform: none; }
+.plate-home .on .stack .row:nth-child(1) { transition-delay: 0.1s; }
+.plate-home .on .stack .row:nth-child(2) { transition-delay: 0.145s; }
+.plate-home .on .stack .row:nth-child(3) { transition-delay: 0.19s; }
+.plate-home .on .stack .row:nth-child(4) { transition-delay: 0.235s; }
+.plate-home .on .stack .row:nth-child(5) { transition-delay: 0.28s; }
+.plate-home .on .stack .row:nth-child(6) { transition-delay: 0.325s; }
+.plate-home .stack .row b {
+  font-family: var(--font-jetbrains), ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  min-width: 26px;
+  color: var(--ink-3);
+}
+.plate-home .stack .row .t { font-weight: 700; font-size: 15px; }
+.plate-home .stack .row .d { font-size: 13px; color: var(--ink-2); }
+.plate-home .dot { width: 11px; height: 11px; flex: 0 0 11px; margin-top: 5px; border: 2px solid var(--line); }
+
+/* ---- the odometer row ---- */
+.plate-home .nums { display: flex; gap: 36px; flex-wrap: wrap; margin-top: 28px; }
+.plate-home .nums div { min-width: 120px; }
+.plate-home .nums b {
+  display: block;
+  font-family: var(--font-jetbrains), ui-monospace, monospace;
+  font-weight: 700;
+  font-size: clamp(30px, 4.4vw, 52px);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+}
+
+/* ---- the Bloom pills ---- */
+.plate-home .pills { margin-top: 22px; }
+.plate-home .pill {
+  display: inline-block;
+  font-family: var(--font-jetbrains), ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  border: var(--bw) solid var(--line);
+  padding: 5px 11px;
+  margin: 0 7px 7px 0;
+  color: #fff;
+}
+.plate-home .p1 { background: var(--b1); }
+.plate-home .p2 { background: var(--b2); }
+.plate-home .p3 { background: var(--b3); color: #0a0a0a; }
+.plate-home .p4 { background: var(--b4); color: #0a0a0a; }
+.plate-home .p5 { background: var(--b5); color: #0a0a0a; }
+.plate-home .p6 { background: var(--b6); }
+
+/* ---- scene rail (right edge) ---- */
+.plate-home .rail {
+  position: fixed;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 55;
+  display: flex;
+  flex-direction: column;
+  pointer-events: none;
+}
+.plate-home .rail .bt {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: flex-end;
+  padding: 7px 0;
+  opacity: 0.28;
+  transition: opacity 300ms;
+}
+.plate-home .rail .bt.on { opacity: 1; }
+.plate-home .rail .bt span {
+  font-family: var(--font-jetbrains), ui-monospace, monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  opacity: 0;
+  transition: opacity 300ms;
+}
+.plate-home .rail .bt.on span { opacity: 1; }
+.plate-home .rail .bt i {
+  width: 22px;
+  height: 2px;
+  background: var(--line);
+  display: block;
+  transition: width 300ms, background-color 300ms;
+}
+.plate-home .rail .bt.on i { width: 44px; background: var(--red); }
+@media (max-width: 1100px) {
+  .plate-home .rail { display: none; }
+}
+
+/* ---- footer ---- */
+.plate-home footer {
+  position: relative;
+  z-index: 10;
+  border-top: var(--bw-l) solid var(--line);
+  background: var(--paper);
+  padding: 46px clamp(20px, 4vw, 72px) 58px;
+  display: flex;
+  justify-content: space-between;
+  gap: 26px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+.plate-home footer .wm {
+  font-family: var(--font-archivo), 'Arial Black', sans-serif;
+  font-weight: 900;
+  font-size: clamp(30px, 5vw, 58px);
+  letter-spacing: -0.045em;
+}
+.plate-home .spectrum {
+  display: flex;
+  height: 12px;
+  width: 100%;
+  margin-top: 26px;
+  border: var(--bw) solid var(--line);
+}
+.plate-home .spectrum i { flex: 1; }
+.plate-home .spectrum i:nth-child(1) { background: var(--b1); }
+.plate-home .spectrum i:nth-child(2) { background: var(--b2); }
+.plate-home .spectrum i:nth-child(3) { background: var(--b3); }
+.plate-home .spectrum i:nth-child(4) { background: var(--b4); }
+.plate-home .spectrum i:nth-child(5) { background: var(--b5); }
+.plate-home .spectrum i:nth-child(6) { background: var(--b6); }
+
+/* ---- mobile: the plate steps back, the copy runs full width ---- */
+@media (max-width: 1100px) {
+  .plate-home .col { width: min(58%, 560px); }
+}
+@media (max-width: 900px) {
+  .plate-home section.scn {
+    padding: 96px 20px 70px;
+    min-height: 112vh;
+    justify-content: flex-start !important;
+  }
+  .plate-home .col { width: 100%; }
+  .plate-home .plate-stage { opacity: 0.3; }
+}
+
+/* ==================================================================
+   LOGIN
+
+   Two panes. On the left a live plate — the same eight diagrams the
+   homepage draws, pinned to one anchor and walked by a clock instead of
+   a scroll, so the ink is always mid-thought when someone arrives. On
+   the right, one card: sign in on its front, create account on its
+   back, and switching between them is a physical flip.
+
+   The plate is a real block in a grid row, not a fixed backdrop: it
+   gets the space the headline and the status line do not want, and it
+   scales into it.
+   ================================================================== */
+.plate-login {
+  display: grid;
+  grid-template-columns: minmax(0, 1.06fr) minmax(0, 1fr);
+  /* One screen, no scroll: the login is a plate you look at, not a page
+     you read. Both panes are built to fit (their paddings and type scale
+     down on short screens), and the clip is the guarantee. */
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.plate-login .chrome {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 11px 22px;
+  border-bottom: var(--bw) solid var(--line);
+  background: color-mix(in srgb, var(--paper) 82%, transparent);
+  backdrop-filter: blur(9px);
+  -webkit-backdrop-filter: blur(9px);
+}
+.plate-login .chrome a,
+.plate-login .chrome button {
+  font-family: var(--font-jetbrains), ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink);
+  text-decoration: none;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  padding: 4px 6px;
+}
+.plate-login .chrome a:hover,
+.plate-login .chrome button:hover { color: var(--red); }
+.plate-login .chrome .beatread { color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.plate-login .chromeprog { position: absolute; left: 0; bottom: -1px; height: 2px; background: var(--red); width: 0; }
+
+/* ---- left: the live plate ---- */
+.plate-login .stagepane {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 14px;
+  padding: 64px clamp(20px, 3vw, 56px) 22px;
+  border-right: var(--bw) solid var(--line);
+  background: var(--paper);
+  min-height: 0;
+}
+.plate-login .stagepane .plate-stage {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+.plate-login .brandrow { display: flex; align-items: center; gap: 11px; }
+.plate-login .mark {
+  width: 26px;
+  height: 26px;
+  flex: none;
+  border: var(--bw) solid var(--line);
+  background: var(--yellow);
+  display: grid;
+  place-content: center;
+  font-family: var(--font-archivo), 'Arial Black', sans-serif;
+  font-weight: 900;
+  font-size: 13px;
+  color: #0a0a0a;
+}
+.plate-login .pitch {
+  font-size: clamp(27px, 2.8vw, 44px);
+  letter-spacing: -0.035em;
+  line-height: 0.98;
+  margin-top: 14px;
+}
+.plate-login .pitch em { font-style: normal; color: var(--red); }
+.plate-login .pitchsub {
+  margin: 10px 0 0;
+  font-size: 14px;
+  color: var(--ink-2);
+  max-width: 46ch;
+}
+.plate-login .statusrow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 22px;
+  align-items: center;
+  border-top: var(--bw) solid var(--line);
+  padding-top: 13px;
+}
+.plate-login .statusrow .live {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  background: var(--b2);
+  border: 1px solid var(--line);
+  margin-right: 9px;
+  display: inline-block;
+  animation: plate-pulse 2.4s ease-in-out infinite;
+}
+@keyframes plate-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+.plate-login .statusrow .spectrum { width: 108px; margin-left: auto; border: var(--bw-s) solid var(--line); }
+
+/* ---- right: the card ---- */
+.plate-login .formpane {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 68px clamp(20px, 3vw, 56px) 24px;
+  min-height: 0;
+}
+.plate-login .cardslot { width: min(400px, 100%); perspective: 1500px; }
+.plate-login .card3d {
+  position: relative;
+  /* Both faces stack in one cell, so the card is as tall as its taller
+     face: the CREATE back (three fields) sets the height and flipping can
+     never reveal a form that outgrew the SIGN IN front. */
+  display: grid;
+  transform-style: preserve-3d;
+  transition: transform 620ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.plate-login .card3d > .face { grid-area: 1 / 1; }
+.plate-login .card3d.flipped { transform: rotateY(180deg); }
+.plate-login .face {
+  background: var(--surface);
+  border: var(--bw-l) solid var(--line);
+  box-shadow: 14px 14px 0 var(--line);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+[data-theme='dark'] .plate-login .face {
+  box-shadow: 0 26px 60px -30px #000, 0 0 0 1px var(--line);
+}
+.plate-login .face.back { transform: rotateY(180deg); }
+.plate-login .spectrum { display: flex; height: 12px; border-bottom: 3px solid var(--line); }
+.plate-login .spectrum i { flex: 1; }
+.plate-login .spectrum i:nth-child(1) { background: var(--b1); }
+.plate-login .spectrum i:nth-child(2) { background: var(--b2); }
+.plate-login .spectrum i:nth-child(3) { background: var(--b3); }
+.plate-login .spectrum i:nth-child(4) { background: var(--b4); }
+.plate-login .spectrum i:nth-child(5) { background: var(--b5); }
+.plate-login .spectrum i:nth-child(6) { background: var(--b6); }
+.plate-login .facehead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 16px;
+  border-bottom: var(--bw) solid var(--line);
+}
+.plate-login .facebody { padding: 20px 22px 18px; }
+.plate-login .facebody h1 { font-size: 1.8rem; }
+.plate-login .facebody .sub { margin: 6px 0 16px; font-size: 13.5px; color: var(--ink-2); }
+.plate-login label.f { display: block; margin-bottom: 12px; }
+.plate-login label.f .lbl { display: flex; justify-content: space-between; margin-bottom: 7px; }
+.plate-login .field {
+  width: 100%;
+  font-family: var(--font-jetbrains), ui-monospace, monospace;
+  font-size: 13px;
+  padding: 12px 14px;
+  border: var(--bw) solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  outline: none;
+  border-radius: 0;
+  transition: border-width 90ms cubic-bezier(0.2, 0, 0, 1), padding 90ms cubic-bezier(0.2, 0, 0, 1), box-shadow 90ms;
+}
+.plate-login .field:focus { border-width: 3px; padding: 11px 13px; box-shadow: 4px 4px 0 var(--line); }
+[data-theme='dark'] .plate-login .field:focus {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--b1) 40%, transparent);
+}
+.plate-login .field::placeholder { color: var(--ink-3); }
+.plate-login .btn {
+  width: 100%;
+  font-family: var(--font-jetbrains), ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  padding: 12px 16px;
+  border: 3px solid var(--line);
+  background: var(--red);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 6px 6px 0 var(--line);
+  position: relative;
+  overflow: hidden;
+  transition: transform 90ms cubic-bezier(0.2, 0, 0, 1), box-shadow 90ms cubic-bezier(0.2, 0, 0, 1);
+}
+.plate-login .btn:hover { transform: translate(6px, 6px); box-shadow: none; }
+.plate-login .btn.sec {
+  background: var(--surface);
+  color: var(--ink);
+  border-width: var(--bw);
+  box-shadow: 4px 4px 0 var(--line);
+  margin-top: 8px;
+}
+.plate-login .btn.sec:hover { transform: translate(4px, 4px); }
+.plate-login .btn:disabled { opacity: 0.55; cursor: wait; }
+.plate-login .fliplink {
+  width: 100%;
+  background: none;
+  border: 0;
+  padding: 10px 0 0;
+  cursor: pointer;
+  font-family: var(--font-jetbrains), ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.plate-login .fliplink:hover { color: var(--red); }
+.plate-login .err {
+  border: var(--bw) solid var(--red);
+  background: var(--red);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 9px 12px;
+  margin-bottom: 14px;
+}
+.plate-login .terms {
+  max-width: 42ch;
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink-2);
+  margin: 0;
+}
+.plate-login .shake { animation: plate-shk 0.3s steps(2, end) 2; }
+@keyframes plate-shk {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+
+/* ---- the stamp ---- */
+.plate-login .platestamp {
+  position: fixed;
+  left: 50%;
+  top: 46%;
+  z-index: 80;
+  pointer-events: none;
+  opacity: 0;
+  font-family: var(--font-archivo), 'Arial Black', sans-serif;
+  font-weight: 900;
+  font-size: clamp(44px, 8vw, 110px);
+  letter-spacing: -0.04em;
+  color: var(--red);
+  border: 9px solid var(--red);
+  padding: 6px 26px;
+  transform: translate(-50%, -50%) rotate(-14deg) scale(2.4);
+  mix-blend-mode: multiply;
+  white-space: nowrap;
+}
+[data-theme='dark'] .plate-login .platestamp { mix-blend-mode: screen; }
+.plate-login .platestamp.hit { animation: plate-stamphit 0.48s cubic-bezier(0.2, 0, 0, 1) forwards; }
+@keyframes plate-stamphit {
+  0%   { opacity: 0; transform: translate(-50%, -50%) rotate(-14deg) scale(2.4); }
+  55%  { opacity: 1; transform: translate(-50%, -50%) rotate(-14deg) scale(0.94); }
+  70%  { transform: translate(-50%, -50%) rotate(-14deg) scale(1.03); }
+  100% { opacity: 1; transform: translate(-50%, -50%) rotate(-14deg) scale(1); }
+}
+
+/* ---- success wipe ---- */
+.plate-login .authwipe {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  background: var(--ink);
+  color: var(--paper);
+  display: grid;
+  place-content: center;
+  clip-path: inset(0 0 100% 0);
+  transition: clip-path 620ms cubic-bezier(0.16, 1, 0.3, 1);
+  text-align: center;
+  pointer-events: none;
+}
+.plate-login .authwipe.on { clip-path: inset(0 0 0 0); }
+.plate-login .authwipe .lbl { color: var(--paper); opacity: 0.7; }
+
+@media (max-width: 1023px) {
+  /* One column. The plate is the first thing to go: on a phone the card
+     is the entire job of this page. Height returns to auto here — a form
+     pinned behind an on-screen keyboard must be allowed to scroll. */
+  .plate-login { grid-template-columns: 1fr; height: auto; min-height: 100dvh; overflow: visible; }
+  .plate-login .stagepane { display: none; }
+  .plate-login .formpane { min-height: 100dvh; }
+}
+
+/* Short viewports (laptops at ~1366×768, browser chrome included) still
+   get the whole two-pane plate — everything simply steps down a notch
+   instead of the page learning to scroll. */
+@media (min-width: 1024px) and (max-height: 790px) {
+  .plate-login .stagepane { padding-top: 56px; padding-bottom: 16px; gap: 10px; }
+  .plate-login .pitch { font-size: clamp(24px, 2.4vw, 34px); margin-top: 10px; }
+  .plate-login .pitchsub { font-size: 13px; margin-top: 8px; }
+  .plate-login .statusrow { padding-top: 10px; }
+  .plate-login .formpane { padding-top: 56px; padding-bottom: 16px; gap: 10px; }
+  .plate-login .facebody { padding: 16px 20px 14px; }
+  .plate-login .facebody h1 { font-size: 1.55rem; }
+  .plate-login .facebody .sub { margin-bottom: 12px; }
+  .plate-login label.f { margin-bottom: 10px; }
+  .plate-login .field { padding: 10px 14px; }
+  .plate-login .field:focus { padding: 9px 13px; }
+  .plate-login .terms { font-size: 11px; }
+}
+
+/* ==================================================================
+   Shared: the scrubber, and the two global escapes.
+   ================================================================== */
+.plate-scrub {
+  position: fixed;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  z-index: 90;
+  display: none;
+  gap: 12px;
+  align-items: center;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 8px 14px;
+  font-family: var(--font-jetbrains), ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.plate-scrub.on { display: flex; }
+.plate-scrub input { width: min(46vw, 420px); }
+
+@media (prefers-reduced-motion: reduce) {
+  .plate-home *,
+  .plate-login * {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+@media print {
+  /* Teachers print. The backdrop is decoration; it never goes on paper. */
+  .plate-stage,
+  .plate-home .rail,
+  .plate-login .beatrail,
+  .plate-login .caps,
+  .plate-scrub { display: none !important; }
+}

@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DiagramMind — Sign in · THE PLATE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800;900&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* ══════════════════════════════════════════════════════════
+   DIAGRAMMIND · /login — PROPOSAL A · "THE PLATE"
+   A scientific plate that draws itself, labels itself, and
+   turns its own labels into verified questions.
+   Pure SVG + stroke-dashoffset. No WebGL. No assets.
+   Scroll is the timeline. The card never moves.
+   ══════════════════════════════════════════════════════════ */
+:root,[data-theme="light"]{
+  --paper:#efeae0; --surface:#fffdf8; --surface-2:#f6f1e6;
+  --ink:#0a0a0a; --ink-2:#57534e; --ink-3:#8a827a;
+  --line:#0a0a0a; --red:#e5342a; --yellow:#ffc93c;
+  --b1:#2b4fe8; --b2:#00a6a6; --b3:#a8d825; --b4:#ffc93c; --b5:#ff7a2f; --b6:#e5342a;
+  --bw:2px; --bw-l:4px; --grain:.05;
+}
+[data-theme="dark"]{
+  --paper:#12100d; --surface:#1c1917; --surface-2:#221f1c;
+  --ink:#f5f2ea; --ink-2:#a8a29e; --ink-3:#6f6862;
+  --line:#5c554c; --b3:#d6ff6b;
+  --bw:1px; --bw-l:2px; --grain:.03;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;background:var(--paper);color:var(--ink);
+  font-family:'Instrument Sans',system-ui,sans-serif;font-size:15px;line-height:1.6;
+  -webkit-font-smoothing:antialiased;overflow-x:hidden;
+  transition:background-color 300ms ease,color 300ms ease;
+}
+body::after{
+  content:"";position:fixed;inset:0;z-index:9997;pointer-events:none;opacity:var(--grain);mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+h1,h2,h3{font-family:'Archivo',sans-serif;font-weight:900;letter-spacing:-.03em;text-transform:uppercase;line-height:1;margin:0}
+.lbl{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-2)}
+.hand{font-family:'Caveat',cursive;font-size:21px;color:var(--red);display:inline-block;transform:rotate(-2.2deg);line-height:1.25}
+.mono{font-family:'JetBrains Mono',monospace}
+
+/* ── layer 0 : the plate ───────────────────────────────── */
+#stage{position:fixed;inset:0;z-index:0;pointer-events:none}
+#stage svg{width:100%;height:100%;display:block;color:var(--ink)}
+
+/* ── chrome ────────────────────────────────────────────── */
+.chrome{
+  position:fixed;top:0;left:0;right:0;z-index:60;display:flex;align-items:center;justify-content:space-between;
+  gap:16px;padding:11px 22px;border-bottom:var(--bw) solid var(--line);
+  background:color-mix(in srgb,var(--paper) 82%,transparent);backdrop-filter:blur(9px);
+}
+.chrome a,.chrome button{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--ink);text-decoration:none;background:none;border:0;cursor:pointer;padding:4px 6px}
+.chrome a:hover,.chrome button:hover{color:var(--red)}
+.chrome .beatread{color:var(--ink-2);font-variant-numeric:tabular-nums}
+.chromeprog{position:absolute;left:0;bottom:-1px;height:2px;background:var(--red);width:0}
+
+/* ── scroll track ──────────────────────────────────────── */
+.track{position:relative;z-index:10;height:460vh}
+.stickywrap{position:sticky;top:0;height:100vh;display:flex;align-items:center;pointer-events:none}
+.railpad{width:100%;padding:0 clamp(20px,4vw,72px)}
+
+/* ── the ID card ───────────────────────────────────────── */
+.cardslot{width:min(400px,92vw);perspective:1500px;pointer-events:auto}
+.card3d{position:relative;transform-style:preserve-3d;transition:transform 620ms cubic-bezier(.16,1,.3,1)}
+.card3d.flipped{transform:rotateY(180deg)}
+.face{
+  background:var(--surface);border:var(--bw-l) solid var(--line);
+  box-shadow:14px 14px 0 var(--line);backface-visibility:hidden;-webkit-backface-visibility:hidden;
+}
+[data-theme="dark"] .face{box-shadow:0 26px 60px -30px #000,0 0 0 1px var(--line)}
+.face.back{position:absolute;inset:0;transform:rotateY(180deg)}
+.spectrum{display:flex;height:12px;border-bottom:3px solid var(--line)}
+.spectrum i{flex:1}
+.spectrum i:nth-child(1){background:var(--b1)}.spectrum i:nth-child(2){background:var(--b2)}
+.spectrum i:nth-child(3){background:var(--b3)}.spectrum i:nth-child(4){background:var(--b4)}
+.spectrum i:nth-child(5){background:var(--b5)}.spectrum i:nth-child(6){background:var(--b6)}
+.facehead{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 16px;border-bottom:var(--bw) solid var(--line)}
+.facebody{padding:22px}
+.facebody h1{font-size:2.05rem}
+.facebody .sub{margin:6px 0 20px;font-size:13.5px;color:var(--ink-2)}
+label.f{display:block;margin-bottom:14px}
+label.f .lbl{display:flex;justify-content:space-between;margin-bottom:7px}
+.field{
+  width:100%;font-family:'JetBrains Mono',monospace;font-size:13px;padding:12px 14px;
+  border:var(--bw) solid var(--line);background:var(--surface);color:var(--ink);outline:none;border-radius:0;
+  transition:border-width 90ms cubic-bezier(.2,0,0,1),padding 90ms cubic-bezier(.2,0,0,1),box-shadow 90ms;
+}
+.field:focus{border-width:3px;padding:11px 13px;box-shadow:4px 4px 0 var(--line)}
+[data-theme="dark"] .field:focus{box-shadow:0 0 0 3px color-mix(in srgb,var(--b1) 40%,transparent)}
+.field::placeholder{color:var(--ink-3)}
+.btn{
+  width:100%;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;
+  padding:14px 18px;border:3px solid var(--line);background:var(--red);color:#fff;cursor:pointer;
+  box-shadow:6px 6px 0 var(--line);position:relative;overflow:hidden;
+  transition:transform 90ms cubic-bezier(.2,0,0,1),box-shadow 90ms cubic-bezier(.2,0,0,1);
+}
+.btn:hover{transform:translate(6px,6px);box-shadow:none}
+.btn.sec{background:var(--surface);color:var(--ink);border-width:var(--bw);box-shadow:4px 4px 0 var(--line);margin-top:10px}
+.btn.sec:hover{transform:translate(4px,4px)}
+.btn:disabled{opacity:.55;cursor:wait}
+.fliplink{width:100%;background:none;border:0;padding:12px 0 2px;cursor:pointer;
+  font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2)}
+.fliplink:hover{color:var(--red)}
+.err{border:var(--bw) solid var(--red);background:var(--red);color:#fff;font-size:13px;font-weight:600;padding:9px 12px;margin-bottom:14px}
+.shake{animation:shk .3s steps(2,end) 2}
+@keyframes shk{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+
+/* ── the stamp ─────────────────────────────────────────── */
+#stamp{
+  position:fixed;left:50%;top:46%;z-index:80;pointer-events:none;opacity:0;
+  font-family:'Archivo',sans-serif;font-weight:900;font-size:clamp(44px,8vw,110px);letter-spacing:-.04em;
+  color:var(--red);border:9px solid var(--red);padding:6px 26px;transform:translate(-50%,-50%) rotate(-14deg) scale(2.4);
+  mix-blend-mode:multiply;white-space:nowrap;
+}
+[data-theme="dark"] #stamp{mix-blend-mode:screen}
+#stamp.hit{animation:stamphit .48s cubic-bezier(.2,0,0,1) forwards}
+@keyframes stamphit{
+  0%{opacity:0;transform:translate(-50%,-50%) rotate(-14deg) scale(2.4)}
+  55%{opacity:1;transform:translate(-50%,-50%) rotate(-14deg) scale(.94)}
+  70%{transform:translate(-50%,-50%) rotate(-14deg) scale(1.03)}
+  100%{opacity:1;transform:translate(-50%,-50%) rotate(-14deg) scale(1)}
+}
+
+/* ── beat rail (right edge) ────────────────────────────── */
+.beatrail{position:fixed;right:18px;top:50%;transform:translateY(-50%);z-index:55;display:flex;flex-direction:column;pointer-events:none}
+.beatrail .bt{display:flex;align-items:center;gap:10px;justify-content:flex-end;padding:9px 0;opacity:.3;transition:opacity 260ms}
+.beatrail .bt.on{opacity:1}
+.beatrail .bt span{font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:700;letter-spacing:.15em;text-transform:uppercase}
+.beatrail .bt i{width:26px;height:2px;background:var(--line);display:block;transition:width 260ms,background-color 260ms}
+.beatrail .bt.on i{width:46px;background:var(--red)}
+@media(max-width:900px){.beatrail{display:none}}
+
+/* ── caption blocks (the narration) ────────────────────── */
+.caps{position:fixed;left:clamp(20px,4vw,72px);bottom:30px;z-index:55;width:min(390px,84vw);height:120px;pointer-events:none}
+.cap{position:absolute;bottom:0;left:0;opacity:0;transform:translateY(10px);transition:opacity 420ms cubic-bezier(.16,1,.3,1),transform 420ms cubic-bezier(.16,1,.3,1)}
+.cap.on{opacity:1;transform:none}
+.cap .n{font-family:'Archivo',sans-serif;font-weight:900;font-size:13px;letter-spacing:.06em;color:var(--red)}
+.cap p{margin:3px 0 0;font-size:13px;line-height:1.5;color:var(--ink-2);max-width:38ch}
+@media(max-height:760px){.caps{display:none}}
+
+/* ── footer ────────────────────────────────────────────── */
+footer{position:relative;z-index:10;border-top:var(--bw-l) solid var(--line);background:var(--paper);
+  padding:44px clamp(20px,4vw,72px) 56px;display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;align-items:flex-end}
+footer .wm{font-family:'Archivo',sans-serif;font-weight:900;font-size:clamp(30px,5vw,56px);letter-spacing:-.04em}
+
+/* ── success wipe ──────────────────────────────────────── */
+#wipe{position:fixed;inset:0;z-index:95;background:var(--ink);color:var(--paper);display:grid;place-content:center;
+  clip-path:inset(0 0 100% 0);transition:clip-path 620ms cubic-bezier(.16,1,.3,1);text-align:center;pointer-events:none}
+#wipe.on{clip-path:inset(0 0 0 0)}
+#wipe .lbl{color:var(--paper);opacity:.7}
+
+/* ── debug scrubber ────────────────────────────────────── */
+#dbg{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:90;display:none;gap:12px;align-items:center;
+  background:var(--ink);color:var(--paper);padding:8px 14px;
+  font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase}
+#dbg.on{display:flex}
+#dbg input{width:min(46vw,420px)}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;transition-duration:.001ms!important}}
+</style>
+</head>
+<body>
+
+<div id="stage"></div>
+
+<div class="chrome">
+  <a href="#" id="backLink">← DiagramMind</a>
+  <div style="display:flex;align-items:center;gap:18px">
+    <span class="lbl beatread" id="beatRead">01 DRAW · 000%</span>
+    <button id="themeBtn" title="Toggle theme (T)">☾ Theme</button>
+    <button id="dbgBtn" title="Scrub the beats (D)">Scrub</button>
+  </div>
+  <div class="chromeprog" id="chromeProg"></div>
+</div>
+
+<main class="track" id="track">
+  <div class="stickywrap">
+    <div class="railpad">
+      <div class="cardslot">
+        <div class="card3d" id="card3d">
+
+          <!-- ── FRONT · SIGN IN ── -->
+          <div class="face" id="faceFront">
+            <div class="spectrum"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+            <div class="facehead"><span class="lbl" style="color:var(--ink)">DiagramMind</span><span class="lbl">ID · 2026</span></div>
+            <div class="facebody">
+              <h1>SIGN IN</h1>
+              <p class="sub">Access your question sets.</p>
+              <form id="formIn" novalidate>
+                <div id="errIn"></div>
+                <label class="f"><span class="lbl">Email or username</span>
+                  <input class="field" type="text" autocomplete="username" placeholder="you@school.edu" data-plate="email"></label>
+                <label class="f"><span class="lbl">Password <a href="#" style="color:var(--ink-3);text-decoration:none">forgot?</a></span>
+                  <input class="field" type="password" autocomplete="current-password" placeholder="••••••••" data-plate="pass"></label>
+                <button class="btn" type="submit">Sign in →</button>
+                <button class="btn sec" type="button">Continue with Google</button>
+                <button class="fliplink" type="button" data-flip>New here? Create account ↻</button>
+              </form>
+            </div>
+          </div>
+
+          <!-- ── BACK · CREATE ── -->
+          <div class="face back" id="faceBack">
+            <div class="spectrum"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+            <div class="facehead"><span class="lbl" style="color:var(--ink)">DiagramMind</span><span class="lbl">NEW · 2026</span></div>
+            <div class="facebody">
+              <h1>CREATE</h1>
+              <p class="sub">Free. No card needed.</p>
+              <form id="formUp" novalidate>
+                <div id="errUp"></div>
+                <label class="f"><span class="lbl">Name</span>
+                  <input class="field" type="text" autocomplete="name" placeholder="Your name" data-plate="email"></label>
+                <label class="f"><span class="lbl">Email</span>
+                  <input class="field" type="email" autocomplete="email" placeholder="you@school.edu" data-plate="email"></label>
+                <label class="f"><span class="lbl">Password</span>
+                  <input class="field" type="password" autocomplete="new-password" placeholder="min. 6 characters" data-plate="pass"></label>
+                <button class="btn" type="submit">Create account →</button>
+                <button class="fliplink" type="button" data-flip>Already have one? Sign in ↻</button>
+              </form>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="beatrail" id="beatRail">
+  <div class="bt"><span>01 Draw</span><i></i></div>
+  <div class="bt"><span>02 Label</span><i></i></div>
+  <div class="bt"><span>03 Ask</span><i></i></div>
+  <div class="bt"><span>04 Verify</span><i></i></div>
+  <div class="bt"><span>05 File</span><i></i></div>
+</div>
+
+<div class="caps" id="caps">
+  <div class="cap"><span class="n">01 · DRAW</span><p>A specimen plate strokes itself into existence, outside-in. This is the diagram you upload — no image, no asset, just line and time.</p></div>
+  <div class="cap"><span class="n">02 · LABEL</span><p>Six leader lines fire and six numbered tags stamp down, one per Bloom level. The plate is now structured data. <span class="hand">extraction</span></p></div>
+  <div class="cap"><span class="n">03 · ASK</span><p>The tags let go of the plate and become questions. This is the product, shown rather than claimed.</p></div>
+  <div class="cap"><span class="n">04 · VERIFY</span><p>A second agent stamps each one. Watch 04 — it is rejected, rewritten, then re-stamped. That is the whole differentiator, as a gesture.</p></div>
+  <div class="cap"><span class="n">05 · FILE</span><p>The set files itself away and the plate settles into the wordmark. The page ends where the brand does.</p></div>
+</div>
+
+<div id="stamp">APPROVED</div>
+
+<div id="wipe"><div><span class="lbl">Authenticated</span><h2 style="font-size:clamp(28px,6vw,64px);margin-top:10px">ENTERING CONSOLE</h2></div></div>
+
+<div id="dbg"><span>Beat scrub</span><input type="range" id="dbgRange" min="0" max="1000" value="0"><span id="dbgVal">0.000</span><span style="opacity:.5">D to exit</span></div>
+
+<footer>
+  <div>
+    <div class="wm">DIAGRAMMIND</div>
+    <span class="lbl">Turn any diagram into a verified question set</span>
+  </div>
+  <div style="max-width:34ch">
+    <p style="font-size:12.5px;color:var(--ink-2);margin:0">By continuing you agree to the Terms and acknowledge the Privacy Policy.</p>
+    <span class="hand">scroll back up — it runs exactly backwards</span>
+  </div>
+</footer>
+
+<script>
+(function(){
+'use strict';
+var NS='http://www.w3.org/2000/svg';
+var clamp=function(v,a,b){return Math.max(a,Math.min(b,v))};
+var ease=function(t){return 1-Math.pow(1-t,3)};
+var easeIO=function(t){return t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2};
+var RM=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function E(tag,attrs,parent){
+  var e=document.createElementNS(NS,tag);
+  if(attrs) for(var k in attrs) e.setAttribute(k,attrs[k]);
+  if(parent) parent.appendChild(e);
+  return e;
+}
+
+/* ══════════════════════════════════════════════════════════
+   BUILD THE PLATE
+   ══════════════════════════════════════════════════════════ */
+var svg=E('svg',{viewBox:'0 0 1600 900',preserveAspectRatio:'xMidYMid slice'},document.getElementById('stage'));
+var defs=E('defs',{},svg);
+
+/* graph paper */
+var pat=E('pattern',{id:'gp',width:'40',height:'40',patternUnits:'userSpaceOnUse'},defs);
+E('path',{d:'M0 .5H40M.5 0V40',stroke:'currentColor','stroke-opacity':'.10','stroke-width':'1','stroke-dasharray':'6 7',fill:'none'},pat);
+var pat2=E('pattern',{id:'gp2',width:'200',height:'200',patternUnits:'userSpaceOnUse'},defs);
+E('path',{d:'M0 .5H200M.5 0V200',stroke:'currentColor','stroke-opacity':'.16','stroke-width':'1.2',fill:'none'},pat2);
+
+var gPaper=E('g',{},svg);
+E('rect',{x:0,y:0,width:1600,height:900,fill:'url(#gp)'},gPaper);
+E('rect',{x:0,y:0,width:1600,height:900,fill:'url(#gp2)'},gPaper);
+
+var gFar =E('g',{},svg);   /* plate frame + furniture (parallax slowest) */
+var gMid =E('g',{},svg);   /* the specimen                              */
+var gNear=E('g',{},svg);   /* leaders, tags, chips (parallax fastest)   */
+var gMark=E('g',{},svg);   /* wordmark                                  */
+
+/* ── plate frame + title block ───────────────────────────── */
+var frame=E('g',{},gFar);
+var fRect=E('rect',{x:596,y:112,width:610,height:676,fill:'none',stroke:'currentColor','stroke-width':2.4,'stroke-opacity':.5},frame);
+[[596,112,1],[1206,112,-1],[1206,788,-1],[596,788,1]].forEach(function(c,i){
+  var sy=i<2?1:-1;
+  E('path',{d:'M'+(c[0])+' '+(c[1]+26*sy)+' L '+c[0]+' '+c[1]+' L '+(c[0]+26*c[2])+' '+c[1],
+    fill:'none',stroke:'currentColor','stroke-width':3,'stroke-opacity':.85},frame);
+});
+var tb=E('g',{},frame);
+E('line',{x1:610,y1:748,x2:840,y2:748,stroke:'currentColor','stroke-width':1.4,'stroke-opacity':.45},tb);
+var tbT1=E('text',{x:610,y:770,'font-family':'JetBrains Mono, monospace','font-size':13,'font-weight':700,'letter-spacing':2.4,fill:'currentColor','fill-opacity':.7},tb);
+tbT1.textContent='PLATE 01 · SPECIMEN';
+var tbT2=E('text',{x:1206,y:770,'text-anchor':'end','font-family':'JetBrains Mono, monospace','font-size':12,'letter-spacing':1.8,fill:'currentColor','fill-opacity':.45},tb);
+tbT2.textContent='DIAGRAMMIND · INGEST';
+/* scale bar */
+var sb=E('g',{},frame);
+E('rect',{x:1080,y:730,width:56,height:7,fill:'currentColor','fill-opacity':.65},sb);
+E('rect',{x:1136,y:730,width:56,height:7,fill:'none',stroke:'currentColor','stroke-width':1.4,'stroke-opacity':.65},sb);
+var sbT=E('text',{x:1080,y:722,'font-family':'JetBrains Mono, monospace','font-size':10,'letter-spacing':1.4,fill:'currentColor','fill-opacity':.5},sb);
+sbT.textContent='10 µm';
+
+/* ── the specimen ────────────────────────────────────────── */
+var SHAPES=[
+  ['ellipse',{cx:900,cy:450,rx:282,ry:250},3.2],
+  ['ellipse',{cx:900,cy:450,rx:254,ry:223,'stroke-dasharray':'9 11'},1.8],
+  ['circle',{cx:818,cy:392,r:106},2.6],
+  ['circle',{cx:818,cy:392,r:118,'stroke-dasharray':'6 9'},1.6],
+  ['circle',{cx:796,cy:370,r:36},2.4],
+  ['path',{d:'M760 420 C 792 386, 800 442, 838 414 S 878 380, 892 418'},1.8],
+  ['path',{d:'M772 350 C 802 322, 824 366, 862 340'},1.6],
+  ['ellipse',{cx:1046,cy:566,rx:68,ry:32,transform:'rotate(-24 1046 566)'},2.6],
+  ['path',{d:'M1000 578 q 14 -20 26 2 q 12 -22 26 0 q 12 -22 26 2',transform:'rotate(-24 1046 566)'},1.6],
+  ['ellipse',{cx:756,cy:624,rx:60,ry:28,transform:'rotate(17 756 624)'},2.6],
+  ['path',{d:'M716 632 q 13 -18 24 2 q 11 -20 24 0 q 11 -20 24 2',transform:'rotate(17 756 624)'},1.6],
+  ['circle',{cx:1058,cy:328,r:55},2.6],
+  ['path',{d:'M1030 300 q 22 14 44 -4'},1.5],
+  ['path',{d:'M900 496 C 946 528, 990 480, 1032 512 S 1096 480, 1128 502'},2.2],
+  ['path',{d:'M878 540 C 918 566, 962 528, 1000 552'},1.8],
+  ['path',{d:'M964 232 q 46 -26 92 -4'},2],
+  ['path',{d:'M978 254 q 44 -24 88 -4'},2],
+  ['path',{d:'M992 276 q 42 -22 84 -4'},2],
+  ['path',{d:'M660 470 C 690 430, 668 396, 700 366'},1.8],
+  ['path',{d:'M672 546 C 706 520, 700 486, 730 470'},1.8],
+  ['line',{x1:640,y1:392,x2:806,y2:508},1.2],
+  ['line',{x1:1148,y1:414,x2:962,y2:520},1.2],
+  ['line',{x1:900,y1:206,x2:900,y2:318},1.2]
+];
+var strokes=SHAPES.map(function(s){
+  var a=Object.assign({fill:'none',stroke:'currentColor','stroke-width':s[2],'stroke-linecap':'round','stroke-linejoin':'round'},s[1]);
+  var e=E(s[0],a,gMid);
+  var L=900; try{L=e.getTotalLength()||900}catch(err){}
+  e.__L=L; e.__dashed=!!s[1]['stroke-dasharray'];
+  if(!e.__dashed){e.setAttribute('stroke-dasharray',L);e.setAttribute('stroke-dashoffset',L);}
+  else e.setAttribute('stroke-opacity',0);
+  return e;
+});
+/* ribosome speckle */
+var gRibo=E('g',{},gMid);
+for(var r=0;r<46;r++){
+  var ra=(Math.sin(r*12.9898)*43758.5453)%1, rb=(Math.sin(r*78.233)*43758.5453)%1;
+  var an=Math.abs(ra)*Math.PI*2, rad=110+Math.abs(rb)*150;
+  var rx=900+Math.cos(an)*rad*1.02, ry=450+Math.sin(an)*rad*0.86;
+  E('circle',{cx:rx.toFixed(1),cy:ry.toFixed(1),r:3.1,fill:'currentColor','fill-opacity':0},gRibo);
+}
+var ribos=gRibo.querySelectorAll('circle');
+
+/* security ring (password) */
+var secRing=E('circle',{cx:900,cy:450,r:308,fill:'none',stroke:'var(--b1)','stroke-width':3,'stroke-dasharray':'0 3000','stroke-opacity':0},gMid);
+
+/* ── labels: leaders + tags ──────────────────────────────── */
+var LEVELS=['Remember','Understand','Apply','Analyze','Evaluate','Create'];
+var QS=[
+  'Name the structure indicated at 01 and state its function.',
+  'Explain how the region at 02 exchanges material with 05.',
+  'Predict what happens downstream if the channel at 03 is blocked.',
+  'A reading shows rising output. Which single failure explains it?',
+  'Judge which of the two transport pathways is more efficient, and why.',
+  'Design a modified specimen that removes the dependency at 06.'
+];
+var QS_FIX='Output is rising. Using the plate, identify the one component whose failure explains it — and justify it from the pathway.';
+var ANCH=[[818,392],[1058,328],[1046,566],[900,700],[700,470],[1010,266]];
+var TAGP=[[690,168],[1122,150],[1216,506],[898,808],[604,614],[1230,258]];
+var CHIP_X=1150, CHIP_Y0=58, CHIP_H=112, CHIP_GAP=20, CHIP_W=400;
+
+var labels=ANCH.map(function(a,i){
+  var t=TAGP[i], g=E('g',{},gNear);
+  var mx=a[0]+(t[0]-a[0])*0.42, my=a[1]+(t[1]-a[1])*0.42;
+  var lead=E('path',{d:'M'+a[0]+' '+a[1]+' L '+mx.toFixed(0)+' '+my.toFixed(0)+' L '+t[0]+' '+t[1],
+    fill:'none',stroke:'currentColor','stroke-width':1.6,'stroke-opacity':.55},g);
+  var L=1; try{L=lead.getTotalLength()}catch(e){}
+  lead.setAttribute('stroke-dasharray',L); lead.setAttribute('stroke-dashoffset',L); lead.__L=L;
+  E('circle',{cx:a[0],cy:a[1],r:5,fill:'currentColor'},g).setAttribute('opacity',0);
+  var anchorDot=g.querySelector('circle');
+
+  var tagG=E('g',{},g);
+  E('rect',{x:t[0]-19,y:t[1]-19,width:38,height:38,fill:'var(--b'+(i+1)+')',stroke:'currentColor','stroke-width':2.6},tagG);
+  var num=E('text',{x:t[0],y:t[1]+6,'text-anchor':'middle','font-family':'JetBrains Mono, monospace','font-size':16,'font-weight':700,
+    fill:(i===2||i===3)?'#0a0a0a':'#ffffff'},tagG);
+  num.textContent='0'+(i+1);
+  var lvl=E('text',{x:t[0],y:t[1]+38,'text-anchor':'middle','font-family':'JetBrains Mono, monospace','font-size':10,'letter-spacing':1.6,
+    fill:'currentColor','fill-opacity':.6},tagG);
+  lvl.textContent=LEVELS[i].toUpperCase();
+
+  /* the question chip it becomes */
+  var chip=E('g',{},gNear);
+  E('rect',{x:0,y:0,width:CHIP_W,height:CHIP_H,fill:'var(--surface)',stroke:'currentColor','stroke-width':2.6},chip);
+  E('rect',{x:0,y:0,width:9,height:CHIP_H,fill:'var(--b'+(i+1)+')'},chip);
+  var cl=E('text',{x:26,y:28,'font-family':'JetBrains Mono, monospace','font-size':11,'font-weight':700,'letter-spacing':2,
+    fill:'currentColor','fill-opacity':.62},chip);
+  cl.textContent=('0'+(i+1)+'  '+LEVELS[i]).toUpperCase();
+  var q1=E('text',{x:26,y:56,'font-family':'Instrument Sans, sans-serif','font-size':15,fill:'currentColor'},chip);
+  var q2=E('text',{x:26,y:76,'font-family':'Instrument Sans, sans-serif','font-size':15,fill:'currentColor'},chip);
+  /* confidence bar */
+  E('rect',{x:26,y:90,width:180,height:7,fill:'none',stroke:'currentColor','stroke-width':1.4,'stroke-opacity':.5},chip);
+  var conf=E('rect',{x:27.5,y:91.5,width:0,height:4,fill:'var(--b2)'},chip);
+  var confT=E('text',{x:216,y:97,'font-family':'JetBrains Mono, monospace','font-size':10,'letter-spacing':1.2,fill:'currentColor','fill-opacity':.55},chip);
+  var mark=E('text',{x:CHIP_W-40,y:64,'text-anchor':'middle','font-family':'Archivo, sans-serif','font-weight':900,'font-size':30,fill:'var(--b2)'},chip);
+  var verd=E('text',{x:CHIP_W-40,y:86,'text-anchor':'middle','font-family':'JetBrains Mono, monospace','font-size':9,'letter-spacing':1.4,fill:'var(--b2)'},chip);
+  chip.setAttribute('opacity',0);
+
+  return {g:g,lead:lead,anchorDot:anchorDot,tagG:tagG,chip:chip,q1:q1,q2:q2,conf:conf,confT:confT,mark:mark,verd:verd,
+          tx:t[0],ty:t[1],base:QS[i],lvl:LEVELS[i]};
+});
+
+/* wrap helper: split a question into two lines of <= n chars */
+function wrap(s,n){
+  var w=s.split(' '),a='',b='';
+  for(var i=0;i<w.length;i++){ if((a+' '+w[i]).trim().length<=n && !b) a=(a+' '+w[i]).trim(); else b=(b+' '+w[i]).trim(); }
+  return [a,b];
+}
+labels.forEach(function(l){var t=wrap(l.base,44);l.q1.textContent=t[0];l.q2.textContent=t[1];});
+
+/* set header above the chip stack */
+var setHead=E('g',{},gNear);
+E('line',{x1:CHIP_X,y1:34,x2:CHIP_X+CHIP_W,y2:34,stroke:'currentColor','stroke-width':2.4},setHead);
+var shT=E('text',{x:CHIP_X,y:24,'font-family':'JetBrains Mono, monospace','font-size':12,'font-weight':700,'letter-spacing':2.6,fill:'currentColor'},setHead);
+shT.textContent='QUESTION SET · 06 ITEMS';
+var shR=E('text',{x:CHIP_X+CHIP_W,y:24,'text-anchor':'end','font-family':'JetBrains Mono, monospace','font-size':12,'letter-spacing':1.8,fill:'var(--b2)'},setHead);
+shR.textContent='0 / 6 VERIFIED';
+setHead.setAttribute('opacity',0);
+
+/* wordmark */
+var wm=E('text',{x:900,y:470,'text-anchor':'middle','font-family':'Archivo, sans-serif','font-weight':900,'font-size':120,
+  'letter-spacing':-5,fill:'currentColor',opacity:0},gMark);
+wm.textContent='DIAGRAMMIND';
+var wmSub=E('text',{x:900,y:512,'text-anchor':'middle','font-family':'JetBrains Mono, monospace','font-size':14,'letter-spacing':6,
+  fill:'currentColor','fill-opacity':.55,opacity:0},gMark);
+wmSub.textContent='ONE PLATE · SIX QUESTIONS · VERIFIED';
+
+/* ══════════════════════════════════════════════════════════
+   STATE
+   ══════════════════════════════════════════════════════════ */
+var S={p:0,scrub:null,emailFocus:0,passFocus:0,passLen:0,submitting:0,fail:0,mx:0,my:0};
+
+var track=document.getElementById('track');
+var chromeProg=document.getElementById('chromeProg');
+var beatRead=document.getElementById('beatRead');
+var beatRail=document.getElementById('beatRail').querySelectorAll('.bt');
+var caps=document.getElementById('caps').querySelectorAll('.cap');
+var BEATS=['01 DRAW','02 LABEL','03 ASK','04 VERIFY','05 FILE'];
+var WIN=[0,.20,.38,.62,.84,1.001];
+
+function readScroll(){
+  if(S.scrub!==null) return S.scrub;
+  var max=document.body.scrollHeight-window.innerHeight;
+  return max>0?clamp(window.scrollY/max,0,1):0;
+}
+
+/* pointer parallax */
+window.addEventListener('mousemove',function(e){
+  S.mx=(e.clientX/window.innerWidth-.5);
+  S.my=(e.clientY/window.innerHeight-.5);
+});
+
+/* ══════════════════════════════════════════════════════════
+   RENDER — a pure function of (scroll, form state)
+   ══════════════════════════════════════════════════════════ */
+var vCount=0;
+function render(now){
+  var p=S.p=readScroll();
+
+  var t1=clamp(p/WIN[1],0,1);
+  var t2=clamp((p-WIN[1])/(WIN[2]-WIN[1]),0,1);
+  var t3=clamp((p-WIN[2])/(WIN[3]-WIN[2]),0,1);
+  var t4=clamp((p-WIN[3])/(WIN[4]-WIN[3]),0,1);
+  var t5=clamp((p-WIN[4])/(WIN[5]-WIN[4]),0,1);
+  var e3=ease(t3), e5=ease(t5);
+
+  /* ── chrome ── */
+  var bi=0; for(var i=0;i<5;i++) if(p>=WIN[i]) bi=i;
+  chromeProg.style.width=(p*100)+'%';
+  beatRead.textContent=BEATS[bi]+' · '+String(Math.round(p*100)).padStart(3,'0')+'%';
+  for(var i2=0;i2<5;i2++){ beatRail[i2].classList.toggle('on',i2===bi); caps[i2].classList.toggle('on',i2===bi); }
+
+  /* ── parallax ── */
+  var pf=RM?0:1;
+  gPaper.setAttribute('transform','translate('+(S.mx*4*pf)+','+(S.my*3*pf)+')');
+  gFar.setAttribute('transform','translate('+(S.mx*8*pf)+','+(S.my*6*pf)+')');
+  var midPX=S.mx*16*pf, midPY=S.my*12*pf;
+  var nearPX=S.mx*26*pf, nearPY=S.my*20*pf;
+
+  /* ── 01 DRAW ── */
+  strokes.forEach(function(e,i){
+    var lp=clamp(t1*1.55-(i*0.035),0,1); lp=ease(lp);
+    if(e.__dashed) e.setAttribute('stroke-opacity',(lp*0.55).toFixed(3));
+    else e.setAttribute('stroke-dashoffset',(e.__L*(1-lp)).toFixed(1));
+  });
+  for(var rr=0;rr<ribos.length;rr++){
+    var rp=clamp(t1*2.0-(rr*0.02),0,1);
+    ribos[rr].setAttribute('fill-opacity',(rp*0.45).toFixed(3));
+  }
+  frame.setAttribute('opacity',(clamp(t1*3,0,1)*(1-e3*0.75)).toFixed(3));
+
+  /* specimen transform: recedes and shrinks as the questions take over */
+  var sx=-300*e3, sc=1-0.30*e3;
+  var fileLift=e5*-40;
+  gMid.setAttribute('transform','translate('+(900+sx+midPX)+','+(450+midPY+fileLift)+') scale('+sc+') translate(-900,-450)');
+  gFar.setAttribute('transform','translate('+(S.mx*8*pf+sx*0.98)+','+(S.my*6*pf)+') scale('+sc+')');
+  gFar.setAttribute('transform-origin','900 450');
+
+  var focusDim=1-0.42*Math.max(S.emailFocus,S.passFocus);
+  gMid.setAttribute('opacity',(clamp(t1*3,0,1)*(1-0.55*e3)*(1-0.85*e5)*focusDim).toFixed(3));
+
+  /* ── password security ring ── */
+  var C=2*Math.PI*308;
+  var closed=clamp(S.passLen/10,0,1)*C;
+  secRing.setAttribute('stroke-dasharray',closed.toFixed(1)+' '+(C-closed).toFixed(1));
+  secRing.setAttribute('stroke-dashoffset',(-C*0.25).toFixed(1));
+  secRing.setAttribute('stroke-opacity',(S.passFocus*0.85).toFixed(3));
+
+  /* ── 02 LABEL + 03 ASK ── */
+  var verified=0;
+  labels.forEach(function(l,i){
+    var lp=clamp(t2*1.7-(i*0.115),0,1);
+    l.lead.setAttribute('stroke-dashoffset',(l.lead.__L*(1-ease(lp))).toFixed(1));
+    l.anchorDot.setAttribute('opacity',(clamp(lp*4,0,1)*(1-e3)).toFixed(3));
+    var pop=clamp((lp-0.62)/0.38,0,1);
+    var popS=1.55-0.55*ease(pop);
+    l.tagG.setAttribute('opacity',(pop*(1-ease(clamp(t3*1.6,0,1)))).toFixed(3));
+    l.tagG.setAttribute('transform','translate('+l.tx+','+l.ty+') scale('+popS.toFixed(3)+') translate('+(-l.tx)+','+(-l.ty)+')');
+    l.lead.setAttribute('stroke-opacity',(0.55*(1-ease(clamp(t3*1.4,0,1)))).toFixed(3));
+
+    /* fly to chip position */
+    var c=ease(clamp(t3*1.65-(i*0.11),0,1));
+    var fromX=l.tx-CHIP_W/2, fromY=l.ty-CHIP_H/2;
+    var toX=CHIP_X, toY=CHIP_Y0+i*(CHIP_H+CHIP_GAP);
+    var cx=fromX+(toX-fromX)*c, cy=fromY+(toY-fromY)*c;
+    var arc=Math.sin(c*Math.PI)*-38;
+    /* FILE: collapse the stack */
+    var fileY=cy+((450-CHIP_H/2)-cy)*e5;
+    var fileX=cx+((900-CHIP_W/2)-cx)*e5;
+    var fileS=(0.28+0.72*c)*(1-0.55*e5);
+    l.chip.setAttribute('transform','translate('+(fileX+nearPX).toFixed(1)+','+(fileY+arc+nearPY+i*e5*6).toFixed(1)+') scale('+fileS.toFixed(3)+')');
+    l.chip.setAttribute('opacity',(c*(1-0.92*e5)).toFixed(3));
+
+    /* ── 04 VERIFY ── */
+    var v=clamp(t4*2.0-(i*0.155),0,1);
+    var rejected=(i===3);
+    var punch=Math.max(0,1-Math.abs(v-0.16)*6);
+    l.mark.setAttribute('font-size',(28+18*punch).toFixed(1));
+    l.mark.setAttribute('opacity',clamp(v*3,0,1).toFixed(3));
+    l.verd.setAttribute('opacity',clamp(v*3,0,1).toFixed(3));
+    l.conf.setAttribute('width',(177*clamp(v*1.6,0,1)*(rejected&&v<0.6?0.42:1)).toFixed(1));
+    if(rejected && v>0.02 && v<0.60){
+      l.mark.textContent='✕'; l.mark.setAttribute('fill','var(--red)');
+      l.verd.textContent='REJECTED'; l.verd.setAttribute('fill','var(--red)');
+      l.conf.setAttribute('fill','var(--red)');
+      l.confT.textContent='conf 0.41';
+      var jit=(v<0.5)?Math.sin(v*90)*3:0;
+      l.chip.setAttribute('transform',l.chip.getAttribute('transform')+' translate('+jit.toFixed(2)+',0)');
+      if(l.__state!=='bad'){ l.__state='bad'; var w=wrap(l.base,44); l.q1.textContent=w[0]; l.q2.textContent=w[1];
+        l.q1.setAttribute('fill-opacity',.45); l.q2.setAttribute('fill-opacity',.45); }
+    } else {
+      l.mark.textContent='✓'; l.mark.setAttribute('fill','var(--b2)');
+      l.verd.textContent='VERIFIED'; l.verd.setAttribute('fill','var(--b2)');
+      l.conf.setAttribute('fill','var(--b2)');
+      l.confT.textContent=v>0.02?('conf 0.9'+(2+i%6)):'';
+      var want=(rejected&&v>=0.60)?'fixed':'ok';
+      if(l.__state!==want){
+        l.__state=want;
+        var txt=(want==='fixed')?QS_FIX:l.base;
+        var w2=wrap(txt,44); l.q1.textContent=w2[0]; l.q2.textContent=w2[1];
+        l.q1.setAttribute('fill-opacity',1); l.q2.setAttribute('fill-opacity',1);
+        if(want==='fixed'){ l.q1.setAttribute('fill','var(--ink)'); l.q2.setAttribute('fill','var(--ink)'); }
+      }
+    }
+    if(v>=1) verified++;
+  });
+
+  setHead.setAttribute('opacity',(clamp(t3*2.2,0,1)*(1-e5)).toFixed(3));
+  setHead.setAttribute('transform','translate('+nearPX.toFixed(1)+','+nearPY.toFixed(1)+')');
+  shR.textContent=verified+' / 6 VERIFIED';
+  shR.setAttribute('fill',verified===6?'var(--b2)':'currentColor');
+
+  /* ── 05 FILE ── */
+  wm.setAttribute('opacity',(e5*0.95).toFixed(3));
+  wmSub.setAttribute('opacity',(clamp((t5-0.35)/0.65,0,1)).toFixed(3));
+  gMark.setAttribute('transform','translate('+nearPX*0.5+','+(26-26*e5+nearPY*0.5)+')');
+
+  requestAnimationFrame(render);
+}
+
+/* reduced motion: hold the final formation, no scroll dependency */
+if(RM){
+  readScroll=function(){return 1};
+}
+requestAnimationFrame(render);
+
+/* ══════════════════════════════════════════════════════════
+   FORM
+   ══════════════════════════════════════════════════════════ */
+document.querySelectorAll('[data-plate]').forEach(function(f){
+  var kind=f.dataset.plate;
+  f.addEventListener('focus',function(){ if(kind==='email')S.emailFocus=1; else S.passFocus=1; });
+  f.addEventListener('blur',function(){ if(kind==='email')S.emailFocus=0; else {S.passFocus=0;} });
+  if(kind==='pass') f.addEventListener('input',function(){S.passLen=f.value.length});
+});
+
+var card=document.getElementById('card3d');
+document.querySelectorAll('[data-flip]').forEach(function(b){
+  b.addEventListener('click',function(){
+    card.classList.toggle('flipped');
+    var flipped=card.classList.contains('flipped');
+    document.getElementById('faceFront').inert=flipped;
+    document.getElementById('faceBack').inert=!flipped;
+  });
+});
+document.getElementById('faceBack').inert=true;
+
+var stamp=document.getElementById('stamp');
+var stampTimer=null;
+function fireStamp(kind){
+  stamp.textContent=kind==='ok'?'APPROVED':'REJECTED';
+  stamp.style.color=kind==='ok'?'var(--b2)':'var(--red)';
+  stamp.style.borderColor=kind==='ok'?'var(--b2)':'var(--red)';
+  stamp.classList.remove('hit'); void stamp.offsetWidth; stamp.classList.add('hit');
+  clearTimeout(stampTimer);
+  stampTimer=setTimeout(function(){stamp.classList.remove('hit');stamp.style.opacity=0;},kind==='ok'?1500:1400);
+}
+function showErr(box,msg,form){
+  box.innerHTML=msg?'<p class="err" role="alert">'+msg+'</p>':'';
+  if(msg){ form.classList.remove('shake'); void form.offsetWidth; form.classList.add('shake'); }
+}
+var EMAIL=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+function handle(form,box){
+  form.addEventListener('submit',function(ev){
+    ev.preventDefault();
+    var fs=form.querySelectorAll('.field'), vals=[].map.call(fs,function(f){return f.value.trim()});
+    var pass=vals[vals.length-1], email=vals[vals.length-2];
+    var msg=null;
+    if(vals.some(function(v){return !v})) msg='Please fill in every field.';
+    else if(email.includes('@') && !EMAIL.test(email)) msg='That email address does not look right.';
+    else if(pass.length<6) msg='Password must be at least 6 characters.';
+    if(msg){ showErr(box,msg,form); fireStamp('no'); return; }
+    showErr(box,null,form); fireStamp('ok');
+    form.querySelector('.btn').disabled=true;
+    form.querySelector('.btn').textContent='Working…';
+    setTimeout(function(){
+      document.getElementById('wipe').classList.add('on');
+      setTimeout(function(){
+        document.getElementById('wipe').classList.remove('on');
+        form.querySelector('.btn').disabled=false;
+        form.querySelector('.btn').textContent=form.id==='formIn'?'Sign in →':'Create account →';
+        stamp.style.opacity=0;
+      },1700);
+    },700);
+  });
+}
+handle(document.getElementById('formIn'),document.getElementById('errIn'));
+handle(document.getElementById('formUp'),document.getElementById('errUp'));
+
+/* ══════════════════════════════════════════════════════════
+   CHROME CONTROLS
+   ══════════════════════════════════════════════════════════ */
+var themeBtn=document.getElementById('themeBtn');
+function toggleTheme(){
+  var d=document.documentElement.getAttribute('data-theme')==='dark';
+  document.documentElement.setAttribute('data-theme',d?'light':'dark');
+  themeBtn.textContent=d?'☾ Theme':'☀ Theme';
+}
+themeBtn.addEventListener('click',toggleTheme);
+
+var dbg=document.getElementById('dbg'), dbgRange=document.getElementById('dbgRange'), dbgVal=document.getElementById('dbgVal');
+function toggleDbg(){
+  dbg.classList.toggle('on');
+  if(dbg.classList.contains('on')){ S.scrub=S.p; dbgRange.value=Math.round(S.p*1000); dbgVal.textContent=S.p.toFixed(3); }
+  else S.scrub=null;
+}
+document.getElementById('dbgBtn').addEventListener('click',toggleDbg);
+dbgRange.addEventListener('input',function(){ S.scrub=+dbgRange.value/1000; dbgVal.textContent=S.scrub.toFixed(3); });
+document.addEventListener('keydown',function(e){
+  if(e.target.matches('input,textarea')) return;
+  var k=e.key.toLowerCase();
+  if(k==='d') toggleDbg();
+  if(k==='t') toggleTheme();
+});
+document.getElementById('backLink').addEventListener('click',function(e){e.preventDefault();window.scrollTo({top:0,behavior:'smooth'})});
+})();
+</script>
+</body>
+</html>

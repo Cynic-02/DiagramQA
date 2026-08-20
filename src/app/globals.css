@@ -544,6 +544,71 @@
   animation: skeleton-shimmer 1.6s linear infinite;
 }
 
+/* ==================================================================
+   MOTION ADDITIONS — from the Motion Rubric study. Tier 1/2 only,
+   all additive, all covered by the reduced-motion contract above.
+
+   THE MARCHING FRAME — the upload dropzone's dashes march while the
+   zone waits, and stand down the moment a drag enters (the accent
+   border takes over). Dashes are ink at rest: affordance without
+   alarm.
+   ================================================================== */
+@keyframes ants-march {
+  to { background-position: 12px 0, -12px 0, 0 -12px, 0 12px; }
+}
+.dropzone-march { position: relative; }
+.dropzone-march::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background:
+    repeating-linear-gradient(90deg, var(--ink-2) 0 6px, transparent 6px 12px) top    / 100% 2px no-repeat,
+    repeating-linear-gradient(90deg, var(--ink-2) 0 6px, transparent 6px 12px) bottom / 100% 2px no-repeat,
+    repeating-linear-gradient(0deg,  var(--ink-2) 0 6px, transparent 6px 12px) left   / 2px 100% no-repeat,
+    repeating-linear-gradient(0deg,  var(--ink-2) 0 6px, transparent 6px 12px) right  / 2px 100% no-repeat;
+  animation: ants-march 1.4s linear infinite;
+}
+.dropzone-march[data-fast]::before { display: none; }
+
+/* THE VERDICT POP — a passing verdict's seal lands like a stamp:
+   overshoot from above, one wobble, dead still. `backwards` holds it
+   hidden through its stagger delay. */
+@keyframes verdict-pop {
+  0%   { opacity: 0; transform: scale(2.1) rotate(-18deg); }
+  60%  { opacity: 1; transform: scale(.9)  rotate(-6deg);  }
+  80%  {            transform: scale(1.06) rotate(-2deg);  }
+  100% { opacity: 1; transform: scale(1)   rotate(0deg);   }
+}
+.stamp-pop { animation: verdict-pop .38s cubic-bezier(.2, 0, 0, 1) backwards; }
+
+/* THE PEN SCRIBBLE — an underline being drawn and redrawd, never
+   satisfied. The "an agent is writing" state, replacing generic
+   spinners wherever work is linguistic rather than mechanical. */
+@keyframes pen-scribble { to { stroke-dashoffset: -60; } }
+.pen-scribble path {
+  stroke-dasharray: 7 5;
+  animation: pen-scribble 1.2s linear infinite;
+}
+
+/* SONNER — toasts are printed slips, not glass cards. Square corners,
+   an ink rule, the hard offset shadow. Errors are ruled in red.
+   Entrance/left untouched so swipe gestures keep working. */
+.toaster [data-sonner-toast] {
+  border-radius: 0 !important;
+  border: 2px solid var(--line) !important;
+  box-shadow: 4px 4px 0 var(--ink) !important;
+  font-family: var(--font-jetbrains), ui-monospace, monospace;
+}
+.toaster [data-sonner-toast] [data-sonner-title] {
+  font-family: inherit; font-weight: 700;
+  font-size: 12px; letter-spacing: .02em; text-transform: uppercase;
+}
+.toaster [data-sonner-toast] [data-description] {
+  font-family: inherit; font-size: 11.5px; opacity: .8;
+}
+.toaster [data-sonner-toast][data-type="error"] {
+  border-color: var(--red) !important;
+  box-shadow: 4px 4px 0 var(--red) !important;
+}
+
 /* Route loading — the spectrum sweep, the only progress indicator. */
 @keyframes route-loading-dot-in {
   0%   { opacity: 0; transform: scale(.3); }
@@ -608,4 +673,53 @@
   .wipe { -webkit-mask-image: none; mask-image: none; }
   a[href^="http"]::after { content: " (" attr(href) ")"; font-size: 8pt; }
   h1, h2, h3 { break-after: avoid; }
+}
+
+/* ==================================================================
+   THE PLATE INKS — the background's own palette.
+
+   The homepage backdrop draws eight scientific plates in ink and then
+   inks them in. Three families, kept separate on purpose:
+
+     --w-*   washes      the colour a stroke is drawn in
+     --f-*   flat inks   the colour a body is filled with, chosen not tinted
+     --n-*   pen inks    marginalia, tuned for legibility on paper
+
+   --b1..--b6 alias the Bloom spectrum so the plate's question tags and
+   the page's Bloom UI can never drift apart.
+   ================================================================== */
+:root,
+[data-theme="light"] {
+  --b1: var(--bloom-1); --b2: var(--bloom-2); --b3: var(--bloom-3);
+  --b4: var(--bloom-4); --b5: var(--bloom-5); --b6: var(--bloom-6);
+
+  --w-red:#e5342a;    --w-orange:#f2701c; --w-amber:#ffc93c; --w-green:#8fc623;
+  --w-teal:#00a6a6;   --w-blue:#2b4fe8;   --w-sky:#6fb9f0;   --w-violet:#8a6bff;
+  --w-pink:#ff8fa8;   --w-sand:#dcc9a2;   --w-cream:#fffaf0; --w-grey:#b9b1a3;
+
+  --f-cyto:#f1e4c3;   --f-nuc:#bda9ea;    --f-core:#2f43c4;  --f-mito:#e0705f;
+  --f-vac:#9ec9e6;    --f-sun:#ef4b24;    --f-sun2:#f2902c;  --f-mount:#6ea648;
+  --f-snow:#f2f7fa;   --f-cloud:#bcd8ec;  --f-soma:#f2bcc7;  --f-amber:#f0b32c;
+  --f-green:#a8cd6e;  --f-sky:#a7cee7;    --f-paper:#fffdf5;
+  --f-ocean:#5d9cce;  --f-sea:#9ecde6;    --f-land:#5f9c46;  --f-land2:#8dbe5b;
+  --f-ice:#e6f0f5;
+
+  --n-red:#d62b20;    --n-orange:#c9590b; --n-amber:#9c7208; --n-green:#4d8710;
+  --n-teal:#08807f;   --n-blue:#2440c9;   --n-violet:#6540dd; --n-pink:#cc3f63;
+}
+
+[data-theme="dark"] {
+  --w-red:#ff4f42;    --w-orange:#ff8f3d; --w-amber:#ffd45e; --w-green:#b6e63a;
+  --w-teal:#22d3d3;   --w-blue:#5b7bff;   --w-sky:#5fb2ee;   --w-violet:#a68cff;
+  --w-pink:#ff9fb5;   --w-sand:#6b5c42;   --w-cream:#3a342b; --w-grey:#5a5348;
+
+  --f-cyto:#4a3f2c;   --f-nuc:#5b4aa8;    --f-core:#5f74ff;  --f-mito:#b8483d;
+  --f-vac:#2f5d80;    --f-sun:#ff5c2e;    --f-sun2:#ff9a3d;  --f-mount:#43682c;
+  --f-snow:#c8d6de;   --f-cloud:#33586f;  --f-soma:#8c4a5c;  --f-amber:#d99f1e;
+  --f-green:#6f9a2a;  --f-sky:#33607f;    --f-paper:#2a251f;
+  --f-ocean:#2b5a80;  --f-sea:#37718f;    --f-land:#3f7a35;  --f-land2:#5d9440;
+  --f-ice:#b9cbd6;
+
+  --n-red:#ff6a5c;    --n-orange:#ff9a45; --n-amber:#ffcf5c; --n-green:#a9e04a;
+  --n-teal:#3fdcdc;   --n-blue:#7b95ff;   --n-violet:#b79bff; --n-pink:#ff8fa8;
 }

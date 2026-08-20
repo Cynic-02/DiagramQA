@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Send, MessageSquare, Loader2, Sparkles, Copy, Check } from 'lucide-react'
+import { X, Send, MessageSquare, Sparkles, Copy, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ProviderSelect } from '@/components/provider-select'
 import { toast } from 'sonner'
@@ -175,7 +175,7 @@ export function ChatPanel({ runId, open, onOpenChange }: ChatPanelProps) {
             >
               {loadingHistory && messages.length === 0 ? (
                 <div className="flex h-full items-center justify-center">
-                  <Loader2 className="size-4 animate-spin text-muted-foreground" />
+                  <PenScribble size={20} className="text-muted-foreground" />
                 </div>
               ) : messages.length === 0 ? (
                 <div className="flex h-full flex-col items-center justify-center gap-2.5 text-center p-2">
@@ -236,7 +236,7 @@ export function ChatPanel({ runId, open, onOpenChange }: ChatPanelProps) {
                   className="brutal-interactive size-9 shrink-0 rounded-lg cursor-pointer"
                 >
                   {loading ? (
-                    <Loader2 className="size-3.5 animate-spin" />
+                    <PenScribble size={16} className="text-primary-foreground" />
                   ) : (
                     <Send className="size-3.5" />
                   )}
