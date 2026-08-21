@@ -808,8 +808,10 @@ export function mountPlateStage(host: HTMLElement, opts: PlateOptions = {}): Pla
   var UID='pl'+Math.floor(Math.random()*1e9).toString(36);
   var STRANDS=0, PTS=34;
   var ART_Y=452, ART_X_RIGHT=1040, ART_X_LEFT=560;
-  var CHIP_W=300, CHIP_H=134, CHIP_GAP=18, CHIP_Y0=140;
-  var CHIP_X_RIGHT=1180, CHIP_X_LEFT=22;
+  /* Smaller than the original card: ~47% less area, so a column of three
+     reads as a compact log rather than three posters stacked in a rail. */
+  var CHIP_W=214, CHIP_H=100, CHIP_GAP=13, CHIP_Y0=140;
+  var CHIP_X_RIGHT=1266, CHIP_X_LEFT=22;
 
   /* Plates alternate sides so the ink has somewhere to travel to. Pin
      them to one anchor instead (ANCHOR_X) and the same morph happens in
@@ -1315,7 +1317,8 @@ export function mountPlateStage(host: HTMLElement, opts: PlateOptions = {}): Pla
        the left, the level printed in mono across a ruled header — and the
        question itself in the teacher's own hand, because that is who
        wrote it. Printed form, handwritten answer: the whole identity of
-       the product in one 300px card. */
+       the product in one small card, sized to read as a log entry rather
+       than a poster. */
     S.gc=E('g',{opacity:0,transform:'translate('+chipX(i)+',0)'},gChips);
     S.chips=sc.qs.map(function(qq,j){
       var c=E('g',{transform:'translate(0,'+(CHIP_Y0+j*(CHIP_H+CHIP_GAP))+')'},S.gc);
@@ -1331,27 +1334,27 @@ export function mountPlateStage(host: HTMLElement, opts: PlateOptions = {}): Pla
          or the text loses its ground to sit on.
          The corner radius matches --r on the HTML side so a question
          card is the same object on both. */
-      var CR=10;
-      E('rect',{x:5,y:5,width:CHIP_W,height:CHIP_H,rx:CR,fill:'var(--line)','fill-opacity':.28},c);
+      var CR=8;
+      E('rect',{x:4,y:4,width:CHIP_W,height:CHIP_H,rx:CR,fill:'var(--line)','fill-opacity':.28},c);
       E('rect',{x:0,y:0,width:CHIP_W,height:CHIP_H,rx:CR,
-        fill:'var(--surface)','fill-opacity':.16,stroke:'currentColor','stroke-width':2.4},c);
+        fill:'var(--surface)','fill-opacity':.16,stroke:'currentColor','stroke-width':2},c);
       /* The Bloom spine: a rect would round all four corners, so it is
          a path that rounds only the two it shares with the card. */
-      E('path',{d:'M11 0 H'+CR+' A'+CR+' '+CR+' 0 0 0 0 '+CR+' V'+(CHIP_H-CR)+
-        ' A'+CR+' '+CR+' 0 0 0 '+CR+' '+CHIP_H+' H11 Z',fill:'var(--b'+qq[0]+')'},c);
-      E('line',{x1:11,y1:34,x2:CHIP_W,y2:34,stroke:'currentColor','stroke-width':1.5,'stroke-opacity':.3},c);
-      E('text',{x:26,y:23,'class':'pf-mono','font-size':10,'font-weight':700,
-        'letter-spacing':1.9,fill:'currentColor','fill-opacity':.62},c).textContent=('0'+qq[0]+'  '+qq[1]).toUpperCase();
-      E('text',{x:CHIP_W-16,y:23,'text-anchor':'end','class':'pf-mono','font-size':9,'font-weight':700,
-        'letter-spacing':1.3,fill:'var(--b2)'},c).textContent='✓ VERIFIED';
-      wrap(qq[2],26,3).forEach(function(line,k){
+      E('path',{d:'M9 0 H'+CR+' A'+CR+' '+CR+' 0 0 0 0 '+CR+' V'+(CHIP_H-CR)+
+        ' A'+CR+' '+CR+' 0 0 0 '+CR+' '+CHIP_H+' H9 Z',fill:'var(--b'+qq[0]+')'},c);
+      E('line',{x1:9,y1:26,x2:CHIP_W,y2:26,stroke:'currentColor','stroke-width':1.2,'stroke-opacity':.3},c);
+      E('text',{x:19,y:16,'class':'pf-mono','font-size':8.5,'font-weight':700,
+        'letter-spacing':1.5,fill:'currentColor','fill-opacity':.62},c).textContent=('0'+qq[0]+'  '+qq[1]).toUpperCase();
+      E('text',{x:CHIP_W-12,y:16,'text-anchor':'end','class':'pf-mono','font-size':7.5,'font-weight':700,
+        'letter-spacing':1,fill:'var(--b2)'},c).textContent='✓ VERIFIED';
+      wrap(qq[2],24,3).forEach(function(line,k){
         if(!line)return;
-        E('text',{x:26,y:62+k*22,'class':'pf-hand','font-size':21,'font-weight':700,
+        E('text',{x:19,y:41+k*14,'class':'pf-hand','font-size':12.5,'font-weight':700,
           fill:'var(--ink)'},c).textContent=line;
       });
-      E('rect',{x:26,y:114,width:150,height:6,fill:'none',stroke:'currentColor','stroke-width':1.2,'stroke-opacity':.4},c);
-      E('rect',{x:27.5,y:115.5,width:147,height:3,fill:'var(--b2)'},c);
-      E('text',{x:186,y:120,'class':'pf-mono','font-size':9,'letter-spacing':1.1,
+      E('rect',{x:19,y:81,width:100,height:5,fill:'none',stroke:'currentColor','stroke-width':1,'stroke-opacity':.4},c);
+      E('rect',{x:20,y:82,width:98,height:3,fill:'var(--b2)'},c);
+      E('text',{x:125,y:85.5,'class':'pf-mono','font-size':7.5,'letter-spacing':.8,
         fill:'currentColor','fill-opacity':.5},c).textContent='CONF 0.9'+(2+j*3);
       return c;
     });

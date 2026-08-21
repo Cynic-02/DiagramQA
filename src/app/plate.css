@@ -253,15 +253,24 @@
 
 .plate-home .mastbox {
   display: inline-block;
+  position: relative;
   /* Forced light-surface + dark-ink, not the theme-relative --surface/
      --line. The box sits on top of whichever diagram is drawn behind
      the hero copy (often the globe's own ocean fill), and in dark mode
      --surface and --line are both dark-on-dark against that — which is
      exactly why the box read as an invisible smudge. These two values
      ARE the site palette (light-mode --surface / --ink, verbatim), just
-     pinned so the card always reads as a lit sheet of paper regardless
-     of what colour is drawn underneath it. */
-  background: #fffdf8;
+     pinned so the card always reads as a lit sheet regardless of what
+     colour is drawn underneath it.
+     GLASS: the fill is translucent and blurred rather than opaque, so
+     the diagram and the graph-paper carry on faintly through the word
+     itself — the same bargain the sign-in card and the question cards
+     already make, now on the one word built to say it. Text stays a
+     solid, forced #0a0a0a throughout, so the blur can never cost the
+     word its own legibility. */
+  background: color-mix(in srgb, #fffdf8 62%, transparent);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
   color: #0a0a0a;
   border: 3px solid #0a0a0a;
   border-radius: 12px;
@@ -275,8 +284,31 @@
      to sit on the grid makes the grid visible. */
   transform: rotate(-1.6deg);
   transform-origin: 12% 80%;
-  position: relative;
   z-index: 2;
+}
+/* The halo the blur is there to catch — two soft washes in the site's
+   own accent pair, so the box reads as glass catching light rather
+   than as a frosted rectangle. Both tokens are theme-invariant, so
+   this halo looks identical in light and dark. Sits behind the box
+   (negative z) and is itself blurred, so it never draws a hard edge —
+   only a warmth the backdrop-filter picks up. */
+.plate-home .mastbox::before,
+.plate-home .mastbox::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  border-radius: 50%;
+  filter: blur(18px);
+}
+.plate-home .mastbox::before {
+  width: 62%; height: 130%;
+  left: -10%; top: -18%;
+  background: color-mix(in srgb, var(--yellow) 70%, transparent);
+}
+.plate-home .mastbox::after {
+  width: 54%; height: 110%;
+  right: -12%; bottom: -16%;
+  background: color-mix(in srgb, var(--blue) 55%, transparent);
 }
 
 .plate-home .masthollow {
