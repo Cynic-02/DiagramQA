@@ -1,23 +1,43 @@
 'use client'
 
 /**
- * UploadStage — the entry point of the pipeline.
+ * UploadStage — the cockpit.
  *
- * Responsibilities:
- *   - Drag-and-drop / click-to-browse file picker (png/jpg/webp/svg + pdf)
- *   - Live preview of the selected diagram (or PDF icon card)
- *   - Bloom's-taxonomy difficulty selector (6 levels, colored by hue)
- *   - "Run pipeline →" CTA: POST /api/runs → setRunId + setDiagram +
- *     startRun → emit `pipeline:start` on the socket (waits for connect)
- *   - Sample-diagram affordance (inline SVG data URL — works offline)
- *   - Post-run view (when diagramDataUrl is already in the store):
- *     preview + bloom level + Re-run button.
+ * REBUILT. The previous version was a single full-bleed column: one
+ * very wide, very flat SOURCE FILE box across the top, the three
+ * instruments shoved to the bottom of the viewport with `mt-auto`, and
+ * whatever height was left over sitting empty between them. On a
+ * laptop that was a hand's width of dead graph paper down the middle
+ * of the most important screen in the product, with heavy 3px rules
+ * boxing every region and a solid black launch slab underneath.
  *
- * NOTE: the local `uploadedFile` state holds the pre-run file. The store's
- * `diagramDataUrl` is only set when the user actually starts a run, because
- * `setDiagram` couples the data-URL with the `upload:done` stage transition
- * and an `activeStage: 'extraction'` switch (which we don't want until the
- * user explicitly kicks off the pipeline).
+ * Three things fixed it, none of which required abandoning the system:
+ *
+ *   1. TWO COLUMNS, NOT ONE. The source bay is tall and narrow-ish so
+ *      the drop target can be roughly the shape of an actual diagram
+ *      (4:3) instead of a letterbox; the three instruments stack in
+ *      the other column. Both columns are `min-h-0` flex children of
+ *      the same row, so they consume the height instead of leaving it.
+ *   2. NO `mt-auto`. Nothing is pushed anywhere. Height is distributed,
+ *      not abandoned.
+ *   3. WEIGHT BUDGET. One heavy rule per screen region, not per box.
+ *      Panels are 2px on a soft corner; the black launch slab is now
+ *      paper with a single top rule, so the only pure-ink object left
+ *      on the page is the button you are meant to press.
+ *
+ * The column contract is unchanged:
+ *
+ *   MASTHEAD  pinned. Stage number, title, live readout.
+ *   DECK      the only scrolling region: source bay + instruments.
+ *   LAUNCH    pinned to the bottom. Checklist + the CTA, always reachable.
+ *
+ * THE DEMO CONTRACT
+ * -----------------
+ * The sample diagram ALWAYS runs, with or without an API key, because it
+ * is replayed locally by `lib/demo-run` rather than sent to a provider.
+ * The standalone "no key?" promo panel is gone — the capability now lives
+ * as a secondary action in the launch bar, where every other run control
+ * already is.
  */
 
 import * as React from 'react'
@@ -29,47 +49,28 @@ import {
   RotateCcw,
   Play,
   Sparkles,
-  ImageIcon,
   Loader2,
+  Check,
+  AlertTriangle,
+  X,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { usePipelineStore } from '@/lib/store'
 import { BLOOM_META } from '@/lib/bloom'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
 import { Switch } from '@/components/ui/switch'
 import { Slider } from '@/components/ui/slider'
 import { Lens } from '@/components/ui/lens'
-import { StageFrame, StageHeader, DataChip } from './shared'
 import { BloomWheel } from './BloomWheel'
 import { ProviderSelect, useProviderOptions } from '@/components/provider-select'
-
-/* ------------------------------------------------------------------ */
-/* A small inline SVG flowchart used as the sample diagram.           */
-/* ------------------------------------------------------------------ */
-
-const SAMPLE_SVG = `<svg xmlns='http://www.w3.org/2000/svg' width='640' height='320' viewBox='0 0 640 320'>
-  <defs>
-    <marker id='arrow' markerWidth='10' markerHeight='10' refX='9' refY='5' orient='auto'>
-      <path d='M0,0 L10,5 L0,10 Z' fill='#2dd4bf'/>
-    </marker>
-  </defs>
-  <rect x='0' y='0' width='640' height='320' fill='#fdf6e9'/>
-  <rect x='40' y='130' width='130' height='60' fill='#fdf6e9' stroke='#1a1a1a' stroke-width='3'/>
-  <text x='105' y='165' text-anchor='middle' fill='#1a1a1a' font-family='sans-serif' font-size='14' font-weight='700'>Client</text>
-  <rect x='255' y='130' width='130' height='60' fill='#fdf6e9' stroke='#1a1a1a' stroke-width='3'/>
-  <text x='320' y='158' text-anchor='middle' fill='#1a1a1a' font-family='sans-serif' font-size='13' font-weight='700'>API</text>
-  <text x='320' y='174' text-anchor='middle' fill='#525252' font-family='sans-serif' font-size='11'>Gateway</text>
-  <rect x='470' y='130' width='130' height='60' fill='#fdf6e9' stroke='#1a1a1a' stroke-width='3'/>
-  <text x='535' y='165' text-anchor='middle' fill='#1a1a1a' font-family='sans-serif' font-size='14' font-weight='700'>Database</text>
-  <line x1='170' y1='160' x2='250' y2='160' stroke='#2dd4bf' stroke-width='3' marker-end='url(#arrow)'/>
-  <line x1='385' y1='160' x2='465' y2='160' stroke='#2dd4bf' stroke-width='3' marker-end='url(#arrow)'/>
-  <line x1='320' y1='130' x2='320' y2='70' stroke='#e8876f' stroke-width='3' stroke-dasharray='4 4'/>
-  <rect x='255' y='30' width='130' height='40' fill='#f5f4f0' stroke='#e8876f' stroke-width='3'/>
-  <text x='320' y='55' text-anchor='middle' fill='#e8876f' font-family='sans-serif' font-size='13' font-weight='700'>Cache</text>
-  <text x='320' y='290' text-anchor='middle' fill='#525252' font-family='monospace' font-size='11'>AR2-DDCQG · sample architecture</text>
-</svg>`
+import {
+  SAMPLE_DIAGRAM_NAME,
+  cancelDemoRun,
+  newDemoRunId,
+  runDemoPipeline,
+  sampleDiagramDataUrl,
+} from '@/lib/demo-run'
 
 /* ------------------------------------------------------------------ */
 /* Helpers                                                            */
@@ -89,7 +90,10 @@ function sniffMime(dataUrl: string): string {
  * rasterised to PNG on a <canvas> before being sent. Returns the original
  * data URL for non-SVG inputs. Resolves to a PNG data URL at 2× scale.
  */
-function rasteriseIfNeeded(dataUrl: string, filename: string): Promise<{ dataUrl: string; name: string }> {
+function rasteriseIfNeeded(
+  dataUrl: string,
+  filename: string,
+): Promise<{ dataUrl: string; name: string }> {
   if (!dataUrl.startsWith('data:image/svg')) {
     return Promise.resolve({ dataUrl, name: filename })
   }
@@ -123,10 +127,132 @@ function rasteriseIfNeeded(dataUrl: string, filename: string): Promise<{ dataUrl
 const ACCEPTED = '.png,.jpg,.jpeg,.webp,.svg'
 // Base64-encoding inflates raw bytes by ~4/3, and the encoded string then
 // rides inside a JSON body to POST /api/runs — which on Vercel has a hard
-// 4.5MB request-body ceiling enforced by the platform itself (returns a
-// raw, uncaught 413 before the request even reaches our route handler).
-// 2.5MB raw comfortably clears that after inflation, with real headroom.
+// 4.5MB request-body ceiling enforced by the platform itself.
 const MAX_BYTES = 2.5 * 1024 * 1024 // 2.5 MB
+
+/* ------------------------------------------------------------------ */
+/* Small RUBRIC primitives, local to this page                         */
+/* ------------------------------------------------------------------ */
+
+/** A monospace section tag. Everything is labelled — structure rule 5. */
+function Tag({
+  children,
+  tone = 'ink',
+  className,
+}: {
+  children: React.ReactNode
+  tone?: 'ink' | 'red' | 'accent' | 'muted'
+  className?: string
+}) {
+  return (
+    <span
+      className={cn(
+        'inline-block rounded-[var(--r-xs)] border-[1.5px] border-[var(--line)] px-2 py-[3px]',
+        'font-mono text-[10px] font-bold uppercase leading-none tracking-[0.16em]',
+        tone === 'red' && 'bg-[var(--red)] text-white',
+        tone === 'ink' && 'bg-[var(--ink)] text-[var(--paper)]',
+        tone === 'accent' && 'bg-[var(--yellow)] text-[#0a0a0a]',
+        tone === 'muted' && 'border-[var(--line)]/40 bg-transparent text-[var(--ink-2)]',
+        className,
+      )}
+    >
+      {children}
+    </span>
+  )
+}
+
+/**
+ * A titled instrument.
+ *
+ * The old version shared its borders with its neighbours via negative
+ * margins, which is correct brutalism and wrong here: four panels
+ * welded edge to edge with 3px of ink between them read as a single
+ * dense table, and the eye has nowhere to rest. These are separate
+ * objects with air between them, ruled at 2px on a soft corner. The
+ * index is set as an outlined numeral so it labels the panel without
+ * competing with the panel's own title.
+ */
+function Instrument({
+  index,
+  title,
+  hint,
+  children,
+  className,
+  bodyClassName,
+}: {
+  index: string
+  title: string
+  hint?: string
+  children: React.ReactNode
+  className?: string
+  bodyClassName?: string
+}) {
+  return (
+    <section
+      className={cn(
+        'glass-surface flex min-w-0 flex-col overflow-hidden border-2 border-[var(--line)]',
+        className,
+      )}
+    >
+      <header className="flex shrink-0 items-center gap-2.5 border-b-2 border-[var(--line)]/20 px-4 py-2.5">
+        <span
+          className="font-[family-name:var(--font-archivo)] text-[17px] font-black leading-none text-transparent"
+          style={{ WebkitTextStroke: '1.5px var(--red)', paintOrder: 'stroke fill' }}
+          aria-hidden
+        >
+          {index}
+        </span>
+        <h2 className="font-[family-name:var(--font-archivo)] text-[12px] font-black uppercase leading-none tracking-[0.06em]">
+          {title}
+        </h2>
+        {hint && (
+          <p className="ml-auto hidden min-w-0 max-w-[46ch] truncate text-right text-[10.5px] leading-none text-[var(--ink-2)] xl:block">
+            {hint}
+          </p>
+        )}
+      </header>
+      {hint && (
+        <p className="shrink-0 px-4 pt-2.5 text-[11px] leading-snug text-[var(--ink-2)] xl:hidden">
+          {hint}
+        </p>
+      )}
+      <div className={cn('min-h-0 flex-1 p-4', bodyClassName)}>{children}</div>
+    </section>
+  )
+}
+
+/** One line of the pre-flight checklist in the launch bar. */
+function CheckLine({
+  ok,
+  label,
+  value,
+}: {
+  ok: boolean
+  label: string
+  value: string
+}) {
+  return (
+    <div className="flex min-w-0 items-center gap-2">
+      <span
+        className={cn(
+          'flex size-[17px] shrink-0 items-center justify-center rounded-[4px] border-[1.5px]',
+          ok
+            ? 'border-[var(--line)] bg-[var(--bloom-3)] text-[#0a0a0a]'
+            : 'border-[var(--line)]/35 bg-transparent text-[var(--ink-2)]',
+        )}
+        aria-hidden
+      >
+        {ok ? <Check className="size-3" strokeWidth={3.5} /> : <X className="size-3" strokeWidth={3.5} />}
+      </span>
+      <span className="min-w-0 font-mono text-[10px] uppercase leading-tight tracking-[0.12em]">
+        <span className="text-[var(--ink-2)]">{label} </span>
+        <span className={cn('font-bold', ok ? 'text-[var(--ink)]' : 'text-[var(--red)]')}>
+          {value}
+        </span>
+      </span>
+    </div>
+  )
+}
 
 /* ------------------------------------------------------------------ */
 /* Component                                                          */
@@ -156,16 +282,31 @@ export function UploadStage() {
   const [uploadedFile, setUploadedFile] = React.useState<{
     name: string
     dataUrl: string
+    /** True for the built-in sample, which always runs as a scripted demo. */
+    isSample?: boolean
   } | null>(null)
   const [dragOver, setDragOver] = React.useState(false)
   const [submitting, setSubmitting] = React.useState(false)
+  // The "no API key" notice is deferred: it only appears once the user has
+  // actually tried to launch a real run. Leading with a warning about
+  // something nobody has attempted yet is the wrong first impression.
+  const [keyWarning, setKeyWarning] = React.useState(false)
+
   const fileInputRef = React.useRef<HTMLInputElement>(null)
+
   const { providers, loading: loadingProviders } = useProviderOptions()
   const hasUsableProvider = React.useMemo(() => {
     if (loadingProviders) return true
     if (selectedProvider) {
       const selected = providers.find((p) => p.id === selectedProvider)
-      return !!selected && selected.usable && (selected.isCustom || selected.supportsVision)
+      // Coerced, not just truthy-checked: `supportsVision` is optional on
+      // the provider row, so the `&&` chain returns `boolean | undefined`
+      // and every consumer expecting a plain boolean fails to typecheck.
+      return !!(
+        selected &&
+        selected.usable &&
+        (selected.isCustom || selected.supportsVision)
+      )
     }
     return providers.some((p) => !p.isCustom && p.usable && p.supportsVision)
   }, [providers, loadingProviders, selectedProvider])
@@ -173,13 +314,19 @@ export function UploadStage() {
   const hasRunDiagram = !!diagramDataUrl
   const previewName = hasRunDiagram ? diagramFilename : uploadedFile?.name
   const previewUrl = hasRunDiagram ? diagramDataUrl : uploadedFile?.dataUrl
+  const isSample = !!uploadedFile?.isSample
 
-  /* ---- file selection (local) ---- */
+  /* ---- file intake ---- */
   const handleFile = React.useCallback((file: File) => {
-    if (file.size > MAX_BYTES) {
-      toast.error('File too large', {
-        description: 'Please use a file under 2.5 MB.',
+    const ok = /\.(png|jpe?g|webp|svg)$/i.test(file.name)
+    if (!ok) {
+      toast.error('Unsupported file type', {
+        description: 'Use PNG, JPG, WebP or SVG.',
       })
+      return
+    }
+    if (file.size > MAX_BYTES) {
+      toast.error('File too large', { description: 'Please use a file under 2.5 MB.' })
       return
     }
     const reader = new FileReader()
@@ -187,6 +334,7 @@ export function UploadStage() {
       const dataUrl = reader.result
       if (typeof dataUrl !== 'string') return
       setUploadedFile({ name: file.name, dataUrl })
+      setKeyWarning(false)
       toast.success('Diagram ready', { description: file.name })
     }
     reader.onerror = () => toast.error('Failed to read file')
@@ -207,18 +355,66 @@ export function UploadStage() {
   }
 
   const loadSample = () => {
-    const dataUrl = `data:image/svg+xml;utf8,${encodeURIComponent(SAMPLE_SVG)}`
-    setUploadedFile({ name: 'sample-flowchart.svg', dataUrl })
-    toast.success('Sample diagram loaded', {
-      description: 'A small architecture flowchart — click Run to try the pipeline.',
+    setUploadedFile({
+      name: SAMPLE_DIAGRAM_NAME,
+      dataUrl: sampleDiagramDataUrl(),
+      isSample: true,
     })
+    setKeyWarning(false)
   }
 
-  /* ---- run pipeline ---- */
+  /* ---- the scripted demo run ---- */
+  const startDemo = React.useCallback(
+    (file: { name: string; dataUrl: string }) => {
+      const runId = newDemoRunId()
+
+      setRunId(runId)
+      setDiagram(file.name, file.dataUrl)
+      startRun()
+      setUploadedFile(null)
+      setKeyWarning(false)
+
+      toast.success('Demo run started', {
+        description: 'Scripted offline run — no API key or model call involved.',
+      })
+
+      // Deliberately not awaited. `setDiagram` moves the active stage to
+      // 'extraction', which unmounts this component immediately; the replay
+      // is owned by lib/demo-run and drives the store on its own.
+      const { applyStageEvent, appendLog } = usePipelineStore.getState()
+      void runDemoPipeline({
+        runId,
+        bloomLevel,
+        questionCount,
+        mcqOnly,
+        onStage: applyStageEvent,
+        onLog: appendLog,
+      })
+    },
+    [bloomLevel, questionCount, mcqOnly, setDiagram, setRunId, startRun],
+  )
+
+  /* ---- run ---- */
   const runPipeline = async () => {
     const file = uploadedFile
-    if (!file) return
+    if (!file || submitting || running) return
+
+    // The sample never touches the network — it always replays locally.
+    if (file.isSample) {
+      startDemo(file)
+      return
+    }
+
+    if (!hasUsableProvider) {
+      setKeyWarning(true)
+      toast.error('No vision-capable API key', {
+        description: 'Add one in Settings, or try the sample diagram — it always runs.',
+      })
+      return
+    }
+
     setSubmitting(true)
+    setKeyWarning(false)
     try {
       // Rasterise SVGs to PNG — the vision model only accepts raster images.
       const { dataUrl: sendDataUrl, name: sendName } = await rasteriseIfNeeded(
@@ -245,21 +441,15 @@ export function UploadStage() {
       }
       const { runId } = (await res.json()) as { runId: string }
 
-      // 1) register run id
       setRunId(runId)
-      // 2) mark upload done, switch active stage to extraction, store diagram
       setDiagram(sendName, sendDataUrl)
-      // 3) start run (resets stage outputs, sets running=true)
       startRun()
-      // 4) clear the local file — store now owns the diagram
       setUploadedFile(null)
-      // Note: no explicit "start" call here. usePipelineStream watches
-      // runId + running and opens the SSE connection to
-      // /api/runs/[id]/stream itself, which is what actually kicks off
-      // the pipeline server-side.
 
       toast.success('Pipeline started', {
-        description: `Run ${runId.slice(0, 8)} · ${bloomLevel} · ${questionCount} question${questionCount === 1 ? '' : 's'}${mcqOnly ? ' (MCQ)' : ''}`,
+        description: `Run ${runId.slice(0, 8)} · ${bloomLevel} · ${questionCount} question${
+          questionCount === 1 ? '' : 's'
+        }${mcqOnly ? ' (MCQ)' : ''}`,
       })
     } catch (e) {
       toast.error('Could not start pipeline', {
@@ -272,184 +462,555 @@ export function UploadStage() {
 
   /* ---- post-run reset ---- */
   const handleReset = () => {
+    cancelDemoRun()
     resetRun()
     setUploadedFile(null)
+    setKeyWarning(false)
   }
 
+  const meta = BLOOM_META[bloomLevel]
+  const providerLabel = loadingProviders
+    ? 'checking…'
+    : hasUsableProvider
+    ? selectedProvider ?? 'automatic'
+    : 'none configured'
+
+  /** One entrance recipe, staggered by section. Same object shape in both
+   *  motion branches so the spread stays a single, well-typed value. */
+  const rise = (delay: number) => ({
+    initial: reduce ? (false as const) : { opacity: 0, y: 14 },
+    animate: { opacity: 1, y: 0 },
+    transition: reduce
+      ? { duration: 0 }
+      : {
+          duration: 0.42,
+          delay,
+          ease: [0.16, 1, 0.3, 1] as [number, number, number, number],
+        },
+  })
+
   /* ---------------------------------------------------------------- */
-  /* Render                                                           */
+  /* Render                                                            */
   /* ---------------------------------------------------------------- */
 
   return (
-    <StageFrame stageId="upload" showHeader={false}>
-      {/* Two-column only from xl. At lg the 280px rail leaves ~744px, which a
-          420px side panel would squeeze to an unusable ~250px main column —
-          so tablets and small laptops stack instead.
-          The stage header lives inside the main column rather than spanning
-          the full width, so the config panel starts level with it instead of
-          being pushed below, which left a large empty block top-right. */}
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px] xl:items-start">
-        {/* ---------------- Left Column: Dropzone / Preview ---------------- */}
-        <div className="min-w-0 space-y-3">
-          <StageHeader stageId="upload" />
-          <AnimatePresence mode="wait" initial={false}>
-            {previewUrl ? (
-              <motion.div
-                key="preview"
-                initial={reduce ? false : { opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={reduce ? undefined : { opacity: 0, y: -8 }}
-                transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+    <div className="flex h-full min-h-0 flex-col">
+      {/* ============================== MASTHEAD ==============================
+          One rule under it, nothing else. The stage index is an outlined
+          numeral rather than a filled red chip: it says "one of six"
+          without being the loudest thing on the screen. */}
+      <motion.header
+        {...rise(0)}
+        className="flex shrink-0 flex-col gap-3 border-b-2 border-[var(--line)] bg-[var(--card)] px-5 py-3 md:flex-row md:items-center md:justify-between md:px-8"
+      >
+        <div className="flex min-w-0 items-center gap-4">
+          <div className="flex shrink-0 items-baseline gap-1.5" aria-label="Stage 1 of 6">
+            <span
+              className="font-[family-name:var(--font-archivo)] text-[34px] font-black leading-none text-transparent"
+              style={{ WebkitTextStroke: '2px var(--red)', paintOrder: 'stroke fill' }}
+              aria-hidden
+            >
+              01
+            </span>
+            <span className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-2)]" aria-hidden>
+              /06
+            </span>
+          </div>
+          <span className="hidden h-9 w-[2px] shrink-0 rounded-none bg-[var(--line)]/20 md:block" aria-hidden />
+          <div className="min-w-0">
+            <h1 className="font-[family-name:var(--font-archivo)] text-xl font-black uppercase leading-none tracking-[-0.03em] md:text-[26px]">
+              Source diagram
+            </h1>
+            <p className="mt-1.5 truncate text-[11.5px] leading-none text-[var(--ink-2)]">
+              <span className="font-bold text-[var(--ink)]">Ingest</span> · six agents read
+              the diagram, write questions, answer them blind, and mark their own work.
+            </p>
+          </div>
+        </div>
+
+        {/* live readout */}
+        <dl className="grid shrink-0 grid-cols-2 overflow-hidden rounded-[var(--r-s)] border-[1.5px] border-[var(--line)]/45 sm:grid-cols-4">
+          {[
+            { k: 'Source', v: previewName ?? '—', accent: !!previewName },
+            { k: 'Level', v: bloomLevel, accent: true },
+            { k: 'Items', v: `${questionCount}${mcqOnly ? '·mcq' : ''}`, accent: true },
+            { k: 'Host', v: providerLabel, accent: hasUsableProvider },
+          ].map((r) => (
+            <div
+              key={r.k}
+              className={cn(
+                'min-w-[92px] max-w-[168px] rounded-none border-[var(--line)]/25 px-2.5 py-1',
+                '[&:nth-child(odd)]:border-r-[1.5px] [&:nth-child(n+3)]:border-t-[1.5px]',
+                'sm:[&:nth-child(odd)]:border-r-0 sm:[&:nth-child(n+3)]:border-t-0 sm:[&:not(:first-child)]:border-l-[1.5px]',
+              )}
+            >
+              <dt className="font-mono text-[8px] font-bold uppercase tracking-[0.16em] text-[var(--ink-2)]">
+                {r.k}
+              </dt>
+              <dd
+                className={cn(
+                  'dat truncate text-[11px] font-bold leading-tight',
+                  r.accent ? 'text-[var(--ink)]' : 'text-[var(--ink-2)]',
+                )}
+                title={r.v}
               >
-                <Card className="brutal-block overflow-hidden p-0">
-                  <div className="flex flex-col">
-                    {/* The diagram, shown at rest and contained by its frame. */}
-                    <div className="flex items-center justify-center bg-muted p-6 border-b border-border/40">
-                      {previewUrl.startsWith('data:application/pdf') ? (
-                        <div className="flex h-48 flex-col items-center justify-center gap-2 text-muted-foreground">
-                          <FileText className="size-12" />
-                          <span className="text-sm font-semibold">PDF source</span>
-                        </div>
-                      ) : (
-                        <Lens lensSize={340} zoomFactor={2.1}>
-                          <img
-                            src={previewUrl}
-                            alt={previewName ?? 'Diagram preview'}
-                            className="max-h-[260px] w-auto max-w-full object-contain"
-                          />
-                        </Lens>
+                {r.v}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </motion.header>
+
+      {/* ============================== DECK ============================== */}
+      <div className="scroll-slim flex min-h-0 flex-1 flex-col overflow-y-auto px-5 py-4 md:px-8">
+        {hasRunDiagram ? (
+          /* ---------- post-launch: the run is registered ---------- */
+          <motion.section
+            {...rise(0.04)}
+            className="paper clip mx-auto w-full max-w-[1100px]"
+          >
+            <header className="flex flex-wrap items-center gap-3 border-b-2 border-[var(--line)]/20 px-4 py-3">
+              <span
+                className={cn(
+                  'size-2.5 rounded-full',
+                  running ? 'animate-pulse bg-[var(--red)]' : 'bg-[var(--bloom-3)]',
+                )}
+                aria-hidden
+              />
+              <h2 className="font-mono text-[11px] font-bold uppercase tracking-[0.18em]">
+                {running ? 'Pipeline running' : 'Pipeline registered'}
+              </h2>
+              <span className="ml-auto truncate font-mono text-[10px] uppercase tracking-[0.16em] text-[var(--ink-2)]">
+                {previewName}
+              </span>
+            </header>
+
+            <div className="grid gap-0 md:grid-cols-[minmax(0,1fr)_300px]">
+              <div className="flex items-center justify-center bg-[var(--paper)] p-6">
+                {previewUrl?.startsWith('data:application/pdf') ? (
+                  <div className="flex h-52 flex-col items-center justify-center gap-2 text-[var(--ink-2)]">
+                    <FileText className="size-12" />
+                    <span className="font-mono text-xs uppercase tracking-widest">PDF source</span>
+                  </div>
+                ) : (
+                  <Lens lensSize={320} zoomFactor={2.1}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={previewUrl ?? ''}
+                      alt={previewName ?? 'Diagram preview'}
+                      className="max-h-[230px] w-auto max-w-full rounded-[var(--r-s)] border-[1.5px] border-[var(--line)]/50 object-contain"
+                    />
+                  </Lens>
+                )}
+              </div>
+
+              <div className="flex flex-col gap-4 border-t-2 border-[var(--line)]/20 p-5 md:border-l-2 md:border-t-0">
+                <div>
+                  <div className="fig-label">Configuration</div>
+                  <dl className="mt-3 space-y-2">
+                    {[
+                      ['Bloom level', bloomLevel],
+                      ['Questions', String(questionCount)],
+                      ['Format', mcqOnly ? 'Multiple choice' : 'Short answer'],
+                    ].map(([k, v]) => (
+                      <div
+                        key={k}
+                        className="flex items-baseline justify-between gap-3 border-b-2 border-dashed border-[var(--line)]/25 pb-2"
+                      >
+                        <dt className="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--ink-2)]">
+                          {k}
+                        </dt>
+                        <dd className="dat text-[12px] font-bold">{v}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </div>
+                <p className="text-[11px] leading-relaxed text-[var(--ink-2)]">
+                  Follow the agents in the left rail, or open the log to watch
+                  their reasoning as it streams.
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleReset}
+                  disabled={running}
+                  className="mt-auto w-full"
+                >
+                  <RotateCcw className="size-3.5" />
+                  Reset stage
+                </Button>
+              </div>
+            </div>
+          </motion.section>
+        ) : (
+          /* ---------- pre-launch: two columns, no dead middle ----------
+             Left column is the source and is allowed to be the tall one,
+             because a drop target the shape of a diagram is the whole
+             point of the screen. Right column carries the three settings
+             instruments. Both stretch, so the deck is never a band of
+             content floating above an empty half. */
+          <motion.div
+            {...rise(0.04)}
+            /* `items-stretch`, not `content-start`. Starting the content
+               at the top left every spare pixel pooled in one band of
+               empty graph paper along the bottom of the screen — the
+               same failure as the old `mt-auto`, just at the other end.
+               Both columns now consume the height they are given, so the
+               drop target grows into the space instead of a void
+               opening under it. */
+            className="grid min-h-0 flex-1 items-stretch gap-4 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]"
+          >
+            {/* ================= A · SOURCE ================= */}
+            <section className="glass-surface flex min-h-0 min-w-0 flex-col overflow-hidden border-2 border-[var(--line)] shadow-[4px_4px_0_var(--line)]">
+              <header className="flex shrink-0 items-center gap-2.5 border-b-2 border-[var(--line)]/20 px-4 py-2.5">
+                <span
+                  className="font-[family-name:var(--font-archivo)] text-[17px] font-black leading-none text-transparent"
+                  style={{ WebkitTextStroke: '1.5px var(--red)', paintOrder: 'stroke fill' }}
+                  aria-hidden
+                >
+                  A
+                </span>
+                <h2 className="font-[family-name:var(--font-archivo)] text-[12px] font-black uppercase leading-none tracking-[0.06em]">
+                  Source file
+                </h2>
+                <button
+                  type="button"
+                  onClick={loadSample}
+                  disabled={isSample}
+                  className="link-ink ml-auto font-mono text-[10px] font-bold uppercase tracking-[0.14em] disabled:pointer-events-none disabled:bg-none disabled:opacity-40"
+                >
+                  {isSample ? 'sample loaded' : 'load sample'}
+                </button>
+              </header>
+
+              <AnimatePresence mode="wait" initial={false}>
+                {previewUrl ? (
+                  <motion.div
+                    key="preview"
+                    initial={reduce ? false : { opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={reduce ? undefined : { opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="flex min-h-0 flex-1 flex-col"
+                  >
+                    <div className="glass-inner flex min-h-0 flex-1 items-center justify-center p-4">
+                      <Lens lensSize={260} zoomFactor={2}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={previewUrl}
+                          alt={previewName ?? 'Diagram preview'}
+                          className="max-h-[46vh] w-auto max-w-full rounded-[var(--r-s)] border-[1.5px] border-[var(--line)]/50 bg-[var(--surface)] object-contain"
+                        />
+                      </Lens>
+                    </div>
+                    <div className="flex shrink-0 flex-wrap items-center gap-3 border-t-2 border-[var(--line)]/20 px-4 py-2.5">
+                      {isSample ? <Tag tone="red">Demo specimen</Tag> : <Tag tone="accent">Loaded</Tag>}
+                      <span className="dat min-w-0 flex-1 truncate text-[12px] font-bold">
+                        {previewName}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setUploadedFile(null)
+                          setKeyWarning(false)
+                        }}
+                        className="link-ink font-mono text-[10px] font-bold uppercase tracking-[0.14em]"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="dropzone"
+                    initial={reduce ? false : { opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={reduce ? undefined : { opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="flex min-h-0 flex-1 flex-col p-3"
+                  >
+                    {/* A drop target shaped like the thing you drop on it.
+                        The old one was a full-width letterbox, which is
+                        the one shape a diagram is never in. */}
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      onDragOver={(e) => {
+                        e.preventDefault()
+                        setDragOver(true)
+                      }}
+                      onDragLeave={() => setDragOver(false)}
+                      onDrop={onDrop}
+                      aria-label="Upload diagram"
+                      className={cn(
+                        'group flex min-h-[240px] w-full flex-1 flex-col items-center justify-center gap-4 rounded-[var(--r-s)] border-2 border-dashed px-6 py-8 text-center',
+                        'transition-[background-color,border-color] duration-[90ms] ease-[cubic-bezier(.2,0,0,1)]',
+                        dragOver
+                          ? 'border-[var(--red)] bg-[color-mix(in_srgb,var(--red)_8%,transparent)]'
+                          : 'border-[var(--line)]/35 bg-transparent hover:border-[var(--line)]/70 hover:bg-[var(--paper)]',
                       )}
+                    >
+                      <span
+                        className={cn(
+                          'flex size-14 shrink-0 items-center justify-center rounded-[var(--r-s)] border-2 border-[var(--line)] transition-[transform,box-shadow,background-color] duration-[90ms]',
+                          dragOver
+                            ? 'translate-x-[4px] translate-y-[4px] bg-[var(--red)] text-white shadow-none'
+                            : 'bg-[var(--yellow)] text-[#0a0a0a] shadow-[4px_4px_0_var(--line)] group-hover:-translate-x-[2px] group-hover:-translate-y-[2px] group-hover:shadow-[6px_6px_0_var(--line)]',
+                        )}
+                      >
+                        <Upload className="size-6" strokeWidth={2.5} />
+                      </span>
+                      <span>
+                        <span className="block font-[family-name:var(--font-archivo)] text-[19px] font-black uppercase leading-none tracking-[-0.02em]">
+                          {dragOver ? 'Release to ingest' : 'Drop a diagram'}
+                        </span>
+                        <span className="mt-2 block font-mono text-[10px] uppercase leading-relaxed tracking-[0.14em] text-[var(--ink-2)]">
+                          or click to browse
+                          <br />
+                          png · jpg · webp · svg · ≤ 2.5 mb
+                        </span>
+                      </span>
+                      <span className="marginalia !text-[15px]">or try the sample →</span>
+                    </button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept={ACCEPTED}
+                      onChange={onPick}
+                      className="sr-only"
+                      aria-hidden
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </section>
+
+            {/* ================= B / C / D · SETTINGS ================= */}
+            <div className="flex min-h-0 min-w-0 flex-col gap-4">
+              <Instrument
+                index="B"
+                title="Cognitive level"
+                hint="Bloom’s taxonomy — cool to warm is low to high cognitive order."
+                className="shrink-0"
+              >
+                <div className="flex flex-col items-center gap-5 md:flex-row md:items-center md:gap-6">
+                  <div className="aspect-square w-full max-w-[248px] shrink-0">
+                    <BloomWheel value={bloomLevel} onChange={setBloomLevel} />
+                  </div>
+                  <div className="min-w-0 flex-1 space-y-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span
+                        className="rounded-[var(--r-xs)] border-[1.5px] border-[var(--line)] px-2 py-[3px] font-mono text-[10px] font-bold uppercase tracking-[0.14em]"
+                        style={{ backgroundColor: meta.hue, color: meta.fg }}
+                      >
+                        {meta.level}
+                      </span>
+                      <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[var(--ink-2)]">
+                        verb · <span className="font-bold text-[var(--ink)]">{meta.verb}</span>
+                      </span>
+                    </div>
+                    <p className="text-[12px] leading-relaxed text-[var(--ink-2)]">{meta.blurb}</p>
+                    {/* the spectrum as a ruler — position in the taxonomy */}
+                    <div className="flex overflow-hidden rounded-[var(--r-xs)] border-[1.5px] border-[var(--line)]">
+                      {(Object.keys(BLOOM_META) as Array<keyof typeof BLOOM_META>).map((lvl, i) => {
+                        const m = BLOOM_META[lvl]
+                        const on = lvl === bloomLevel
+                        return (
+                          <button
+                            key={lvl}
+                            type="button"
+                            onClick={() => setBloomLevel(lvl)}
+                            title={lvl}
+                            aria-label={lvl}
+                            aria-pressed={on}
+                            className={cn(
+                              'h-6 flex-1 rounded-none transition-[opacity] duration-[90ms]',
+                              i > 0 && 'border-l-[1.5px] border-[var(--line)]',
+                              on ? 'opacity-100' : 'opacity-25 hover:opacity-65',
+                            )}
+                            style={{ backgroundColor: m.hue }}
+                          />
+                        )
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </Instrument>
+
+              <div className="grid min-h-0 flex-1 gap-4 sm:grid-cols-2">
+                <Instrument
+                  index="C"
+                  title="Output shape"
+                  hint="How many items the generator writes, and in what format."
+                >
+                  <div className="space-y-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="space-y-1">
+                        <label htmlFor="mcq-only-toggle" className="block text-[12px] font-bold">
+                          Multiple-choice only
+                        </label>
+                        <p className="text-[11px] leading-snug text-[var(--ink-2)]">
+                          Every item gets 4 options and a correct key.
+                        </p>
+                      </div>
+                      <Switch
+                        id="mcq-only-toggle"
+                        checked={mcqOnly}
+                        onCheckedChange={setMcqOnly}
+                        aria-label="Generate multiple-choice questions only"
+                      />
                     </div>
 
-                    {/* File info */}
-                    <div className="space-y-3 p-5 bg-card">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0 space-y-1">
-                          <div className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground">
-                            Source diagram
-                          </div>
-                          <p className="truncate text-sm font-bold">
-                            {previewName}
-                          </p>
-                        </div>
-                        {hasRunDiagram && (
-                          <DataChip tone="emerald">
-                            <span
-                              className="size-1.5 rounded-full bg-accent-foreground"
-                              aria-hidden
-                            />
-                            stored
-                          </DataChip>
-                        )}
+                    <div className="space-y-3 border-t-2 border-dashed border-[var(--line)]/25 pt-4">
+                      <div className="flex items-baseline justify-between">
+                        <label htmlFor="question-count-slider" className="text-[12px] font-bold">
+                          Number of questions
+                        </label>
+                        <span className="dat rounded-[var(--r-xs)] border-[1.5px] border-[var(--line)] bg-[var(--ink)] px-2 py-[2px] text-[12px] font-bold text-[var(--paper)]">
+                          {questionCount}
+                        </span>
+                      </div>
+                      <Slider
+                        id="question-count-slider"
+                        value={[questionCount]}
+                        onValueChange={([v]) => setQuestionCount(v)}
+                        min={1}
+                        max={20}
+                        step={1}
+                        aria-label="Number of questions to generate"
+                      />
+                      <div className="flex justify-between font-mono text-[9px] uppercase tracking-[0.16em] text-[var(--ink-2)]">
+                        <span>1</span>
+                        <span>20</span>
                       </div>
                     </div>
                   </div>
-                </Card>
-              </motion.div>
-            ) : (
-              <motion.div
-                key="dropzone"
-                initial={reduce ? false : { opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={reduce ? undefined : { opacity: 0, y: -8 }}
-                transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-              >
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  onDragOver={(e) => {
-                    e.preventDefault()
-                    setDragOver(true)
-                  }}
-                  onDragLeave={() => setDragOver(false)}
-                  onDrop={onDrop}
-                  aria-label="Upload diagram"
-                  data-fast={dragOver || undefined}
-                  className={cn(
-                    'dropzone-march group relative flex w-full flex-col items-center justify-center gap-3 border-2 border-dashed px-6 py-10 text-center transition-all rounded-[var(--radius)]',
-                    dragOver
-                      ? 'border-accent bg-accent/10'
-                      : 'border-transparent bg-card',
-                  )}
+                </Instrument>
+
+                <Instrument
+                  index="D"
+                  title="Model host"
+                  hint="The vision + text provider that runs every stage."
                 >
-                  <div
-                    className={cn(
-                      'flex size-12 items-center justify-center border transition-all rounded-lg',
-                      dragOver
-                        ? 'border-border bg-accent text-accent-foreground'
-                        : 'border-border bg-muted text-muted-foreground group-hover:text-accent group-hover:scale-105',
+                  <div className="space-y-3">
+                    <ProviderSelect
+                      value={selectedProvider}
+                      onChange={setSelectedProvider}
+                      requireVision
+                      className="h-10 w-full"
+                    />
+                    <div
+                      className={cn(
+                        'flex items-start gap-2 rounded-[var(--r-s)] border-[1.5px] px-3 py-2',
+                        hasUsableProvider
+                          ? 'border-[var(--line)]/30 text-[var(--ink-2)]'
+                          : 'border-[var(--yellow)] bg-[color-mix(in_srgb,var(--yellow)_16%,transparent)] text-[var(--ink)]',
+                      )}
+                    >
+                      {hasUsableProvider ? (
+                        <Check className="mt-[1px] size-3.5 shrink-0" strokeWidth={3} />
+                      ) : (
+                        <AlertTriangle className="mt-[1px] size-3.5 shrink-0" strokeWidth={2.5} />
+                      )}
+                      <p className="text-[11px] leading-snug">
+                        {loadingProviders
+                          ? 'Checking configured providers…'
+                          : hasUsableProvider
+                          ? 'A vision-capable host is ready for your own diagrams.'
+                          : 'No vision key yet — your own uploads can’t run, but the demo still can.'}
+                      </p>
+                    </div>
+                    {!hasUsableProvider && !loadingProviders && (
+                      <Link
+                        href="/app/settings/api-keys"
+                        className="link-ink inline-block font-mono text-[10px] font-bold uppercase tracking-[0.14em]"
+                      >
+                        Add an API key →
+                      </Link>
                     )}
-                  >
-                    <Upload className="size-5" />
                   </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-foreground/90">
-                      {dragOver ? 'Drop to upload' : 'Drag a diagram here, or click to browse'}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      PNG · JPG · WebP · SVG — under 5&nbsp;MB
-                    </p>
-                  </div>
-                </button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept={ACCEPTED}
-                  onChange={onPick}
-                  className="sr-only"
-                  aria-hidden
-                />
-                <div className="mt-3 flex items-center justify-center">
-                  <button
-                    type="button"
-                    onClick={loadSample}
-                    className="inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-all hover:text-accent hover:scale-[1.02]"
-                  >
-                    <Sparkles className="size-3" />
-                    or try a sample diagram
-                  </button>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                </Instrument>
+              </div>
 
-          {!hasRunDiagram && <DashboardStats />}
+              {/* ---------- LEDGER ---------- */}
+              <WorkspaceLedger />
+            </div>
+          </motion.div>
+        )}
+      </div>
 
-          {/* Primary action — sits directly under the workspace metrics.
-              It previously lived at the foot of the ~900px config panel,
-              which put it below the fold. The main column ends at the
-              metrics row and had dead space underneath, so the action is
-              both visible without scrolling and adjacent to the diagram it
-              acts on. Hidden once a run is registered, matching the
-              "Pipeline active" card that replaces the config panel. */}
-          {!hasRunDiagram && (
-            <Card className="space-y-3 border-border/60 bg-card p-4">
-              {!hasUsableProvider ? (
-                <div className="space-y-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-[11px] text-amber-500">
-                  <p className="flex items-center gap-1.5 font-bold">
-                    ⚠️ No Usable API Keys
-                  </p>
-                  <p className="leading-relaxed">
-                    All AI providers are currently missing keys. Please add an API key in{' '}
-                    <Link href="/app/settings/api-keys" className="font-bold underline hover:text-amber-400">
-                      Settings
-                    </Link>{' '}
-                    to start the pipeline.
-                  </p>
-                </div>
-              ) : (
-                <p className="text-[11px] leading-relaxed text-muted-foreground">
-                  {uploadedFile
-                    ? 'Ready to run. The vision agent will initiate the process on click.'
-                    : 'Please select a diagram file to enable the agent pipeline.'}
-                </p>
-              )}
+      {/* ============================== LAUNCH ==============================
+          Paper, not a black slab. One rule at the top separates it from
+          the deck; the only saturated object in the bar is the button
+          you are meant to press, which is exactly where the eye should
+          land when the checklist goes green. */}
+      {!hasRunDiagram && (
+        <motion.div
+          {...rise(0.16)}
+          className="shrink-0 border-t-2 border-[var(--line)] bg-[var(--card)]"
+        >
+          {keyWarning && !hasUsableProvider && (
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b-2 border-[var(--line)]/20 bg-[var(--yellow)] px-5 py-2 text-[#0a0a0a] md:px-8">
+              <AlertTriangle className="size-3.5 shrink-0" strokeWidth={2.5} />
+              <span className="font-mono text-[10px] font-bold uppercase tracking-[0.12em]">
+                No vision-capable API key
+              </span>
+              <span className="text-[11px]">
+                Add one in{' '}
+                <Link href="/app/settings/api-keys" className="font-bold underline underline-offset-2">
+                  Settings → API Keys
+                </Link>
+                , or run the sample — that one never needs a key.
+              </span>
+            </div>
+          )}
+
+          <div className="flex flex-col gap-3 px-5 py-3 md:flex-row md:items-center md:justify-between md:gap-6 md:px-8">
+            <div className="grid min-w-0 gap-x-6 gap-y-1.5 sm:grid-cols-2 lg:grid-cols-4">
+              <CheckLine
+                ok={!!uploadedFile}
+                label="Source"
+                value={uploadedFile ? (isSample ? 'sample' : 'ready') : 'none'}
+              />
+              <CheckLine ok label="Level" value={bloomLevel.toLowerCase()} />
+              <CheckLine
+                ok
+                label="Output"
+                value={`${questionCount}× ${mcqOnly ? 'mcq' : 'short'}`}
+              />
+              <CheckLine
+                ok={isSample || hasUsableProvider}
+                label="Host"
+                value={isSample ? 'demo · local' : hasUsableProvider ? 'ready' : 'no key'}
+              />
+            </div>
+
+            <div className="flex shrink-0 items-center gap-2.5">
+              <span className="hidden whitespace-pre-line text-right font-mono text-[9px] uppercase leading-tight tracking-[0.12em] text-[var(--ink-2)] xl:block">
+                {!uploadedFile
+                  ? 'Load a diagram\nto arm the pipeline'
+                  : isSample
+                  ? 'Scripted run\nno model call'
+                  : 'Six agents\n~40–90 s'}
+              </span>
               <Button
                 type="button"
-                size="lg"
+                variant="outline"
+                onClick={() => {
+                  if (submitting || running) return
+                  startDemo({ name: SAMPLE_DIAGRAM_NAME, dataUrl: sampleDiagramDataUrl() })
+                }}
+                disabled={submitting || running}
+                title="Replays a full scripted run locally — no API key needed"
+              >
+                <Sparkles className="size-4" />
+                Sample demo
+              </Button>
+              <Button
+                type="button"
                 onClick={runPipeline}
-                disabled={!uploadedFile || submitting || running || !hasUsableProvider}
-                className="spring-transition w-full hover:scale-[1.02] active:scale-[0.98]"
+                disabled={!uploadedFile || submitting || running}
+                className="min-w-[176px]"
               >
                 {submitting ? (
                   <>
@@ -463,149 +1024,17 @@ export function UploadStage() {
                   </>
                 )}
               </Button>
-            </Card>
-          )}
-        </div>
-
-        {/* ---------------- Right Column: Configuration ---------------- */}
-        <div className="scroll-slim min-w-0 space-y-4 xl:sticky xl:top-[4.75rem] xl:max-h-[calc(100vh-6.5rem)] xl:overflow-y-auto xl:pr-1">
-          {hasRunDiagram ? (
-            <Card className="brutal-block p-5 space-y-4">
-              <div className="space-y-1">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-foreground">Pipeline active</h3>
-                <p className="text-xs text-muted-foreground">
-                  The diagram has been registered and is being processed by the agent pipeline.
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-2 pt-4 border-t border-border/40">
-                <DataChip tone="emerald">{bloomLevel}</DataChip>
-                <DataChip>{running ? 'running' : 'complete'}</DataChip>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleReset}
-                  disabled={running}
-                  className="ml-auto"
-                >
-                  <RotateCcw className="size-3.5" />
-                  Reset stage
-                </Button>
-              </div>
-            </Card>
-          ) : (
-            <>
-              {/* AI Provider Select */}
-              <div className="space-y-2">
-                <div>
-                  <h3 className="text-sm font-bold text-foreground">AI Provider</h3>
-                  <p className="text-xs text-muted-foreground">
-                    Vision and text model host running the pipeline stages.
-                  </p>
-                </div>
-                <ProviderSelect
-                  value={selectedProvider}
-                  onChange={setSelectedProvider}
-                  requireVision
-                  className="h-10 w-full"
-                />
-              </div>
-
-              {/* Bloom's level difficulty selection */}
-              <div className="space-y-2">
-                <div>
-                  <h3 className="text-sm font-bold text-foreground">Difficulty (Bloom&apos;s level)</h3>
-                  <p className="text-xs text-muted-foreground">
-                    Calibrate difficulty based on Bloom&apos;s Cognitive Taxonomy.
-                  </p>
-                </div>
-
-                <Card className="brutal-block p-3.5 space-y-3">
-                  <div className="mx-auto aspect-square w-full max-w-[218px]">
-                    <BloomWheel value={bloomLevel} onChange={setBloomLevel} />
-                  </div>
-
-                  <div className="space-y-2 border-t border-border/40 pt-4">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <DataChip tone="emerald">
-                        {BLOOM_META[bloomLevel].level}
-                      </DataChip>
-                      <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-                        verb · {BLOOM_META[bloomLevel].verb}
-                      </span>
-                    </div>
-                    <div className="flex items-start gap-2.5 rounded-lg border border-border/50 bg-card/30 px-3.5 py-2.5">
-                      <span
-                        className="mt-1 size-2 shrink-0 rounded-full"
-                        style={{ backgroundColor: BLOOM_META[bloomLevel].hue }}
-                        aria-hidden
-                      />
-                      <div className="space-y-0.5">
-                        <p className="text-xs font-bold">{bloomLevel}</p>
-                        <p className="text-[11px] leading-relaxed text-muted-foreground">
-                          {BLOOM_META[bloomLevel].blurb}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              </div>
-
-              {/* Question Settings panel */}
-              <div className="space-y-2">
-                <div>
-                  <h3 className="text-sm font-bold text-foreground">Question Settings</h3>
-                </div>
-
-                <Card className="brutal-block space-y-3 p-3.5">
-                  {/* MCQ toggle */}
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="space-y-0.5">
-                      <label htmlFor="mcq-only-toggle" className="text-xs font-bold">
-                        Multiple-choice only
-                      </label>
-                      <p className="text-[10px] text-muted-foreground leading-relaxed">
-                        When active, every generated item includes 4 options and a correct key.
-                      </p>
-                    </div>
-                    <Switch
-                      id="mcq-only-toggle"
-                      checked={mcqOnly}
-                      onCheckedChange={setMcqOnly}
-                      aria-label="Generate multiple-choice questions only"
-                    />
-                  </div>
-
-                  {/* Question count */}
-                  <div className="space-y-2 border-t border-border/40 pt-3">
-                    <div className="flex items-center justify-between">
-                      <label htmlFor="question-count-slider" className="text-xs font-bold">
-                        Number of questions
-                      </label>
-                      <DataChip tone="emerald">{questionCount}</DataChip>
-                    </div>
-                    <Slider
-                      id="question-count-slider"
-                      value={[questionCount]}
-                      onValueChange={([v]) => setQuestionCount(v)}
-                      min={1}
-                      max={20}
-                      step={1}
-                      aria-label="Number of questions to generate"
-                    />
-                    <div className="flex justify-between text-[9px] font-mono uppercase tracking-wider text-muted-foreground">
-                      <span>1</span>
-                      <span>20</span>
-                    </div>
-                  </div>
-                </Card>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-    </StageFrame>
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </div>
   )
 }
+
+/* ------------------------------------------------------------------ */
+/* Workspace ledger — shown only once there is history to report       */
+/* ------------------------------------------------------------------ */
 
 interface StatsData {
   runs: {
@@ -621,70 +1050,68 @@ interface StatsData {
   providers: number
 }
 
-function DashboardStats() {
+function WorkspaceLedger() {
   const [stats, setStats] = React.useState<StatsData | null>(null)
-  const [loading, setLoading] = React.useState(true)
 
   React.useEffect(() => {
+    let alive = true
     fetch('/api/stats')
       .then((res) => (res.ok ? res.json() : null))
-      .then((data) => setStats(data))
+      .then((data) => {
+        if (alive) setStats(data)
+      })
       .catch(() => {})
-      .finally(() => setLoading(false))
+    return () => {
+      alive = false
+    }
   }, [])
 
-  if (loading) {
-    return (
-      <div className="flex h-32 items-center justify-center rounded-lg border border-border/30 bg-muted/5 animate-pulse">
-        <Loader2 className="size-4 animate-spin text-muted-foreground/60" />
-      </div>
-    )
-  }
+  // A fresh workspace has nothing to report, and four zeroes read as a
+  // failure state rather than an empty one. Stay silent until there is
+  // an actual run to count.
+  if (!stats || stats.runs.total === 0) return null
 
-  if (!stats) return null
+  const dur =
+    stats.runs.averageDurationMs === null
+      ? '—'
+      : `${Math.round(stats.runs.averageDurationMs / 1000)}s`
 
-  const formatDuration = (ms: number | null) => {
-    if (ms === null) return 'N/A'
-    const sec = Math.round(ms / 1000)
-    return `${sec}s`
-  }
+  const cells = [
+    { k: 'Total runs', v: String(stats.runs.total) },
+    { k: 'Success rate', v: `${Math.round(stats.runs.successRate * 100)}%` },
+    { k: 'Avg duration', v: dur },
+    { k: 'Saved agents', v: String(stats.agents) },
+  ]
 
   return (
-    <div className="space-y-3 pt-2">
-      <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-        Workspace Dashboard Metrics
-      </div>
-      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-        {/* Total Runs Card */}
-        <Card className="p-2.5 bg-muted/10 border-border/30 space-y-1 rounded-xl">
-          <div className="text-[9px] font-mono text-muted-foreground uppercase tracking-wide">Total Runs</div>
-          <div className="text-base font-black leading-none">{stats.runs.total}</div>
-        </Card>
-
-        {/* Success Rate Card */}
-        <Card className="p-2.5 bg-muted/10 border-border/30 space-y-1 rounded-xl">
-          <div className="text-[9px] font-mono text-muted-foreground uppercase tracking-wide">Success Rate</div>
-          <div className="text-base font-black leading-none text-emerald-500">
-            {Math.round(stats.runs.successRate * 100)}%
+    <section className="mt-auto pt-1">
+      <div className="fig-label mb-2">Workspace ledger</div>
+      <dl className="grid grid-cols-2 overflow-hidden rounded-[var(--r)] border-2 border-[var(--line)] bg-[var(--card)] sm:grid-cols-4">
+        {cells.map((c) => (
+          <div
+            key={c.k}
+            className={cn(
+              'rounded-none border-[var(--line)]/20 px-3.5 py-2.5',
+              '[&:nth-child(odd)]:border-r-2 [&:nth-child(n+3)]:border-t-2',
+              'sm:[&:nth-child(odd)]:border-r-0 sm:[&:nth-child(n+3)]:border-t-0 sm:[&:not(:first-child)]:border-l-2',
+            )}
+          >
+            <dt className="font-mono text-[8.5px] font-bold uppercase tracking-[0.16em] text-[var(--ink-2)]">
+              {c.k}
+            </dt>
+            {/* Outlined numerals. A workspace ledger is a footnote, not
+                a scoreboard — hollow type keeps the figures legible at
+                display size without letting four of them outweigh the
+                one control on the page that actually does something. */}
+            <dd
+              className="dat mt-1 font-[family-name:var(--font-archivo)] text-[26px] font-black leading-none text-transparent"
+              style={{ WebkitTextStroke: '1.5px var(--ink)', paintOrder: 'stroke fill' }}
+            >
+              {c.v}
+            </dd>
           </div>
-        </Card>
-
-        {/* Avg Duration Card */}
-        <Card className="p-2.5 bg-muted/10 border-border/30 space-y-1 rounded-xl">
-          <div className="text-[9px] font-mono text-muted-foreground uppercase tracking-wide">Avg Duration</div>
-          <div className="text-base font-black leading-none">
-            {formatDuration(stats.runs.averageDurationMs)}
-          </div>
-        </Card>
-
-        {/* Custom Agents Card */}
-        <Card className="p-2.5 bg-muted/10 border-border/30 space-y-1 rounded-xl">
-          <div className="text-[9px] font-mono text-muted-foreground uppercase tracking-wide">Saved Agents</div>
-          <div className="text-base font-black leading-none text-primary">
-            {stats.agents}
-          </div>
-        </Card>
-      </div>
-    </div>
+        ))}
+      </dl>
+    </section>
   )
 }
