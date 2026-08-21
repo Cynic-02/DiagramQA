@@ -40,13 +40,13 @@ export function StageHeader({ stageId }: { stageId: StageId }) {
   const stageState = usePipelineStore((s) => s.stages[stageId])
 
   return (
-    <header className="space-y-4 border-b border-border/40 pb-6">
-      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between md:gap-6">
-        <div className="min-w-0 space-y-1.5">
-          <div className="text-[11px] font-mono font-bold uppercase tracking-[0.14em] text-muted-foreground">
+    <header className="space-y-2">
+      <div className="flex flex-col gap-3 md:flex-row md:items-baseline md:justify-between md:gap-6">
+        <div className="min-w-0 space-y-1">
+          <div className="lbl text-[var(--ink-2)]">
             Stage · {stage.short}
           </div>
-          <h1 className="text-2xl font-black uppercase tracking-tight md:text-[28px]">
+          <h1 className="font-[family-name:var(--font-archivo)] text-xl font-black uppercase tracking-[-0.03em] md:text-2xl">
             <DecryptedText
               text={stage.label}
               animateOn="view"
@@ -58,9 +58,9 @@ export function StageHeader({ stageId }: { stageId: StageId }) {
               parentClassName="text-foreground font-black"
             />
           </h1>
-          <p className="max-w-2xl text-sm font-medium text-muted-foreground">
-            <span className="font-bold text-foreground">{stage.agent}</span>
-            <span className="mx-1.5 text-muted-foreground">·</span>
+          <p className="max-w-3xl text-[12px] leading-snug text-[var(--ink-2)]">
+            <span className="font-bold text-[var(--ink)]">{stage.agent}</span>
+            <span className="mx-1.5">·</span>
             {stage.description}
           </p>
         </div>
@@ -68,9 +68,9 @@ export function StageHeader({ stageId }: { stageId: StageId }) {
       </div>
 
       {stageState.message && (
-        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+        <div className="flex items-center gap-2 font-mono text-[11px] text-[var(--ink-2)]">
           {stageState.status === 'running' && (
-            <Loader2 className="size-3.5 animate-spin text-foreground" />
+            <Loader2 className="size-3 animate-spin text-[var(--ink)]" />
           )}
           <span className="truncate">{stageState.message}</span>
         </div>
@@ -93,19 +93,28 @@ export function EmptyState({
   icon?: LucideIcon
 }) {
   return (
-    <div className="flex min-h-[340px] flex-col items-center justify-center gap-3 rounded-[var(--radius)] border border-dashed border-border bg-card px-6 py-24 text-center">
-      {Icon && (
-        <div className="flex size-12 items-center justify-center rounded-lg border border-border/70 bg-muted shadow-sm">
-          <ShaderIcon icon={Icon} size={20} colorTint="#94a3b8" speed={0.35} />
-        </div>
-      )}
-      <div className="space-y-1">
-        <p className="text-sm font-bold text-foreground">{title}</p>
-        {hint && (
-          <p className="mx-auto max-w-sm text-xs font-medium leading-relaxed text-muted-foreground">
-            {hint}
-          </p>
+    /* Sized to its own content, centred in whatever space it is given.
+       The previous version carried `min-h-[340px]` and `py-24`, so an
+       empty stage rendered a dashed box the height of the viewport —
+       the page shouted loudest at the exact moment it had least to
+       say. */
+    <div className="flex flex-1 items-center justify-center px-6 py-10">
+      <div className="ticket flex max-w-[480px] flex-col items-center gap-3 px-8 py-7 text-center">
+        {Icon && (
+          <div className="flex size-11 items-center justify-center rounded-[var(--r-s)] border-2 border-[var(--line)] bg-[var(--yellow)]">
+            <ShaderIcon icon={Icon} size={20} colorTint="#0a0a0a" speed={0.35} />
+          </div>
         )}
+        <div className="space-y-1.5">
+          <p className="font-[family-name:var(--font-archivo)] text-[15px] font-black uppercase tracking-[-0.01em]">
+            {title}
+          </p>
+          {hint && (
+            <p className="mx-auto max-w-[46ch] text-[11.5px] leading-relaxed text-[var(--ink-2)]">
+              {hint}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -127,7 +136,7 @@ export function RunningShimmer({ label }: { label: string }) {
         {[0, 1, 2].map((i) => (
           <div
             key={i}
-            className="relative h-20 overflow-hidden border border-border/70 rounded-[var(--radius)] bg-card"
+            className="relative h-20 overflow-hidden rounded-[var(--r)] border-[1.5px] border-[var(--line)]/30 bg-[var(--card)]"
           >
             <motion.div
               aria-hidden
@@ -160,11 +169,7 @@ export function StageFrame({
   stageId: StageId
   children: React.ReactNode
   /**
-   * Set false when the stage renders its own <StageHeader> inside a
-   * column. UploadStage does this: with the header spanning full width,
-   * its side panel was forced below it, leaving a large dead rectangle
-   * in the top-right of the viewport. Moving the header into the main
-   * column lets the panel start at the top and fill that space.
+   * Set false when the stage renders its own header inside a column.
    */
   showHeader?: boolean
 }) {
@@ -174,17 +179,20 @@ export function StageFrame({
       initial={reduce ? false : { opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-      className="relative mx-auto w-full max-w-[1500px] px-6 py-5 md:px-8 md:py-6"
+      /* The shell hands every stage a fixed-height box and never scrolls
+         the document. A stage is therefore a column: chrome pinned, one
+         scrolling pane. Anything that overflows scrolls *inside* the
+         frame, so the rail, top bar and dock stay put. */
+      className="flex h-full min-h-0 flex-col"
     >
-      {showHeader && <StageHeader stageId={stageId} />}
-      <motion.div
-        initial={reduce ? false : { opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
-        className={showHeader ? 'mt-5 md:mt-6' : undefined}
-      >
-        {children}
-      </motion.div>
+      {showHeader && (
+        <div className="shrink-0 border-b-2 border-[var(--line)] bg-[var(--card)] px-5 py-3.5 md:px-8">
+          <StageHeader stageId={stageId} />
+        </div>
+      )}
+      <div className="scroll-slim min-h-0 flex-1 overflow-y-auto px-5 py-5 md:px-8">
+        <div className="mx-auto w-full max-w-[1500px]">{children}</div>
+      </div>
     </motion.section>
   )
 }

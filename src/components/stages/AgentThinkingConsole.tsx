@@ -168,6 +168,16 @@ export function AgentThinkingConsole({
   const Icon = cfg.icon
   const accent = ACCENT_HEX[cfg.accent]
 
+  // This stage's own status in the run. Once it leaves 'running' the
+  // console freezes into a settled, read-only bubble instead of looping
+  // its "awaiting model response" prompt forever — that loop only makes
+  // sense while this agent is the one actually talking. A frozen console
+  // is what lets several agents' consoles sit stacked on one page, each
+  // one legible on its own, like scrollback in a chat thread.
+  const stageState = usePipelineStore((s) => s.stages[stageId])
+  const stageStatus = stageState?.status ?? 'idle'
+  const frozen = stageStatus !== 'idle' && stageStatus !== 'running'
+
   // Live logs from the store. Once a real reasoning line for this stage
   // arrives, we stop the scripted placeholder animation and switch to
   // showing genuine model output — the scripted lines were only ever a
@@ -184,11 +194,13 @@ export function AgentThinkingConsole({
 
   // which scripted thought we're on (only advances while no real data yet)
   const [thoughtIdx, setThoughtIdx] = React.useState(0)
-  const scriptedDone = hasRealReasoning || thoughtIdx >= cfg.thoughts.length
+  const scriptedDone = hasRealReasoning || frozen || thoughtIdx >= cfg.thoughts.length
 
-  // typewriter for the current scripted thought
+  // typewriter for the current scripted thought — disabled once frozen,
+  // so a stage that finished early doesn't keep animating in the background
+  // while a later stage in the feed is the one actually "live".
   const currentThought = cfg.thoughts[thoughtIdx] ?? ''
-  const typed = useTypewriter(currentThought, 22, !reduce && !hasRealReasoning)
+  const typed = useTypewriter(currentThought, 22, !reduce && !hasRealReasoning && !frozen)
 
   // advance to the next thought a beat after the current finishes typing
   React.useEffect(() => {
@@ -198,6 +210,12 @@ export function AgentThinkingConsole({
     return () => clearTimeout(t)
   }, [typed, currentThought, scriptedDone])
 
+  // Once the stage finishes, snap straight to the end of the scripted
+  // list so nothing is left mid-sentence in the frozen view.
+  React.useEffect(() => {
+    if (frozen) setThoughtIdx(cfg.thoughts.length)
+  }, [frozen, cfg.thoughts.length])
+
   // auto-scroll the body to the bottom as content grows
   const bodyRef = React.useRef<HTMLDivElement>(null)
   React.useEffect(() => {
@@ -205,11 +223,12 @@ export function AgentThinkingConsole({
     if (el) el.scrollTop = el.scrollHeight
   }, [typed, thoughtIdx, liveLines.length])
 
-  // faux live metrics that tick up while thinking
+  // faux live metrics that tick up while thinking, and hold still once frozen
   const [tokens, setTokens] = React.useState(0)
   const [elapsed, setElapsed] = React.useState(0)
   const startTime = React.useRef<number | null>(null)
   React.useEffect(() => {
+    if (frozen) return
     startTime.current = Date.now()
     const id = setInterval(() => {
       setTokens((t) => t + Math.floor(Math.random() * 90) + 30)
@@ -218,7 +237,7 @@ export function AgentThinkingConsole({
       }
     }, 420)
     return () => clearInterval(id)
-  }, [stageId])
+  }, [stageId, frozen])
 
   // build the rendered line list
   const doneThoughts = cfg.thoughts.slice(0, thoughtIdx)
@@ -228,69 +247,96 @@ export function AgentThinkingConsole({
       initial={reduce ? false : { opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+      /* Paper, not a terminal.
+         This was a near-black rounded panel with a 50px blurred drop
+         shadow and three little traffic-light dots — a macOS terminal
+         screenshot dropped into the middle of a cream drafting page.
+         Nothing else in the product looks remotely like it, and the
+         one screen where a teacher is watching six agents work should
+         not be the screen that stops looking like the product.
+         It is now the same object as every other panel: card ground,
+         ink rule, hard offset shadow, and the agent's Bloom hue as a
+         spine down the left edge so you can tell which of the six is
+         talking without reading the header. */
       className={cn(
-        'relative overflow-hidden rounded-2xl',
+        'glass-surface relative flex overflow-hidden border-2 border-[var(--line)] shadow-[5px_5px_0_var(--line)]',
         className
       )}
-      style={{
-        background: 'rgba(10,10,10,0.95)',
-        border: '2px solid rgba(255,255,255,0.1)',
-        boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
-      }}
       role="status"
       aria-live="polite"
       aria-label={`${cfg.agent} thinking`}
     >
+      <span
+        className="w-[6px] shrink-0 rounded-none"
+        style={{ background: accent }}
+        aria-hidden
+      />
+      <div className="min-w-0 flex-1">
       {/* ---- Header ---- */}
-      <div className="relative flex items-center justify-between gap-3 border-b border-white/10 px-5 py-3">
+      <div className="relative flex items-center justify-between gap-3 border-b-2 border-[var(--line)]/20 px-4 py-2.5">
         <div className="flex min-w-0 items-center gap-2.5">
           <span
-            className="flex size-7 shrink-0 items-center justify-center rounded-full"
+            className="flex size-7 shrink-0 items-center justify-center rounded-[var(--r-xs)] border-[1.5px] border-[var(--line)]"
             style={{ backgroundColor: accent }}
           >
             <ShaderIcon icon={Icon} size={15} colorTint="#0a0a0a" speed={0.5} />
           </span>
           <div className="min-w-0 leading-tight">
             <div className="flex items-center gap-2">
-              <span className="truncate text-[13px] font-black uppercase text-white">
+              <span className="truncate font-[family-name:var(--font-archivo)] text-[13px] font-black uppercase tracking-[0.02em]">
                 {cfg.agent}
               </span>
-              <span
-                className="hidden font-mono text-[10px] font-bold uppercase tracking-wider sm:inline"
-                style={{ color: accent }}
-              >
-                thinking
+              <span className="hidden rounded-[var(--r-xs)] border-[1.5px] border-[var(--line)]/35 px-1.5 py-[2px] font-mono text-[9px] font-bold uppercase tracking-[0.14em] text-[var(--ink-2)] sm:inline">
+                {frozen
+                  ? stageStatus === 'error'
+                    ? 'error'
+                    : stageStatus === 'flagged'
+                    ? 'flagged'
+                    : 'done'
+                  : 'thinking'}
               </span>
             </div>
-            <div className="flex items-center gap-1">
-              <span
-                className="thinking-dot size-1.5 rounded-full"
-                style={{ backgroundColor: accent, animationDelay: '0ms' }}
-              />
-              <span
-                className="thinking-dot size-1.5 rounded-full"
-                style={{ backgroundColor: accent, animationDelay: '160ms' }}
-              />
-              <span
-                className="thinking-dot size-1.5 rounded-full"
-                style={{ backgroundColor: accent, animationDelay: '320ms' }}
-              />
-            </div>
+            {frozen ? (
+              <div className="mt-1 flex items-center gap-1.5 font-mono text-[9px] font-bold uppercase tracking-[0.12em] text-[var(--ink-2)]">
+                <svg viewBox="0 0 16 16" className="size-3 shrink-0" aria-hidden>
+                  <path
+                    d="M3 8.5L6.3 12L13 4"
+                    fill="none"
+                    stroke={accent}
+                    strokeWidth="2.4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                <span>settled</span>
+              </div>
+            ) : (
+              <div className="mt-1 flex items-center gap-1">
+                {[0, 160, 320].map((d) => (
+                  <span
+                    key={d}
+                    className="thinking-dot size-1.5 rounded-full border-[1.5px] border-[var(--line)]"
+                    style={{ backgroundColor: accent, animationDelay: `${d}ms` }}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </div>
-        <div className="flex shrink-0 items-center gap-3 font-mono text-[10px] font-bold text-white/60">
+        <div className="flex shrink-0 items-center gap-3 font-mono text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--ink-2)]">
           <span>
-            ctx <span style={{ color: accent }}>{(tokens / 1000).toFixed(1)}k</span>
+            ctx <span className="text-[var(--ink)]">{(tokens / 1000).toFixed(1)}k</span>
           </span>
-          <span className="hidden sm:inline">
-            <span style={{ color: accent }}>{elapsed.toFixed(1)}s</span>
-          </span>
-          <span className="flex items-center gap-1">
+          <span className="hidden sm:inline text-[var(--ink)]">{elapsed.toFixed(1)}s</span>
+          <span className="flex items-center gap-1.5">
             <span
-              className="inline-block size-2 rounded-full"
+              className={cn(
+                'inline-block size-2 rounded-full border-[1.5px] border-[var(--line)]',
+                !frozen && !reduce && 'animate-pulse',
+              )}
               style={{ backgroundColor: accent }}
             />
-            <span style={{ color: accent }}>live</span>
+            <span className="text-[var(--ink)]">{frozen ? 'done' : 'live'}</span>
           </span>
         </div>
       </div>
@@ -298,15 +344,8 @@ export function AgentThinkingConsole({
       {/* ---- Body: streaming thoughts ---- */}
       <div
         ref={bodyRef}
-        className="scroll-slim relative max-h-72 min-h-40 overflow-y-auto px-5 py-4 font-mono text-[12.5px] leading-relaxed"
+        className="glass-inner scroll-slim relative max-h-72 min-h-40 overflow-y-auto px-4 py-3.5 font-mono text-[12.5px] leading-relaxed"
       >
-        {/* window chrome dots */}
-        <div className="pointer-events-none absolute right-4 top-3.5 flex gap-1.5">
-          <span className="size-1.5 rounded-full bg-rose-500/80" />
-          <span className="size-1.5 rounded-full bg-amber-500/80" />
-          <span className="size-1.5 rounded-full bg-emerald-500/80" />
-        </div>
-
         <div className="space-y-1.5">
           {hasRealReasoning ? (
             // Real model reasoning is available for this stage — show only
@@ -324,9 +363,20 @@ export function AgentThinkingConsole({
             </>
           )}
 
-          {/* idle trailing prompt once everything is streamed but stage still running */}
-          {scriptedDone && (
-            <div className="flex items-center gap-2 pt-0.5 text-white/40">
+          {/* closing line once this agent has actually finished — its real
+              stage message, not an endless "still waiting" prompt */}
+          {frozen && stageState?.message && (
+            <ThoughtLine
+              text={stageState.message}
+              accent={accent}
+              done
+              level={stageStatus === 'error' ? 'error' : stageStatus === 'flagged' ? 'warn' : 'success'}
+            />
+          )}
+
+          {/* idle trailing prompt only while THIS agent is still the live one */}
+          {!frozen && scriptedDone && (
+            <div className="flex items-center gap-2 pt-0.5 text-[var(--ink-2)]">
               <span style={{ color: accent }}>›</span>
               <span className="thinking-caret" style={{ backgroundColor: accent }} />
               <span className="text-[11px]">awaiting model response…</span>
@@ -336,20 +386,27 @@ export function AgentThinkingConsole({
       </div>
 
       {/* ---- Footer: status bar ---- */}
-      <div className="relative flex items-center justify-between gap-3 border-t border-white/10 px-5 py-2.5 font-mono text-[10px] font-bold text-white/60">
+      <div className="relative flex items-center justify-between gap-3 border-t-2 border-[var(--line)]/20 px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--ink-2)]">
         <span className="truncate">
-          {label ?? (scriptedDone ? 'streaming live output' : 'reasoning in progress')}
+          {frozen
+            ? `finished in ${elapsed.toFixed(1)}s`
+            : label ?? (scriptedDone ? 'streaming live output' : 'reasoning in progress')}
         </span>
-        {/* scanning progress bar */}
-        <div className="relative h-1.5 w-28 overflow-hidden rounded-full border border-white/20 bg-white/5">
-          <div
-            className="absolute inset-y-0 w-1/2"
-            style={{
-              backgroundColor: accent,
-              animation: reduce ? undefined : 'thinking-scan 1.8s linear infinite',
-            }}
-          />
+        {/* scanning progress bar while live; a solid settled bar once frozen */}
+        <div className="relative h-2 w-28 overflow-hidden rounded-full border-[1.5px] border-[var(--line)] bg-[var(--paper)]">
+          {frozen ? (
+            <div className="absolute inset-0" style={{ backgroundColor: accent }} />
+          ) : (
+            <div
+              className="absolute inset-y-0 w-1/2"
+              style={{
+                backgroundColor: accent,
+                animation: reduce ? undefined : 'thinking-scan 1.8s linear infinite',
+              }}
+            />
+          )}
         </div>
+      </div>
       </div>
     </motion.div>
   )
@@ -375,9 +432,14 @@ function ThoughtLine({
       a status event, not as part of the model's own reasoning. */
   level?: 'info' | 'warn' | 'error' | 'success'
 }) {
-  const glyphColor = level === 'warn' ? '#f59e0b' : level === 'error' ? '#f87171' : accent
+  const glyphColor =
+    level === 'warn' ? 'var(--bloom-5)' : level === 'error' ? 'var(--red)' : accent
   const textColor =
-    level === 'warn' ? 'text-amber-300/90' : level === 'error' ? 'text-red-300/90' : 'text-white/85'
+    level === 'warn'
+      ? 'text-[var(--bloom-5)]'
+      : level === 'error'
+      ? 'text-[var(--red)]'
+      : 'text-[var(--ink)]'
   const glyph = level === 'warn' ? '⚠' : level === 'error' ? '✕' : done ? '✓' : '›'
   return (
     <div className="flex items-start gap-2">

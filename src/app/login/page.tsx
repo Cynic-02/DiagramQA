@@ -42,7 +42,7 @@ export default function LoginPage() {
   const stageRef = React.useRef<HTMLDivElement | null>(null)
   const plateRef = React.useRef<PlateHandle | null>(null)
 
-  const [plate, setPlate] = React.useState('THE GLOBE')
+  const [plate, setPlate] = React.useState('THE LENS')
   const [mode, setMode] = React.useState<Mode>('signin')
   const [name, setName] = React.useState('')
   const [email, setEmail] = React.useState('')
@@ -73,9 +73,20 @@ export default function LoginPage() {
           autoplay: 6,
           anchorX: 800,
           chips: false,
-          viewBox: '300 30 1000 844',
+          /* Tighter than the homepage's. The sign-in stage is a
+             half-width column, so the same viewBox that reads as
+             full-bleed there rendered the plate at about two thirds
+             the size it should be here. */
+          viewBox: '390 76 830 748',
           preserveAspectRatio: 'xMidYMid meet',
           flight: 'premium',
+          /* Sign-in gets its own three plates. Replaying the
+             homepage's globe here made the two pages read as one
+             page, and the globe is the most recognisable drawing
+             in the product — the worst possible thing to repeat.
+             Optics, structures, anatomy: same drafting rules,
+             nothing in common with the marketing sequence. */
+          only: ['LENS', 'TRUSS', 'HEART'],
           onScene: (_i, sceneName) => setPlate(sceneName),
         })
         plateRef.current = handle
@@ -206,9 +217,10 @@ export default function LoginPage() {
             QUESTION SET.
           </h2>
           <p className="pitchsub">
-            Eight plates, one pipeline. The model has no idea what a cell is — it reads
-            structure, which is why the same six agents work on a membrane, a circuit and an
-            orbit without one subject-specific rule between them.
+            A lens, a truss, a heart. The model has no idea what any of them are — it reads{' '}
+            <span className="marker-highlight">structure</span>, which is why the same six agents work on
+            optics, a bridge and an anatomy plate without one subject-specific rule between
+            them.
           </p>
         </div>
 
@@ -378,6 +390,23 @@ export default function LoginPage() {
             </div>
           </div>
         </div>
+
+        {/* The right column was one card floating in a field of
+            paper. Three cells of standing fact under it give the
+            column a base, and they are the three things somebody
+            hesitating on a sign-in form actually wants to know. */}
+        <dl className="cardmeta" aria-label="What a run does">
+          {[
+            ['6', 'agents per run'],
+            ['6', 'Bloom levels'],
+            ['100%', 'answers verified'],
+          ].map(([v, k]) => (
+            <div key={k}>
+              <dt>{v}</dt>
+              <dd>{k}</dd>
+            </div>
+          ))}
+        </dl>
 
         <p className="terms">
           By continuing you agree to the Terms and acknowledge the Privacy Policy.

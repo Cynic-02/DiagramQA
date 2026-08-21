@@ -4,89 +4,70 @@ import * as React from 'react'
 import { usePipelineStore } from '@/lib/store'
 import { PipelineSidebar } from './PipelineSidebar'
 import { TopBar } from './TopBar'
-import { AgentLogRail } from './AgentLogRail'
+import { ConsoleDock } from './ConsoleDock'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 
 /**
- * App shell wrapping the console section of the single `/` page.
+ * App shell for the console.
  *
- * Renders `<section id="console">` as its root — the hero's "Begin" button
- * smooth-scrolls to this anchor. Inside: a sticky left pipeline sidebar
- * (desktop) / off-canvas Sheet drawer (mobile) + a main content column with
- * a sticky `TopBar` and the live `AgentLogRail` floating bottom-right.
+ * THE FRAME
+ * ---------
+ * The shell is locked to the viewport (`h-screen`, `overflow-hidden`) and
+ * every region inside it is a flex child that manages its own scrolling.
+ * The document itself never scrolls, so the sidebar, the top bar, the
+ * dock and the status strip are always where you left them and only the
+ * content pane moves. Stages are handed a fixed-height box and are
+ * expected to fill it — `StageFrame` does that for the ones that don't
+ * lay themselves out.
  *
- * The orchestrator's page mounts it as:
- *
- * ```tsx
- * <AppShell>{renderActiveStage()}</AppShell>
- * ```
- *
- * where `renderActiveStage()` returns the stage component for the current
- * `activeStage` from the store. The shell is `min-h-screen flex flex-col` so
- * a page-level footer (rendered by the orchestrator as a sibling AFTER the
- * shell) sits at the bottom of the viewport when content is short.
+ * Three columns: pipeline rail, content, dock. The dock replaces the two
+ * floating widgets (agent log, follow-up chat) that used to sit on top of
+ * the content in the bottom-right corner; it takes its width out of the
+ * layout instead of covering anything.
  */
 export function AppShell({
   children,
   footer,
 }: {
   children: React.ReactNode
-  /**
-   * Page footer, rendered INSIDE the main column.
-   *
-   * It used to be a sibling after <AppShell>, which meant the flex row
-   * holding the sticky rail ended above it. A `sticky top-0 h-screen`
-   * element stops sticking once its containing block's bottom scrolls
-   * past, so near the page bottom the rail detached and its footer
-   * (Run box, Collapse) visibly slid upward. Putting the page footer in
-   * the main column extends the row to the full document height, so the
-   * rail stays put all the way down.
-   */
+  /** Thin status strip pinned to the bottom of the content column. */
   footer?: React.ReactNode
 }) {
   const sidebarCollapsed = usePipelineStore((s) => s.sidebarCollapsed)
   const [mobileOpen, setMobileOpen] = React.useState(false)
 
   return (
-    <section
-      id="console"
-      className="relative flex min-h-screen flex-col"
-    >
+    <section id="console" className="relative flex h-screen flex-col overflow-hidden">
       {/* Top hairline accent — solid flat border, not a gradient thread */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 z-40 h-1 bg-primary"
+        className="pointer-events-none absolute inset-x-0 top-0 z-40 h-1 bg-[var(--red)]"
       />
 
-      <div className="flex flex-1">
-        {/* Desktop fixed rail (sticky on lg+) */}
+      <div className="flex min-h-0 flex-1">
+        {/* Desktop pipeline rail */}
         <PipelineSidebar collapsed={sidebarCollapsed} variant="rail" />
 
         {/* Mobile off-canvas drawer */}
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <SheetContent
             side="left"
-            className="w-[280px] gap-0 border-border bg-sidebar p-0 sm:max-w-[280px]"
+            className="w-[280px] gap-0 border-[var(--line)] bg-[var(--card)] p-0 sm:max-w-[280px]"
           >
             <SheetTitle className="sr-only">Pipeline navigation</SheetTitle>
             <PipelineSidebar collapsed={false} variant="sheet" />
           </SheetContent>
         </Sheet>
 
-        {/* Main column */}
-        <div className="flex min-w-0 flex-1 flex-col">
+        {/* Content column */}
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           <TopBar onOpenMobileSidebar={() => setMobileOpen(true)} />
-
-          <main className="relative flex-1">
-            {/* Active stage content (provided by the orchestrator) */}
-            <div className="relative z-10">{children}</div>
-
-            {/* Floating live log rail */}
-            <AgentLogRail />
-          </main>
-
+          <main className="relative min-h-0 flex-1 overflow-hidden">{children}</main>
           {footer}
         </div>
+
+        {/* Right dock: agent log + follow-up chat */}
+        <ConsoleDock />
       </div>
     </section>
   )

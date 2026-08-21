@@ -1,6 +1,5 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
 import { usePipelineStore } from '@/lib/store'
 import { usePipelineStream } from '@/hooks/use-pipeline-stream'
 import { AppShell } from '@/components/layout/AppShell'
@@ -10,12 +9,19 @@ import { GenerationStage } from '@/components/stages/GenerationStage'
 import { AnsweringStage } from '@/components/stages/AnsweringStage'
 import { VerificationStage } from '@/components/stages/VerificationStage'
 import { ResultsStage } from '@/components/stages/ResultsStage'
-import { ScrollProgress } from '@/components/scroll-progress'
+import { PipelineThinkingFeed } from '@/components/stages/PipelineThinkingFeed'
 import { StageTransition } from '@/components/stage-transition'
 import { CommandPalette } from '@/components/command-palette'
-import { ChatPanel } from '@/components/chat-panel'
 
-function renderActiveStage(activeStage: string) {
+/** The five working agents — while the run is actively moving through
+ *  these, they all render on one shared page (see PipelineThinkingFeed)
+ *  instead of each getting its own full-page swap. */
+const WORKING_STAGES = new Set(['extraction', 'generation', 'answering', 'verification', 'results'])
+
+function renderActiveStage(activeStage: string, running: boolean) {
+  if (running && WORKING_STAGES.has(activeStage)) {
+    return <PipelineThinkingFeed />
+  }
   switch (activeStage) {
     case 'upload':
       return <UploadStage />
@@ -34,72 +40,83 @@ function renderActiveStage(activeStage: string) {
   }
 }
 
+/**
+ * The console.
+ *
+ * The page no longer scrolls and nothing floats over it: the shell is
+ * locked to the viewport, the agent log and the follow-up chat live in
+ * the right dock, and the footer is a one-line status strip rather than
+ * a block of content you had to scroll past.
+ */
 export default function AppPage() {
   usePipelineStream()
-
   const activeStage = usePipelineStore((s) => s.activeStage)
-  const completed = usePipelineStore((s) => s.completed)
-  const runId = usePipelineStore((s) => s.runId)
-  const finalQA = usePipelineStore((s) => s.finalQA)
-  const chatOpen = usePipelineStore((s) => s.chatOpen)
-  const setChatOpen = usePipelineStore((s) => s.setChatOpen)
+  const running = usePipelineStore((s) => s.running)
+  const showingFeed = running && WORKING_STAGES.has(activeStage)
 
-
+  // While the run is moving through the working agents, `activeStage`
+  // itself flips every few seconds (extraction → generation → …) as each
+  // one starts. Keying StageTransition on that would remount — and
+  // restart the entrance animation of — the shared feed on every single
+  // agent handoff, which is exactly the "jumping to a new page" feeling
+  // this was meant to fix. Give the whole run a single stable key instead;
+  // only the transition into and out of the feed as a whole still animates.
+  const transitionKey = showingFeed ? 'pipeline-feed' : activeStage
 
   return (
-    <div className="relative flex min-h-screen flex-col">
-      <ScrollProgress />
+    <>
       <CommandPalette />
-
-      <AppShell footer={<Footer />}>
-        <StageTransition stageId={activeStage}>
-          {renderActiveStage(activeStage)}
+      <AppShell footer={<StatusStrip />}>
+        <StageTransition stageId={transitionKey}>
+          {renderActiveStage(activeStage, running)}
         </StageTransition>
       </AppShell>
-
-      {/* Chat button — appears once results are generated */}
-      {completed && finalQA.length > 0 && (
-        <ChatPanel
-          runId={runId}
-          open={chatOpen}
-          onOpenChange={setChatOpen}
-        />
-      )}
-    </div>
+    </>
   )
 }
 
-function Footer() {
+function StatusStrip() {
+  const running = usePipelineStore((s) => s.running)
+  const completed = usePipelineStore((s) => s.completed)
+
+  const marks = [
+    { label: 'Extraction', color: 'var(--bloom-1)' },
+    { label: 'Generation', color: 'var(--bloom-3)' },
+    { label: 'Answering', color: 'var(--bloom-2)' },
+    { label: 'Verification', color: 'var(--bloom-5)' },
+  ]
+
   return (
-    <footer className="mt-auto border-t border-border/40">
-      <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-4 px-6 py-6 text-sm text-muted-foreground sm:flex-row sm:items-center">
-        <div className="flex items-center gap-2">
-          <span className="font-mono text-xs font-bold tracking-widest text-foreground/80">
-            DiagramMind
+    <footer className="flex h-8 shrink-0 items-center gap-4 border-t-[3px] border-[var(--line)] bg-[var(--card)] px-4 md:px-6">
+      <span className="dat shrink-0 text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink)]">
+        DiagramMind
+      </span>
+      <span className="hidden truncate font-mono text-[10px] text-[var(--ink-2)] md:inline">
+        Agentic, Retrieval-Augmented, Diagram-Driven Course Question Generation
+      </span>
+      <div className="ml-auto flex shrink-0 items-center gap-3">
+        {marks.map((m) => (
+          <span
+            key={m.label}
+            className="hidden items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.14em] text-[var(--ink-2)] xl:flex"
+          >
+            <span
+              className="size-1.5 rounded-full"
+              style={{ backgroundColor: m.color }}
+              aria-hidden
+            />
+            {m.label}
           </span>
-          <span className="text-border">·</span>
-          <span className="text-xs">
-            Agentic, Retrieval-Augmented, Diagram-Driven Course Question Generation
-          </span>
-        </div>
-        <div className="flex items-center gap-4 text-xs">
-          <span className="flex items-center gap-1.5">
-            <span className="size-1.5 rounded-full bg-primary" />
-            Extraction
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="size-1.5 rounded-full bg-accent" />
-            Generation
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="size-1.5 rounded-full bg-secondary" />
-            Answering
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="size-1.5 rounded-full bg-foreground/60" />
-            Verification
-          </span>
-        </div>
+        ))}
+        <span className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.14em] text-[var(--ink-2)]">
+          <span
+            className={`size-1.5 rounded-full ${
+              running ? 'bg-[var(--red)]' : completed ? 'bg-[var(--bloom-2)]' : 'bg-[var(--ink-2)]'
+            }`}
+            aria-hidden
+          />
+          {running ? 'running' : completed ? 'complete' : 'idle'}
+        </span>
       </div>
     </footer>
   )

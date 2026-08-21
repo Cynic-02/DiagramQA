@@ -31,11 +31,20 @@ import { cn } from '@/lib/utils'
 /* Geometry                                                            */
 /* ------------------------------------------------------------------ */
 
+/* The hub has to hold the longest level name in the taxonomy set at
+   display weight — UNDERSTAND, ten characters — so the inner radius is
+   sized from that word, not from what looks balanced with the wedges
+   empty. It used to be 70, the readout was fixed-pixel HTML floated on
+   top, and the moment the wheel was rendered smaller than its authored
+   320px the SVG scaled and the text did not: the word ran straight out
+   through the hub wall. The readout is now SVG text in the same
+   viewBox, so it scales with everything else and cannot overflow at
+   any size. */
 const SIZE = 320
 const CX = SIZE / 2
 const CY = SIZE / 2
-const OUTER_R = 140
-const INNER_R = 70
+const OUTER_R = 146
+const INNER_R = 86
 const SEG = 60 // degrees per segment
 
 /**
@@ -118,7 +127,7 @@ export function BloomWheel({ value, onChange, className }: BloomWheelProps) {
       <style>{`
         .bloom-seg { outline: none; }
         .bloom-seg:focus-visible {
-          stroke: var(--foreground) !important;
+          stroke: var(--blue) !important;
           stroke-width: 2.5 !important;
         }
       `}</style>
@@ -143,10 +152,14 @@ export function BloomWheel({ value, onChange, className }: BloomWheelProps) {
         style={{ transformOrigin: 'center' }}
       >
         <defs>
+          {/* The vignette used to be three hardcoded dark oklch stops, which
+              read as a grey smudge on cream paper. It now derives from the
+              paper token, so it disappears in light mode and only does its
+              job in dark. */}
           <radialGradient id="bloom-bg" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="oklch(0.32 0.02 240)" stopOpacity="0.5" />
-            <stop offset="70%" stopColor="oklch(0.2 0.014 240)" stopOpacity="0.18" />
-            <stop offset="100%" stopColor="oklch(0.13 0.012 240)" stopOpacity="0" />
+            <stop offset="0%" stopColor="var(--muted)" stopOpacity="0.55" />
+            <stop offset="72%" stopColor="var(--muted)" stopOpacity="0.18" />
+            <stop offset="100%" stopColor="var(--muted)" stopOpacity="0" />
           </radialGradient>
         </defs>
 
@@ -168,7 +181,7 @@ export function BloomWheel({ value, onChange, className }: BloomWheelProps) {
             cy={CY}
             r={OUTER_R + 14}
             fill="none"
-            stroke="var(--border)"
+            stroke="var(--line)"
             strokeWidth={1.5}
             strokeDasharray="2 7"
             strokeLinecap="round"
@@ -183,8 +196,13 @@ export function BloomWheel({ value, onChange, className }: BloomWheelProps) {
           const centerAngle = i * SEG
           const d = annularSector(CX, CY, INNER_R, OUTER_R, startAngle, endAngle)
           const selected = i === selectedIndex
-          const fill = selected ? meta.hue : 'var(--muted)'
-          const stroke = 'var(--border)'
+          // Every wedge carries its own Bloom Spectrum hue; the unselected
+          // ones are mixed back toward the card so the cool→warm ramp stays
+          // legible without competing with the selection.
+          const fill = selected
+            ? meta.hue
+            : `color-mix(in srgb, ${meta.hue} 26%, var(--card))`
+          const stroke = 'var(--line)'
           const labelPos = polar(
             CX,
             CY,
@@ -231,9 +249,9 @@ export function BloomWheel({ value, onChange, className }: BloomWheelProps) {
               <text
                 x={labelPos.x}
                 y={labelPos.y}
-                fill={selected ? 'var(--foreground)' : 'var(--muted-foreground)'}
-                fontSize={11}
-                fontFamily="var(--font-geist-mono), ui-monospace, monospace"
+                fill={selected ? meta.fg : 'var(--ink-2)'}
+                fontSize={11.5}
+                fontFamily="var(--font-jetbrains), ui-monospace, monospace"
                 textAnchor="middle"
                 dominantBaseline="middle"
                 transform={`rotate(${labelRot} ${labelPos.x} ${labelPos.y})`}
@@ -251,9 +269,60 @@ export function BloomWheel({ value, onChange, className }: BloomWheelProps) {
           cy={CY}
           r={INNER_R - 4}
           fill="var(--card)"
-          stroke="var(--border)"
-          strokeWidth={2}
+          stroke="var(--line)"
+          strokeWidth={2.5}
         />
+
+        {/* ---- the centre readout, in the viewBox ---- */}
+        <AnimatePresence mode="wait">
+          <motion.g
+            key={value}
+            initial={reduce ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={reduce ? undefined : { opacity: 0 }}
+            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <circle
+              cx={CX}
+              cy={CY - 34}
+              r={5}
+              fill={selectedMeta.hue}
+              stroke="var(--line)"
+              strokeWidth={2}
+            />
+            {/* textLength + lengthAdjust is the guarantee: however long
+                the level name is, it is drawn to exactly this width. */}
+            <text
+              x={CX}
+              y={CY + 4}
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fontFamily="var(--font-archivo), 'Arial Black', sans-serif"
+              fontWeight={900}
+              fontSize={20}
+              letterSpacing="-0.5"
+              fill="var(--foreground)"
+              textLength={Math.min(2 * (INNER_R - 16), value.length * 13)}
+              lengthAdjust="spacingAndGlyphs"
+              style={{ textTransform: 'uppercase' }}
+            >
+              {value.toUpperCase()}
+            </text>
+            <text
+              x={CX}
+              y={CY + 32}
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fontFamily="var(--font-jetbrains), ui-monospace, monospace"
+              fontSize={10}
+              fontWeight={700}
+              letterSpacing="1.9"
+              fill="var(--ink-2)"
+            >
+              {selectedMeta.verb.toUpperCase()}
+            </text>
+          </motion.g>
+        </AnimatePresence>
 
         {/* pointer indicator — starts at 12 o'clock and spring-rotates
             to the selected segment's center angle */}
@@ -276,33 +345,6 @@ export function BloomWheel({ value, onChange, className }: BloomWheelProps) {
         </motion.g>
       </motion.svg>
 
-      {/* Center readout — HTML overlay, crossfades on selection */}
-      <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-        <div className="flex w-[38%] min-w-[88px] flex-col items-center gap-1.5 text-center">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={value}
-              initial={reduce ? false : { opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={reduce ? undefined : { opacity: 0, y: -6 }}
-              transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-              className="flex flex-col items-center gap-1.5"
-            >
-              <span
-                className="size-2.5 rounded-full border border-border"
-                style={{ backgroundColor: selectedMeta.hue }}
-                aria-hidden
-              />
-              <span className="text-base font-semibold leading-tight text-foreground">
-                {value}
-              </span>
-              <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-                {selectedMeta.verb}
-              </span>
-            </motion.div>
-          </AnimatePresence>
-        </div>
-      </div>
     </div>
   )
 }

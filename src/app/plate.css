@@ -31,7 +31,16 @@
   --bw-l: 4px;
 
   position: relative;
-  background: var(--paper);
+  /* Transparent, NOT --paper. These two elements stand in for `body`,
+     and an opaque fill here painted straight over the ambient field
+     behind them — which is why the glow reached every console screen
+     and neither of the two pages anybody actually lands on. The paper
+     colour is already on <body>; all this element needs to contribute
+     is the grid, which belongs on top of the wash anyway. */
+  background-color: transparent;
+  background-image: var(--grid-tile);
+  background-size: 34px 34px;
+  background-attachment: fixed;
   color: var(--ink);
   font-family: var(--font-instrument), system-ui, sans-serif;
   font-size: 15px;
@@ -194,7 +203,13 @@
   transition: transform 620ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 .plate-home .on .col .rule { transform: scaleX(1); }
-.plate-home .col h1 { font-size: clamp(38px, 6.4vw, 82px); }
+.plate-home .col h1 { font-size: clamp(38px, 6.1vw, 76px); }
+/* The first section is the only one carrying a lede, two buttons AND a
+   line of marginalia under the headline, so centring it in the viewport
+   pushed the last of those below the fold — and that last line is the
+   one telling you to keep scrolling. Extra bottom padding lifts the
+   whole column without moving anything relative to anything else. */
+.plate-home section.scn[data-i='0'] { padding-top: 84px; padding-bottom: 156px; }
 .plate-home .col h2 { font-size: clamp(28px, 4.4vw, 54px); }
 .plate-home .col p.lead {
   font-size: clamp(15px, 1.5vw, 18px);
@@ -202,6 +217,109 @@
   max-width: 46ch;
   margin: 18px 0 0;
 }
+/* ------------------------------------------------------------------
+   THE MASTHEAD — solid / boxed / hollow.
+
+   The masking animation clips each line to its own overflow box, so
+   anything that hangs outside the glyph — the box's 2px rule, its hard
+   offset shadow, the outlined line's stroke — has to be paid for in
+   padding, or the mask shears it off. That is what the negative margin
+   and the line padding below are doing: they buy the ink room to exist
+   without moving the type off its baseline grid.
+   ------------------------------------------------------------------ */
+.plate-home .col h1.mast { line-height: 0.98; }
+/* The masking animation clips each line to its own overflow box, so
+   the boxed word's rule, its shadow and its rotation all have to be
+   paid for in padding or the mask shears them off. The negative
+   margins hand that padding straight back, so the type still sits on
+   its own baseline grid. */
+/* The box is WIDER than the word inside it — padding, a 2px rule and a
+   5px offset shadow all live outside the glyphs — and it is rotated on
+   top of that, which throws its corners wider still. The mask's own
+   padding is the only room any of that has to exist in, and 16px was
+   not enough: the right edge of the box landed outside the clip and
+   took the last letter's stem with it. 34px covers the widest case
+   (0.22em pad + 2px rule + 5px shadow + the rotation's corner throw)
+   with room to spare, and the negative margin hands every pixel of it
+   straight back so the type never leaves its baseline grid. */
+.plate-home h1.mast .mask { padding: 0 34px 18px; margin: 0 -34px -17px; }
+/* The overlap: the third line climbs under the tilted box instead of
+   clearing it. Two lines of display type that touch read as one
+   object made of parts; two that clear each other read as a list. */
+/* Line 3 keeps its own overflow clip — that clip is what the reveal
+   animation slides out of — and simply climbs. The boxed word carries
+   a z-index, so it is the one that stays on top where they meet. */
+.plate-home h1.mast .mask:nth-of-type(3) { margin-top: -0.14em; }
+
+.plate-home .mastbox {
+  display: inline-block;
+  /* Forced light-surface + dark-ink, not the theme-relative --surface/
+     --line. The box sits on top of whichever diagram is drawn behind
+     the hero copy (often the globe's own ocean fill), and in dark mode
+     --surface and --line are both dark-on-dark against that — which is
+     exactly why the box read as an invisible smudge. These two values
+     ARE the site palette (light-mode --surface / --ink, verbatim), just
+     pinned so the card always reads as a lit sheet of paper regardless
+     of what colour is drawn underneath it. */
+  background: #fffdf8;
+  color: #0a0a0a;
+  border: 3px solid #0a0a0a;
+  border-radius: 12px;
+  box-shadow: 6px 6px 0 #0a0a0a;
+  padding: 0.03em 0.2em 0.09em;
+  margin-right: 0.1em;
+  line-height: 0.92;
+  /* Off the horizontal by a degree and a half. Not enough to read as a
+     tilt — enough that the eye registers the line is not parallel to
+     the two around it, which is the whole trick: one element refusing
+     to sit on the grid makes the grid visible. */
+  transform: rotate(-1.6deg);
+  transform-origin: 12% 80%;
+  position: relative;
+  z-index: 2;
+}
+
+.plate-home .masthollow {
+  display: inline-block;
+  position: relative;
+  z-index: 1;
+  color: transparent;
+  -webkit-text-stroke: 2.5px var(--red);
+  /* Stroke first, fill second — otherwise a stroke this heavy on a 900
+     weight closes the counters in Q, S and O and the word turns into a
+     row of blobs. */
+  paint-order: stroke fill;
+}
+@media (max-width: 900px) {
+  .plate-home .masthollow { -webkit-text-stroke-width: 1.8px; }
+  .plate-home .mastbox { border-radius: 9px; box-shadow: 4px 4px 0 #0a0a0a; }
+}
+
+/* The eyebrow is a chip, not a floating word: a ruled box with a
+   filled square in front of it, so it reads as a tag applied to the
+   section rather than as the first line of the headline. */
+.plate-home .col .kick .lbl {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  padding: 5px 12px 5px 10px;
+  color: var(--ink);
+  background: var(--surface);
+}
+.plate-home .col .kick .lbl::before {
+  content: '';
+  width: 8px; height: 8px; flex: 0 0 8px;
+  background: var(--yellow);
+  border: 1.5px solid var(--line);
+  border-radius: 2px;
+}
+
+/* Corners, everywhere the homepage draws a box. */
+.plate-home .btn { border-radius: 10px; }
+.plate-home .btn.sec { border-radius: 10px; }
+
 .plate-home .mask { overflow: hidden; display: block; }
 .plate-home .mask > span {
   display: block;
@@ -253,7 +371,7 @@
   box-shadow: 4px 4px 0 var(--line);
 }
 .plate-home .btn.sec:hover { transform: translate(4px, 4px); }
-.plate-home .cta { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 30px; }
+.plate-home .cta { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 24px; }
 
 /* ---- the numbered stack ---- */
 .plate-home .stack {
@@ -289,7 +407,34 @@
 }
 .plate-home .stack .row .t { font-weight: 700; font-size: 15px; }
 .plate-home .stack .row .d { font-size: 13px; color: var(--ink-2); }
-.plate-home .dot { width: 11px; height: 11px; flex: 0 0 11px; margin-top: 5px; border: 2px solid var(--line); }
+.plate-home .dot { width: 11px; height: 11px; flex: 0 0 11px; margin-top: 5px; border: 2px solid var(--line); position: relative; }
+/* Only the pipeline steps get this — they're the one place on the page
+   describing something actually *running*. A ring of the step's own
+   colour expands and fades from the dot, twice, staggered a half-beat
+   apart — flat ink, no blur, so it reads as a printed pulse mark
+   rather than a soft UI glow. */
+.plate-home .dot--live::before,
+.plate-home .dot--live::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border: 2px solid currentColor;
+  animation: dotpulse 1.8s ease-out infinite;
+}
+.plate-home .dot--live::after { animation-delay: 0.6s; }
+@keyframes dotpulse {
+  from { transform: scale(1); opacity: 0.85; }
+  to   { transform: scale(2.6); opacity: 0; }
+}
+.plate-home .spin-badge { animation: spinbadge 12s linear infinite; }
+@keyframes spinbadge {
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .plate-home .dot--live::before,
+  .plate-home .dot--live::after { animation: none; display: none; }
+  .plate-home .spin-badge { animation: none; }
+}
 
 /* ---- the odometer row ---- */
 .plate-home .nums { display: flex; gap: 36px; flex-wrap: wrap; margin-top: 28px; }
@@ -418,9 +563,11 @@
 /* ==================================================================
    LOGIN
 
-   Two panes. On the left a live plate — the same eight diagrams the
-   homepage draws, pinned to one anchor and walked by a clock instead of
-   a scroll, so the ink is always mid-thought when someone arrives. On
+   Two panes. On the left a live plate — three diagrams of its own (a
+   lens, a truss, a heart), pinned to one anchor and walked by a clock
+   instead of a scroll, so the ink is always mid-thought when someone
+   arrives. Deliberately NOT the homepage's eight: a returning user
+   should not be shown a rerun of the marketing page. On
    the right, one card: sign in on its front, create account on its
    back, and switching between them is a physical flip.
 
@@ -430,7 +577,7 @@
    ================================================================== */
 .plate-login {
   display: grid;
-  grid-template-columns: minmax(0, 1.06fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1.14fr) minmax(0, 1fr);
   /* One screen, no scroll: the login is a plate you look at, not a page
      you read. Both panes are built to fit (their paddings and type scale
      down on short screens), and the clip is the guarantee. */
@@ -478,10 +625,13 @@
   position: relative;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
-  gap: 14px;
-  padding: 64px clamp(20px, 3vw, 56px) 22px;
+  gap: 12px;
+  /* The plate is the thing worth looking at on this page, so it gets
+     the room. The padding was written for a stage that shared its
+     column with a lot more copy than it does now. */
+  padding: 58px clamp(14px, 2vw, 34px) 16px;
   border-right: var(--bw) solid var(--line);
-  background: var(--paper);
+  background-color: transparent;
   min-height: 0;
 }
 .plate-login .stagepane .plate-stage {
@@ -553,7 +703,44 @@
   padding: 68px clamp(20px, 3vw, 56px) 24px;
   min-height: 0;
 }
-.plate-login .cardslot { width: min(400px, 100%); perspective: 1500px; }
+/* The card is the page's one object, so it is allowed to be the size
+   of an object. At 400px with 20px of padding it read as a widget
+   dropped on a wall; the extra 72px of width and the roomier interior
+   are what make it read as a form you sit down at. */
+.plate-login .cardmeta {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  width: min(540px, 100%);
+  margin: 6px 0 0;
+  border: var(--bw) solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--surface) 55%, transparent);
+  backdrop-filter: blur(12px) saturate(140%);
+  -webkit-backdrop-filter: blur(12px) saturate(140%);
+}
+.plate-login .cardmeta > div { padding: 12px 12px; text-align: center; }
+.plate-login .cardmeta > div + div { border-left: var(--bw) solid var(--line); }
+.plate-login .cardmeta dt {
+  font-family: var(--font-archivo), 'Arial Black', sans-serif;
+  font-weight: 900;
+  font-size: 25px;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: transparent;
+  -webkit-text-stroke: 1.5px var(--ink);
+  paint-order: stroke fill;
+}
+.plate-login .cardmeta dd {
+  margin: 5px 0 0;
+  font-family: var(--font-jetbrains), ui-monospace, monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.plate-login .cardslot { width: min(540px, 100%); perspective: 1500px; }
 .plate-login .card3d {
   position: relative;
   /* Both faces stack in one cell, so the card is as tall as its taller
@@ -566,9 +753,21 @@
 .plate-login .card3d > .face { grid-area: 1 / 1; }
 .plate-login .card3d.flipped { transform: rotateY(180deg); }
 .plate-login .face {
-  background: var(--surface);
+  /* Glass: translucent fill, blurred backdrop, and a border that stays
+     hard ink at full weight so the panel never loses its own edge. */
+  background: color-mix(in srgb, var(--surface) 74%, transparent);
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
   border: var(--bw-l) solid var(--line);
-  box-shadow: 14px 14px 0 var(--line);
+  border-radius: 20px;
+  /* The spectrum strip is a filled bar sitting on the card's top
+     edge. Without the clip it squares off the two corners the
+     radius just rounded. */
+  overflow: hidden;
+  /* 14px of solid black under a card this size stopped reading as a
+     printed offset and started reading as a second black card behind
+     the first one. */
+  box-shadow: 6px 6px 0 var(--line);
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
 }
@@ -576,7 +775,8 @@
   box-shadow: 0 26px 60px -30px #000, 0 0 0 1px var(--line);
 }
 .plate-login .face.back { transform: rotateY(180deg); }
-.plate-login .spectrum { display: flex; height: 12px; border-bottom: 3px solid var(--line); }
+.plate-login .spectrum { display: flex; height: 12px; border-bottom: 3px solid var(--line); border-radius: 0; }
+.plate-login .spectrum i { border-radius: 0; }
 .plate-login .spectrum i { flex: 1; }
 .plate-login .spectrum i:nth-child(1) { background: var(--b1); }
 .plate-login .spectrum i:nth-child(2) { background: var(--b2); }
@@ -592,24 +792,24 @@
   padding: 9px 16px;
   border-bottom: var(--bw) solid var(--line);
 }
-.plate-login .facebody { padding: 20px 22px 18px; }
-.plate-login .facebody h1 { font-size: 1.8rem; }
-.plate-login .facebody .sub { margin: 6px 0 16px; font-size: 13.5px; color: var(--ink-2); }
-.plate-login label.f { display: block; margin-bottom: 12px; }
+.plate-login .facebody { padding: 30px 34px 28px; }
+.plate-login .facebody h1 { font-size: clamp(2.1rem, 2.6vw, 2.7rem); }
+.plate-login .facebody .sub { margin: 8px 0 20px; font-size: 14px; color: var(--ink-2); }
+.plate-login label.f { display: block; margin-bottom: 15px; }
 .plate-login label.f .lbl { display: flex; justify-content: space-between; margin-bottom: 7px; }
 .plate-login .field {
   width: 100%;
   font-family: var(--font-jetbrains), ui-monospace, monospace;
-  font-size: 13px;
-  padding: 12px 14px;
+  font-size: 14px;
+  padding: 15px 16px;
   border: var(--bw) solid var(--line);
-  background: var(--surface);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
   color: var(--ink);
   outline: none;
-  border-radius: 0;
+  border-radius: 9px;
   transition: border-width 90ms cubic-bezier(0.2, 0, 0, 1), padding 90ms cubic-bezier(0.2, 0, 0, 1), box-shadow 90ms;
 }
-.plate-login .field:focus { border-width: 3px; padding: 11px 13px; box-shadow: 4px 4px 0 var(--line); }
+.plate-login .field:focus { border-width: 3px; padding: 14px 15px; box-shadow: 3px 3px 0 var(--line); }
 [data-theme='dark'] .plate-login .field:focus {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--b1) 40%, transparent);
 }
@@ -617,29 +817,30 @@
 .plate-login .btn {
   width: 100%;
   font-family: var(--font-jetbrains), ui-monospace, monospace;
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 700;
   letter-spacing: 0.13em;
   text-transform: uppercase;
-  padding: 12px 16px;
-  border: 3px solid var(--line);
+  padding: 16px 18px;
+  border: 2px solid var(--line);
+  border-radius: 12px;
   background: var(--red);
   color: #fff;
   cursor: pointer;
-  box-shadow: 6px 6px 0 var(--line);
+  box-shadow: 4px 4px 0 var(--line);
   position: relative;
   overflow: hidden;
   transition: transform 90ms cubic-bezier(0.2, 0, 0, 1), box-shadow 90ms cubic-bezier(0.2, 0, 0, 1);
 }
-.plate-login .btn:hover { transform: translate(6px, 6px); box-shadow: none; }
+.plate-login .btn:hover { transform: translate(4px, 4px); box-shadow: none; }
 .plate-login .btn.sec {
   background: var(--surface);
   color: var(--ink);
   border-width: var(--bw);
-  box-shadow: 4px 4px 0 var(--line);
-  margin-top: 8px;
+  box-shadow: 3px 3px 0 var(--line);
+  margin-top: 10px;
 }
-.plate-login .btn.sec:hover { transform: translate(4px, 4px); }
+.plate-login .btn.sec:hover { transform: translate(3px, 3px); }
 .plate-login .btn:disabled { opacity: 0.55; cursor: wait; }
 .plate-login .fliplink {
   width: 100%;

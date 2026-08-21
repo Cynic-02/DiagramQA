@@ -59,6 +59,9 @@ export type PlateOptions = {
   flight?: 'standard' | 'premium'
   /** Fade each section's first child in and out with its own plate. */
   choreograph?: boolean
+  /** Play exactly these plate keys, in this order. Omit for the
+      homepage sequence. The sign-in page passes its own three. */
+  only?: string[]
   /** Fired when the settled plate changes. */
   onScene?: (index: number, name: string, progress: number) => void
 }
@@ -133,6 +136,11 @@ export function mountPlateStage(host: HTMLElement, opts: PlateOptions = {}): Pla
     /* polar caps */
     S_GLOBE.push(['ellipse',{cx:0,cy:-232,rx:108,ry:24,fill:ICE,'fill-opacity':.95,stroke:'currentColor'},2]);
     S_GLOBE.push(['ellipse',{cx:0,cy:232,rx:108,ry:24,fill:ICE,'fill-opacity':.95,stroke:'currentColor'},2]);
+    /* No orbit ring. The plate is the Earth, and the Earth does not
+       have one — a decorative ellipse cutting across the sphere reads
+       as a planetary ring to anyone who looks at it for a second,
+       which is exactly the wrong thing to teach from a diagram whose
+       whole job is being literally true. */
   })();
 
   var S_CELL=[
@@ -155,7 +163,13 @@ export function mountPlateStage(host: HTMLElement, opts: PlateOptions = {}): Pla
     ['path',{d:'M78 -196 q 44 -24 88 -4'},2],
     ['path',{d:'M92 -174 q 42 -22 84 -4'},2],
     ['line',{x1:-262,y1:-58,x2:-96,y2:58},1.2],
-    ['line',{x1:248,y1:-36,x2:62,y2:70},1.2]
+    ['line',{x1:248,y1:-36,x2:62,y2:70},1.2],
+    /* ribosomes studding the ER, and a vesicle pinching off the membrane */
+    ['circle',{cx:10,cy:64,r:6},1.6],
+    ['circle',{cx:70,cy:44,r:6},1.6],
+    ['circle',{cx:140,cy:68,r:6},1.6],
+    ['circle',{cx:-128,cy:96,r:6},1.6],
+    ['circle',{cx:196,cy:-150,r:15},1.8]
   ];
 
   var S_ATOM=[
@@ -176,7 +190,13 @@ export function mountPlateStage(host: HTMLElement, opts: PlateOptions = {}): Pla
     ['line',{x1:194,y1:-206,x2:306,y2:-206},2],
     ['line',{x1:212,y1:-166,x2:306,y2:-166},2],
     ['path',{d:'M306 -226 L306 -242'},1.6],
-    ['path',{d:'M299 -235 L306 -226 L313 -235'},1.8]
+    ['path',{d:'M299 -235 L306 -226 L313 -235'},1.8],
+    /* an inner dashed shell, one electron per outer shell, and a photon */
+    ['circle',{cx:0,cy:0,r:150,'stroke-dasharray':'6 9'},1.4],
+    ['circle',{cx:-218,cy:-47,r:11},2.6],
+    ['circle',{cx:68,cy:212,r:11},2.6],
+    ['circle',{cx:7,cy:150,r:11},2.6],
+    ['path',{d:'M-96 -150 q 10 -14 20 0 q 10 14 20 0 q 10 -14 20 0'},1.6]
   ];
 
   var S_CIRCUIT=[
@@ -205,7 +225,11 @@ export function mountPlateStage(host: HTMLElement, opts: PlateOptions = {}): Pla
     ['circle',{cx:146,cy:-170,r:5},2.2],
     ['circle',{cx:190,cy:-170,r:5},2.2],
     ['path',{d:'M-168 156 L-168 184 L-138 170 Z'},2.6],
-    ['path',{d:'M-138 154 L-138 186'},2.6]
+    ['path',{d:'M-138 154 L-138 186'},2.6],
+    /* a voltmeter on the battery wire, and an open switch on the top run */
+    ['circle',{cx:-250,cy:0,r:20},1.8],
+    ['path',{d:'M-258 -7 L-250 8 L-242 -7'},1.6],
+    ['path',{d:'M-190 -170 L-156 -190'},1.8]
   ];
 
   var S_ORBIT=[['circle',{cx:0,cy:0,r:52},3]];
@@ -219,7 +243,16 @@ export function mountPlateStage(host: HTMLElement, opts: PlateOptions = {}): Pla
     ['circle',{cx:-164,cy:36,r:15},2.4],
     ['circle',{cx:204,cy:62,r:19},2.6],
     ['ellipse',{cx:204,cy:62,rx:36,ry:12,transform:'rotate(-14 204 62)'},1.8],
-    ['circle',{cx:-286,cy:-60,r:12},2.4]
+    ['circle',{cx:-286,cy:-60,r:12},2.4],
+    /* the belt — six bodies on their own ring between the two outer orbits */
+    ['circle',{cx:265,cy:42,r:3.5},1.4],
+    ['circle',{cx:49,cy:120,r:3.5},1.4],
+    ['circle',{cx:-216,cy:78,r:3.5},1.4],
+    ['circle',{cx:-265,cy:-42,r:3.5},1.4],
+    ['circle',{cx:-49,cy:-120,r:3.5},1.4],
+    ['circle',{cx:216,cy:-78,r:3.5},1.4],
+    /* a dwarf on the innermost orbit */
+    ['circle',{cx:-117,cy:-18,r:6},2]
   ]);
 
   var S_CYCLE=[
@@ -240,7 +273,13 @@ export function mountPlateStage(host: HTMLElement, opts: PlateOptions = {}): Pla
     ['path',{d:'M-260 120 C -230 70, -280 40, -244 -10'},1.8],
     ['path',{d:'M183 -3 L194 -18 L205 -1'},2],
     ['path',{d:'M261 -13 L272 -28 L283 -11'},1.9],
-    ['path',{d:'M-255 5 L-244 -10 L-233 7'},1.9]
+    ['path',{d:'M-255 5 L-244 -10 L-233 7'},1.9],
+    /* two pines on the slope, and wind crossing above the cloud */
+    ['path',{d:'M-60 64 L-52 42 L-44 64 Z'},1.6],
+    ['path',{d:'M-53 64 v 9'},1.4],
+    ['path',{d:'M-6 104 L 2 82 L 10 104 Z'},1.6],
+    ['path',{d:'M-1 104 v 9'},1.4],
+    ['path',{d:'M-150 -252 q 30 -16 60 0 q 30 16 60 0'},1.5]
   ]);
 
   var S_NEURON=[
@@ -265,7 +304,13 @@ export function mountPlateStage(host: HTMLElement, opts: PlateOptions = {}): Pla
     ['circle',{cx:414,cy:34,r:10},2],
     ['circle',{cx:390,cy:-102,r:10},2],
     ['path',{d:'M-30 -110 H14'},1.5],
-    ['path',{d:'M5 -117 L14 -110 L5 -103'},1.7]
+    ['path',{d:'M5 -117 L14 -110 L5 -103'},1.7],
+    /* vesicles riding the axon, and a collateral that branches away */
+    ['circle',{cx:180,cy:4,r:5},1.6],
+    ['circle',{cx:252,cy:-2,r:5},1.6],
+    ['circle',{cx:310,cy:-10,r:5},1.6],
+    ['path',{d:'M224 -2 C 252 44, 300 64, 342 74'},2],
+    ['circle',{cx:342,cy:74,r:8},2.2]
   ];
 
   /* scene 7 — a feed-forward network: forward pass and backpropagation.
@@ -301,6 +346,140 @@ export function mountPlateStage(host: HTMLElement, opts: PlateOptions = {}): Pla
     S_NET.push(['circle',{cx:300,cy:0,r:11,fill:'var(--f-mito)','fill-opacity':.95,
       stroke:'var(--w-red)'},2.4]);
   })();
+
+  /* ══════════════════════════════════════════════════════════
+     THE AUXILIARY PLATES — sign-in only.
+
+     The sign-in page used to replay the homepage's eight plates.
+     Two problems with that: the first thing a returning user sees
+     is a rerun of the marketing page, and the globe is the single
+     most recognisable drawing in the product, so the two pages read
+     as the same page. These three are drawn to the same rules —
+     ink first, colour last, every stroke generated from numbers —
+     but share no subject with the homepage, and they are drawn from
+     three different disciplines on purpose: optics, structures,
+     anatomy. Same pipeline, nothing in common.
+
+     They are tagged `aux`, so the homepage never sees them; the
+     sign-in page asks for them by key.
+     ══════════════════════════════════════════════════════════ */
+
+  /* scene A — the converging lens. Object beyond 2F, so the real
+     image lands inverted and reduced between F' and 2F'. The ray
+     construction is the actual construction, not three lines that
+     look like one: f = 110, u = -300, therefore v = +174 and the
+     image height is 0.58 of the object's. Every ray below passes
+     through (174, 70) because the arithmetic says it must. */
+  var S_LENS=[
+    ['line',{x1:-344,y1:0,x2:344,y2:0,'stroke-dasharray':'12 9'},1.5],
+    ['path',{d:'M0 -172 C 44 -112, 44 112, 0 172 C -44 112, -44 -112, 0 -172 Z'},3.2],
+    ['line',{x1:0,y1:-214,x2:0,y2:214,'stroke-dasharray':'6 9'},1.4],
+    ['circle',{cx:-110,cy:0,r:8},2.4],
+    ['circle',{cx:110,cy:0,r:8},2.4],
+    ['circle',{cx:-220,cy:0,r:5.5},1.8],
+    ['circle',{cx:220,cy:0,r:5.5},1.8],
+    ['line',{x1:-300,y1:0,x2:-300,y2:-120},3.2],
+    ['path',{d:'M-313 -98 L-300 -126 L-287 -98'},3.2],
+    ['line',{x1:174,y1:0,x2:174,y2:70},3.2],
+    ['path',{d:'M163 50 L174 76 L185 50'},3.2],
+    ['line',{x1:-300,y1:-120,x2:0,y2:-120},2],
+    ['line',{x1:0,y1:-120,x2:300,y2:207},2],
+    ['line',{x1:-300,y1:-120,x2:300,y2:120},2],
+    ['line',{x1:-300,y1:-120,x2:0,y2:69.5,'stroke-dasharray':'9 7'},1.7],
+    ['line',{x1:0,y1:69.5,x2:300,y2:69.5,'stroke-dasharray':'9 7'},1.7],
+    ['line',{x1:300,y1:-176,x2:300,y2:176},2.4],
+    ['path',{d:'M300 -140 L326 -164 M300 -60 L326 -84 M300 20 L326 -4 M300 100 L326 76'},1.5],
+    ['line',{x1:-22,y1:-190,x2:22,y2:-190},2.2],
+    ['line',{x1:-22,y1:190,x2:22,y2:190},2.2],
+    ['line',{x1:-344,y1:268,x2:344,y2:268},2],
+    ['path',{d:'M-300 256 L-300 280 M-220 258 L-220 278 M-110 258 L-110 278 M0 254 L0 282 M110 258 L110 278 M220 258 L220 278 M300 256 L300 280'},1.5],
+    ['path',{d:'M-330 -196 C -306 -150, -306 -70, -330 -24'},1.6],
+    ['path',{d:'M-300 -196 C -276 -150, -276 -70, -300 -24'},1.6]
+  ];
+
+  /* scene B — a Warren truss. Pinned at one end, on a roller at the
+     other, which is the whole reason a bridge does not tear itself
+     apart when the deck warms up. Three point loads on the top
+     chord; the diagonals alternate tension and compression, which
+     is what the colour pass says. */
+  var S_TRUSS=[
+    ['line',{x1:-320,y1:120,x2:-160,y2:120},3.2],
+    ['line',{x1:-160,y1:120,x2:0,y2:120},3.2],
+    ['line',{x1:0,y1:120,x2:160,y2:120},3.2],
+    ['line',{x1:160,y1:120,x2:320,y2:120},3.2],
+    ['line',{x1:-160,y1:-60,x2:0,y2:-60},3.2],
+    ['line',{x1:0,y1:-60,x2:160,y2:-60},3.2],
+    ['line',{x1:-320,y1:120,x2:-160,y2:-60},2.6],
+    ['line',{x1:-160,y1:-60,x2:0,y2:120},2.6],
+    ['line',{x1:0,y1:120,x2:160,y2:-60},2.6],
+    ['line',{x1:160,y1:-60,x2:320,y2:120},2.6],
+    ['line',{x1:-160,y1:120,x2:-160,y2:-60},2.3],
+    ['line',{x1:0,y1:120,x2:0,y2:-60},2.3],
+    ['line',{x1:160,y1:120,x2:160,y2:-60},2.3],
+    ['line',{x1:-352,y1:150,x2:352,y2:150},2.8],
+    ['path',{d:'M-330 150 L-348 176 M-250 150 L-268 176 M-170 150 L-188 176 M-90 150 L-108 176 M-10 150 L-28 176 M70 150 L52 176 M150 150 L132 176 M230 150 L212 176 M310 150 L292 176'},1.5],
+    ['path',{d:'M-320 120 L-354 182 L-286 182 Z'},2.6],
+    ['path',{d:'M-354 182 L-372 206 M-330 182 L-348 206 M-306 182 L-324 206 M-286 182 L-304 206'},1.5],
+    ['circle',{cx:304,cy:150,r:16},2.3],
+    ['circle',{cx:338,cy:150,r:16},2.3],
+    ['line',{x1:278,y1:170,x2:366,y2:170},2.3],
+    ['path',{d:'M278 170 L260 194 M304 170 L286 194 M330 170 L312 194 M360 170 L342 194'},1.5],
+    ['line',{x1:-160,y1:-172,x2:-160,y2:-74},2.8],
+    ['path',{d:'M-173 -96 L-160 -68 L-147 -96'},2.8],
+    ['line',{x1:0,y1:-196,x2:0,y2:-74},2.8],
+    ['path',{d:'M-13 -96 L0 -68 L13 -96'},2.8],
+    ['line',{x1:160,y1:-172,x2:160,y2:-74},2.8],
+    ['path',{d:'M147 -96 L160 -68 L173 -96'},2.8],
+    ['circle',{cx:-320,cy:120,r:9},2.3],
+    ['circle',{cx:-160,cy:120,r:9},2.3],
+    ['circle',{cx:0,cy:120,r:9},2.3],
+    ['circle',{cx:160,cy:120,r:9},2.3],
+    ['circle',{cx:320,cy:120,r:9},2.3],
+    ['circle',{cx:-160,cy:-60,r:9},2.3],
+    ['circle',{cx:0,cy:-60,r:9},2.3],
+    ['circle',{cx:160,cy:-60,r:9},2.3],
+    ['line',{x1:-320,y1:244,x2:320,y2:244,'stroke-dasharray':'11 8'},1.5],
+    ['path',{d:'M-320 230 L-320 258 M320 230 L320 258 M0 232 L0 256'},1.5],
+    ['path',{d:'M-380 212 C -286 226, -186 200, -86 214 S 140 230, 258 208 S 358 218, 388 210'},1.9]
+  ];
+
+  /* scene C — the four-chamber heart. Deoxygenated blue on the
+     drawing's left, oxygenated red on its right, which is the
+     anatomical convention and also the only way the flow arrows
+     make sense without a legend. The apex points down-left; a
+     valentine points down-centre, and that is the difference
+     between a diagram and a sticker. */
+  var S_HEART=[
+    ['path',{d:'M-16 -232 C 112 -246, 208 -158, 202 -34 C 196 76, 122 172, 14 238 C -58 272, -142 216, -180 122 C -214 38, -200 -108, -114 -184 C -84 -212, -50 -230, -16 -232 Z'},3.2],
+    ['path',{d:'M-16 -244 C 124 -258, 226 -168, 220 -32 C 214 84, 132 186, 16 248','stroke-dasharray':'10 9'},1.7],
+    ['path',{d:'M10 -212 C 44 -122, 30 6, -40 156'},2.7],
+    ['path',{d:'M-142 -132 C -74 -100, -12 -110, 4 -152'},2.2],
+    ['path',{d:'M20 -142 C 80 -108, 142 -104, 178 -132'},2.2],
+    ['path',{d:'M-136 -102 C -108 -20, -84 66, -34 140'},2.2],
+    ['path',{d:'M42 -96 C 92 -14, 108 68, 60 158'},2.2],
+    ['path',{d:'M28 -226 C 34 -292, 104 -326, 144 -286 C 168 -260, 164 -226, 142 -208'},2.9],
+    ['path',{d:'M64 -224 C 70 -272, 114 -294, 136 -272 C 150 -258, 146 -234, 130 -222'},2.1],
+    ['path',{d:'M-44 -220 C -64 -282, -124 -300, -156 -268'},2.7],
+    ['path',{d:'M-158 -272 C -182 -292, -210 -292, -228 -278'},2.1],
+    ['path',{d:'M-150 -282 C -142 -306, -120 -318, -96 -314'},2.1],
+    ['path',{d:'M-118 -196 C -150 -240, -162 -276, -156 -300'},2.7],
+    ['path',{d:'M-172 88 C -222 118, -244 158, -240 202'},2.7],
+    ['path',{d:'M186 -138 C 226 -156, 258 -150, 282 -128'},1.9],
+    ['path',{d:'M182 -102 C 224 -98, 256 -82, 272 -56'},1.9],
+    ['path',{d:'M-106 -126 L-86 -94 L-66 -126 L-46 -94 L-26 -126'},2.1],
+    ['path',{d:'M48 -120 L68 -90 L88 -120 L108 -90 L128 -120'},2.1],
+    ['path',{d:'M40 -214 L56 -238 L72 -214 L88 -238 L104 -214'},2.1],
+    ['path',{d:'M-96 -224 L-80 -248 L-64 -224 L-48 -248 L-32 -224'},2.1],
+    ['path',{d:'M-8 -168 C -60 -138, -96 -58, -92 36'},1.9],
+    ['path',{d:'M-60 -102 C -20 -76, 6 -28, 12 36'},1.7],
+    ['path',{d:'M-86 -90 L-72 -28 M-58 -94 L-50 -24'},1.5],
+    ['path',{d:'M58 -86 L66 -24 M94 -88 L86 -20'},1.5],
+    ['path',{d:'M-212 -62 C -174 -36, -156 4, -156 46'},2.3],
+    ['path',{d:'M-170 30 L-156 58 L-142 30'},2.3],
+    ['path',{d:'M106 -256 C 140 -278, 170 -268, 184 -240'},2.3],
+    ['path',{d:'M168 -250 L192 -234 L186 -262'},2.3],
+    ['path',{d:'M-54 208 L-32 236'},1.6]
+  ];
 
   /* ══════════════════════════════════════════════════════════
      SCENE TABLE
@@ -355,12 +534,54 @@ export function mountPlateStage(host: HTMLElement, opts: PlateOptions = {}): Pla
          [3,'Apply','Predict conduction speed if that sheath is lost.'],
          [5,'Evaluate','Judge which pathway is most vulnerable, and why.']]},
 
-    {key:'NET',    name:'THE NETWORK',     shapes:S_NET,   anchors:[], tags:[], qs:[], finale:true}
+    {key:'NET',    name:'THE NETWORK',     shapes:S_NET,   anchors:[], tags:[], qs:[], finale:true},
+
+    /* --- auxiliary plates: sign-in only, never on the homepage --- */
+    {key:'LENS',   name:'THE LENS',        shapes:S_LENS,  aux:true,
+     anchors:[[0,0],[110,0],[174,44]],
+     tags:[[-300,-250],[300,-190],[330,240]],
+     qs:[[2,'Understand','Explain why the image at 03 is inverted.'],
+         [3,'Apply','Predict where the image moves if the object nears 02.'],
+         [4,'Analyze','Which ray fixes the image height, and why?']]},
+
+    {key:'TRUSS',  name:'THE TRUSS',       shapes:S_TRUSS, aux:true,
+     anchors:[[-160,-60],[-320,120],[320,120]],
+     tags:[[-300,-250],[-340,250],[330,250]],
+     qs:[[1,'Remember','Name the support drawn at 03 and state what it releases.'],
+         [4,'Analyze','Which diagonals carry tension under the loads at 01?'],
+         [5,'Evaluate','Judge whether the span is safe if 02 seizes.']]},
+
+    {key:'HEART',  name:'THE HEART',       shapes:S_HEART, aux:true,
+     anchors:[[-100,-40],[100,-40],[100,-280]],
+     tags:[[-320,-230],[320,140],[300,-290]],
+     qs:[[1,'Remember','Name the chamber at 01 and the vessel it empties into.'],
+         [4,'Analyze','Trace the path from 01 to 03 and name every valve crossed.'],
+         [6,'Create','Design a test that would reveal a leak at 02.']]}
   ];
+
+  /* Which plates this mount actually plays. `only` names them in
+     order — the sign-in page asks for its own three. Otherwise the
+     auxiliary plates are dropped, so the homepage keeps exactly one
+     plate per scroll section and the anchor maths still lines up. */
+  SCENES = (opts.only && opts.only.length)
+    ? opts.only.map(function(k){
+        for(var z=0;z<SCENES.length;z++) if(SCENES[z].key===k) return SCENES[z];
+        return null;
+      }).filter(Boolean)
+    : SCENES.filter(function(sc){ return !sc.aux });
+  if(SCENES.length<2) SCENES=[SCENES[0]||{key:'GLOBE',name:'THE GLOBE',shapes:S_GLOBE,anchors:[],tags:[],qs:[]}];
   var N=SCENES.length;
 
+  /* The vertical band of the 1600×900 viewBox that survives both the
+     `slice` crop on a short window and the fixed chrome bar over the
+     top of it. Every plate mount is sized and placed inside this. */
+  var SAFE_T=118, SAFE_B=818, BAND=SAFE_B-SAFE_T;
   var STAGE_X=1040,STAGE_Y=452;
-  var PAD_X=44, PAD_Y=54;
+  /* PAD_Y came down from 54. The mount is a frame around a drawing,
+     not a room the drawing stands in the middle of — and every pixel
+     of air inside it is a pixel the frame's own top and bottom rules
+     have to find somewhere on a cropped stage. */
+  var PAD_X=44, PAD_Y=34;
   var LEVELS=['Remember','Understand','Apply','Analyze','Evaluate','Create'];
 
   /* Greedy wrap into at most `lines` lines of at most `n` characters. The
@@ -389,24 +610,50 @@ export function mountPlateStage(host: HTMLElement, opts: PlateOptions = {}): Pla
   function R(m,a,b,spec){for(var i=a;i<=b;i++)m[i]=spec;return m}
   var W=function(n){return 'var(--w-'+n+')'};
   var CMAP={
+    GLOBE:(function(){var m={};
+      m[1]=[null,0,W('amber')];       /* the equator          */
+      m[2]=[null,0,W('sky')];   m[3]=[null,0,W('sky')];
+      m[4]=[null,0,W('teal')];  m[5]=[null,0,W('teal')];
+      R(m,6,8,[null,0,W('sky')]);     /* meridians            */
+      m[9]=[null,0,W('violet')];      /* the axis             */
+      R(m,10,19,[null,0,W('green')]); /* land, inked in green */
+      R(m,20,21,[null,0,W('teal')]);  /* ice caps             */
+      return m;})(),
+
     CELL:(function(){var m={};
-      m[0]=[W('sand'),.50,null];      /* cytoplasm            */
-      m[2]=[W('violet'),.34,null];    /* nucleus              */
-      m[4]=[W('blue'),.82,null];      /* nucleolus            */
-      m[7]=[W('red'),.50,null];       /* mitochondrion        */
-      m[9]=[W('red'),.50,null];
-      m[11]=[W('sky'),.52,null];      /* vacuole              */
-      m[8]=[null,0,W('red')]; m[10]=[null,0,W('red')];
-      m[5]=[null,0,W('violet')]; m[6]=[null,0,W('violet')];
-      m[13]=[null,0,W('teal')]; m[14]=[null,0,W('teal')];
-      R(m,15,17,[null,0,W('orange')]);/* golgi                */
-      R(m,18,19,[null,0,W('grey')]);
+      /* RECOLOURED. The old pass gave the cytoplasm a heavy 50% sand
+         wash and then drew the mitochondria in the same red at the same
+         50%, so the one organelle the plate is really about sank into
+         its own background, and the ribosomes — also red — read as bits
+         of it that had broken off. Every organelle now owns a hue
+         nobody else uses, and the cytoplasm drops to a wash faint
+         enough to be a ground rather than a competitor. */
+      m[0]=[W('amber'),.16,W('teal')];  /* cytoplasm + plasma membrane */
+      m[1]=[null,0,W('teal')];          /* inner membrane              */
+      m[2]=[W('violet'),.30,null];      /* nucleus                     */
+      m[3]=[null,0,W('violet')];        /* nuclear envelope            */
+      m[4]=[W('blue'),.88,W('blue')];   /* nucleolus                   */
+      m[5]=[null,0,W('violet')]; m[6]=[null,0,W('violet')];  /* chromatin */
+      m[7]=[W('orange'),.58,W('red')];  /* mitochondrion — the subject */
+      m[8]=[null,0,W('red')];           /* its cristae                 */
+      m[9]=[W('orange'),.58,W('red')];
+      m[10]=[null,0,W('red')];
+      m[11]=[W('sky'),.46,W('blue')];   /* vacuole                     */
+      m[12]=[null,0,W('blue')];
+      m[13]=[null,0,W('green')]; m[14]=[null,0,W('green')]; /* ER       */
+      R(m,15,17,[null,0,W('amber')]);   /* golgi                       */
+      R(m,18,19,[null,0,W('sky')]);     /* cytoskeleton                */
+      R(m,20,23,[W('violet'),.92,W('violet')]); /* ribosomes           */
+      m[24]=[W('green'),.48,W('green')];/* vesicle                     */
       return m;})(),
 
     ATOM:(function(){var m={};
       m[0]=[null,0,W('blue')]; m[1]=[null,0,W('teal')]; m[2]=[null,0,W('violet')];
       m[3]=[W('red'),.92,null]; m[4]=[W('blue'),.92,null]; m[5]=[W('amber'),.92,null];
+      m[18]=[null,0,W('sky')];        /* the inner shell      */
       R(m,6,8,[W('teal'),.95,W('teal')]);
+      R(m,19,21,[W('teal'),.95,W('teal')]);    /* electrons   */
+      m[22]=[null,0,W('amber')];      /* the photon           */
       m[9]=[W('green'),.45,W('green')]; m[10]=[W('sky'),.45,W('sky')];
       R(m,11,12,[null,0,W('orange')]);
       R(m,13,15,[null,0,W('orange')]);
@@ -422,7 +669,14 @@ export function mountPlateStage(host: HTMLElement, opts: PlateOptions = {}): Pla
       m[12]=[null,0,W('red')];        /* battery              */
       R(m,13,14,[W('red'),.95,W('red')]);
       m[15]=[null,0,W('teal')];       /* ground               */
-      R(m,16,17,[null,0,W('teal')]);  /* current arrows       */
+      R(m,16,19,[null,0,W('teal')]);  /* current arrows       */
+      m[20]=[null,0,W('orange')];     /* inductor             */
+      m[21]=[null,0,W('sky')];        /* the sense branch     */
+      R(m,22,23,[W('sky'),.9,W('sky')]);
+      R(m,24,25,[null,0,W('violet')]);/* the meter marks      */
+      m[26]=[null,0,W('violet')];     /* voltmeter            */
+      m[27]=[null,0,W('violet')];
+      m[28]=[null,0,W('amber')];      /* switch lever         */
       return m;})(),
 
     ORBIT:(function(){var m={};
@@ -435,6 +689,8 @@ export function mountPlateStage(host: HTMLElement, opts: PlateOptions = {}): Pla
       m[19]=[W('amber'),.92,null];
       m[20]=[null,0,W('amber')];      /* ring                 */
       m[21]=[W('violet'),.92,null];
+      R(m,22,27,[W('amber'),.85,W('amber')]); /* the belt     */
+      m[28]=[W('teal'),.9,W('teal')]; /* the dwarf            */
       return m;})(),
 
     CYCLE:(function(){var m={};
@@ -446,7 +702,10 @@ export function mountPlateStage(host: HTMLElement, opts: PlateOptions = {}): Pla
       R(m,7,16,[null,0,W('red')]);    /* rays                 */
       m[17]=[W('sky'),.38,null];      /* cloud                */
       m[18]=[null,0,W('blue')];       /* rain                 */
-      R(m,19,21,[null,0,W('teal')]);  /* evaporation          */
+      R(m,19,24,[null,0,W('teal')]);  /* evaporation          */
+      m[25]=[W('green'),.9,W('green')]; m[27]=[W('green'),.9,W('green')]; /* pines */
+      m[26]=[null,0,W('grey')]; m[28]=[null,0,W('grey')];
+      m[29]=[null,0,W('sky')];        /* wind                 */
       return m;})(),
 
     NEURON:(function(){var m={};
@@ -454,10 +713,69 @@ export function mountPlateStage(host: HTMLElement, opts: PlateOptions = {}): Pla
       m[1]=[W('violet'),.60,null];
       m[2]=[W('blue'),.92,null];
       R(m,3,9,[null,0,W('violet')]);  /* dendrites            */
+      m[10]=[null,0,W('amber')];      /* the axon             */
       R(m,11,13,[W('amber'),.62,W('orange')]); /* myelin      */
       R(m,14,16,[null,0,W('teal')]);  /* terminal branches    */
       R(m,17,19,[W('teal'),.92,W('teal')]);
       m[20]=[null,0,W('red')];        /* signal               */
+      R(m,22,24,[W('amber'),.9,W('amber')]);  /* vesicles     */
+      m[25]=[null,0,W('teal')];       /* collateral           */
+      m[26]=[W('teal'),.92,W('teal')];
+      return m;})(),
+
+    /* --- auxiliary plates --- */
+    LENS:(function(){var m={};
+      m[0]=[null,0,W('grey')];        /* principal axis        */
+      m[1]=[W('sky'),.42,W('blue')];  /* the lens itself       */
+      m[2]=[null,0,W('violet')];      /* the lens plane        */
+      m[3]=[W('red'),.92,W('red')];   /* F and F′              */
+      m[4]=[W('red'),.92,W('red')];
+      m[5]=[W('grey'),.85,W('grey')]; /* 2F and 2F′            */
+      m[6]=[W('grey'),.85,W('grey')];
+      R(m,7,8,[null,0,W('green')]);   /* the object            */
+      R(m,9,10,[null,0,W('orange')]); /* the real image        */
+      R(m,11,12,[null,0,W('amber')]); /* parallel → focal ray  */
+      m[13]=[null,0,W('teal')];       /* the centre ray        */
+      R(m,14,15,[null,0,W('violet')]);/* focal → parallel ray  */
+      R(m,16,17,[null,0,W('grey')]);  /* the screen            */
+      R(m,18,19,[null,0,W('grey')]);  /* the mount             */
+      R(m,20,21,[null,0,W('sand')]);  /* the optical bench     */
+      R(m,22,23,[null,0,W('sky')]);   /* incoming wavefronts   */
+      return m;})(),
+
+    TRUSS:(function(){var m={};
+      R(m,0,3,[null,0,W('blue')]);    /* bottom chord — tension     */
+      R(m,4,5,[null,0,W('teal')]);    /* top chord — compression    */
+      R(m,6,9,[null,0,W('orange')]);  /* diagonals                  */
+      R(m,10,12,[null,0,W('green')]); /* verticals                  */
+      R(m,13,14,[null,0,W('sand')]);  /* the deck                   */
+      R(m,15,16,[null,0,W('grey')]);  /* the pin                    */
+      R(m,17,20,[null,0,W('grey')]);  /* the roller                 */
+      R(m,21,26,[null,0,W('red')]);   /* the loads                  */
+      R(m,27,34,[W('amber'),.95,W('amber')]); /* the joints         */
+      R(m,35,36,[null,0,W('grey')]);  /* the span dimension         */
+      m[37]=[null,0,W('sky')];        /* the water below            */
+      return m;})(),
+
+    HEART:(function(){var m={};
+      m[0]=[W('pink'),.34,W('red')];  /* the myocardium         */
+      m[1]=[null,0,W('grey')];        /* the pericardium        */
+      m[2]=[null,0,W('red')];         /* the septum             */
+      m[3]=[null,0,W('blue')];        /* right AV boundary      */
+      m[4]=[null,0,W('red')];         /* left AV boundary       */
+      m[5]=[null,0,W('blue')];        /* right ventricle        */
+      m[6]=[null,0,W('red')];         /* left ventricle         */
+      R(m,7,8,[null,0,W('red')]);     /* the aortic arch        */
+      R(m,9,11,[null,0,W('blue')]);   /* the pulmonary trunk    */
+      m[12]=[null,0,W('blue')];       /* superior vena cava     */
+      m[13]=[null,0,W('blue')];       /* inferior vena cava     */
+      R(m,14,15,[null,0,W('red')]);   /* the pulmonary veins    */
+      R(m,16,19,[null,0,W('amber')]); /* the four valves        */
+      R(m,20,21,[null,0,W('orange')]);/* the coronaries         */
+      R(m,22,23,[null,0,W('grey')]);  /* chordae tendineae      */
+      R(m,24,25,[null,0,W('blue')]);  /* deoxygenated inflow    */
+      R(m,26,27,[null,0,W('red')]);   /* oxygenated outflow     */
+      m[28]=[null,0,W('grey')];       /* the apex tick          */
       return m;})()
   };
 
@@ -537,20 +855,11 @@ export function mountPlateStage(host: HTMLElement, opts: PlateOptions = {}): Pla
      ══════════════════════════════════════════════════════════ */
   var svg=E('svg',{viewBox:VIEWBOX,preserveAspectRatio:FIT,'class':'plate-svg'},host);
   var defs=E('defs',{},svg);
-  var pat=E('pattern',{id:UID+'gp',width:'40',height:'40',patternUnits:'userSpaceOnUse'},defs);
-  E('path',{d:'M0 .5H40M.5 0V40',stroke:'currentColor','stroke-opacity':'.10','stroke-width':'1','stroke-dasharray':'6 7',fill:'none'},pat);
-  var pat2=E('pattern',{id:UID+'gp2',width:'200',height:'200',patternUnits:'userSpaceOnUse'},defs);
-  E('path',{d:'M0 .5H200M.5 0V200',stroke:'currentColor','stroke-opacity':'.15','stroke-width':'1.2',fill:'none'},pat2);
-
+  /* SVG grid removed in favor of consistent CSS background grid */
   /* The sphere, as a clip. The land wash is bounded by the globe's own
      silhouette, so no continent can ever spill past the limb. */
   var globeClip=E('clipPath',{id:UID+'globe',clipPathUnits:'userSpaceOnUse'},defs);
   E('circle',{cx:0,cy:0,r:250},globeClip);
-
-  var gPaper=E('g',{},svg);
-  E('rect',{x:-400,y:-400,width:2400,height:1700,fill:'url(#'+UID+'gp)'},gPaper);
-  E('rect',{x:-400,y:-400,width:2400,height:1700,fill:'url(#'+UID+'gp2)'},gPaper);
-
   /* plate furniture — moves to the active side, never redrawn */
   /* ---- the plate mount ----
      The frame is a mount, not a crop. It is re-laid-out every frame from
@@ -601,11 +910,12 @@ export function mountPlateStage(host: HTMLElement, opts: PlateOptions = {}): Pla
   var gEcho  =E('g',{fill:'none','stroke-linecap':'round','stroke-linejoin':'round',opacity:0},svg); /* ink memory */
   var gInk   =E('g',{fill:'none','stroke-linecap':'round','stroke-linejoin':'round'},svg);           /* A · strands */
   var gAnn   =E('g',{},svg);                                        /* B · annotation */
+  var gLink  =E('g',{fill:'none','stroke-linecap':'round'},svg);    /* B · tag → card leaders */
   var gChips =E('g',{},svg);                                        /* B · question UI */
   var gSet   =E('g',{opacity:0},svg);
   var gDebug =E('g',{opacity:0,fill:'none'},svg);
 
-  var setLine0=E('line',{x1:0,y1:0,x2:CHIP_W,y2:0,stroke:'currentColor','stroke-width':2.4},gSet);
+  var setLine0=E('line',{x1:0,y1:0,x2:CHIP_W,y2:0,stroke:'currentColor','stroke-width':2},gSet);
   var setL=E('text',{x:0,y:-10,'class':'pf-mono','font-size':10,'font-weight':700,
     'letter-spacing':1.8,fill:'currentColor'},gSet);
   var setR=E('text',{x:CHIP_W,y:-10,'text-anchor':'end','class':'pf-mono','font-size':10,
@@ -1009,9 +1319,26 @@ export function mountPlateStage(host: HTMLElement, opts: PlateOptions = {}): Pla
     S.gc=E('g',{opacity:0,transform:'translate('+chipX(i)+',0)'},gChips);
     S.chips=sc.qs.map(function(qq,j){
       var c=E('g',{transform:'translate(0,'+(CHIP_Y0+j*(CHIP_H+CHIP_GAP))+')'},S.gc);
-      E('rect',{x:6,y:6,width:CHIP_W,height:CHIP_H,fill:'var(--line)','fill-opacity':.92},c);
-      E('rect',{x:0,y:0,width:CHIP_W,height:CHIP_H,fill:'var(--surface)',stroke:'currentColor','stroke-width':2.4},c);
-      E('rect',{x:0,y:0,width:11,height:CHIP_H,fill:'var(--b'+qq[0]+')'},c);
+      /* FULL-TRANSPARENT GLASS, in SVG.
+         `backdrop-filter` is not dependable on an SVG shape, so the
+         card earns the see-through read the other way: a translucent
+         fill instead of a blurred one. At 16% the plate underneath —
+         ink, graph paper, the diagram itself — reads straight through
+         the card; it stops being a card sitting ON the drawing and
+         starts being a pane of glass laid over it. The 2.4px rule
+         stays fully opaque — that's the whole bargain with a
+         see-through panel, it may lose its fill but never its edge,
+         or the text loses its ground to sit on.
+         The corner radius matches --r on the HTML side so a question
+         card is the same object on both. */
+      var CR=10;
+      E('rect',{x:5,y:5,width:CHIP_W,height:CHIP_H,rx:CR,fill:'var(--line)','fill-opacity':.28},c);
+      E('rect',{x:0,y:0,width:CHIP_W,height:CHIP_H,rx:CR,
+        fill:'var(--surface)','fill-opacity':.16,stroke:'currentColor','stroke-width':2.4},c);
+      /* The Bloom spine: a rect would round all four corners, so it is
+         a path that rounds only the two it shares with the card. */
+      E('path',{d:'M11 0 H'+CR+' A'+CR+' '+CR+' 0 0 0 0 '+CR+' V'+(CHIP_H-CR)+
+        ' A'+CR+' '+CR+' 0 0 0 '+CR+' '+CHIP_H+' H11 Z',fill:'var(--b'+qq[0]+')'},c);
       E('line',{x1:11,y1:34,x2:CHIP_W,y2:34,stroke:'currentColor','stroke-width':1.5,'stroke-opacity':.3},c);
       E('text',{x:26,y:23,'class':'pf-mono','font-size':10,'font-weight':700,
         'letter-spacing':1.9,fill:'currentColor','fill-opacity':.62},c).textContent=('0'+qq[0]+'  '+qq[1]).toUpperCase();
@@ -1027,6 +1354,12 @@ export function mountPlateStage(host: HTMLElement, opts: PlateOptions = {}): Pla
       E('text',{x:186,y:120,'class':'pf-mono','font-size':9,'letter-spacing':1.1,
         fill:'currentColor','fill-opacity':.5},c).textContent='CONF 0.9'+(2+j*3);
       return c;
+    });
+    /* The leader line from each numbered tag on the diagram to its
+       question card — drawn per-card so the reveal loop can grow each
+       one independently instead of fading a static line in. */
+    S.links=sc.qs.map(function(){
+      return E('path',{d:'',fill:'none',stroke:'currentColor','stroke-width':1.5,'stroke-opacity':0},gLink);
     });
   });
 
@@ -1142,10 +1475,22 @@ export function mountPlateStage(host: HTMLElement, opts: PlateOptions = {}): Pla
   var bufX=new Float64Array(PTS), bufY=new Float64Array(PTS);
 
   function morphStrand(A,B,localT,k,pair,dir,axA,out){
-    var fl=flowOf(A,axA);
-    var jit=PREMIUM?(hsh(k,7)-0.5)*0.05:0;
-    var r0=0.10+(PREMIUM?PREL[A.imp]:REL[A.imp])+fl.del+jit;
-    var r1=0.92-(PREMIUM?PARR[B.imp]:ARR[B.imp])+fl.del-jit;
+    /* premium keys the whole schedule to the family being ASSEMBLED.
+       Every piece flying at the same target line shares one window, one
+       lane and one jitter, so the line travels and lands whole — an
+       ellipse that assembles from staggered fragments reads as broken,
+       not premium. The standard flight keeps its source-keyed release. */
+    var fl=flowOf(A,axA), flB=null;
+    if(PREMIUM){
+      var ny=clamp((B.gcy-ART_Y)/330,-1.4,1.4);
+      flB={lane:ny*12,del:ny*0.020};
+    }
+    var jit=PREMIUM?(hsh(B.gid*7+1,7)-0.5)*0.05:0;
+    var rel=PREMIUM?PREL[B.imp]:REL[A.imp];
+    var arr=PREMIUM?PARR[B.imp]:ARR[B.imp];
+    var del=flB?flB.del:fl.del;
+    var r0=0.10+rel+del+jit;
+    var r1=0.92-arr+del-jit;
     var u=smoothstep(r0,r1,localT);
     var uu=PREMIUM?easeInOutQuint(u):easeInOutCubic(u);
     var flow=Math.sin(Math.PI*u);                 /* 0 at both ends, 1 midway */
@@ -1154,7 +1499,7 @@ export function mountPlateStage(host: HTMLElement, opts: PlateOptions = {}): Pla
        in — an in-place morph that swoops wide reads as restless, not premium */
     var bowMul=PREMIUM?0.52:1;
     var ctrl=SPAN_X*pair.ctrl*(PREMIUM?0.85:1)+110;
-    var lane=fl.lane*pair.lane;
+    var lane=(flB?flB.lane:fl.lane)*pair.lane;
     var o1x=dir*ctrl,        o1y=pair.bow*bowMul+lane;
     var o2x=-dir*ctrl*0.94,  o2y=-pair.bow*0.8*bowMul+lane;
 
@@ -1215,9 +1560,20 @@ export function mountPlateStage(host: HTMLElement, opts: PlateOptions = {}): Pla
       {sh:[0,1],         t:'bre', px:0,  py:0,   amp:0.010, sp:0.5}
     ],
     ATOM:[
-      {sh:[6],  t:'ell', rx:252, ry:94, rot:0,   sp: 1.05},
-      {sh:[7],  t:'ell', rx:252, ry:94, rot:60,  sp:-0.80},
-      {sh:[8],  t:'ell', rx:252, ry:94, rot:120, sp: 1.30},
+      /* Six electrons are drawn and only three used to be listed here,
+         so half the shell orbited and half sat perfectly still — which
+         on a diagram whose entire subject is orbital motion reads as a
+         bug, because it is one. 19 and 20 sit on the rot-0 and rot-60
+         ellipses; 21 sits on the inner dashed shell, which is circular,
+         so it gets rx = ry = 150. Phase is taken from where each one is
+         drawn, so they stay spread out instead of stacking up. */
+      {sh:[6],  t:'ell', rx:252, ry:94,  rot:0,   sp: 1.05},
+      {sh:[7],  t:'ell', rx:252, ry:94,  rot:60,  sp:-0.80},
+      {sh:[8],  t:'ell', rx:252, ry:94,  rot:120, sp: 1.30},
+      {sh:[19], t:'ell', rx:252, ry:94,  rot:0,   sp: 1.05},
+      {sh:[20], t:'ell', rx:252, ry:94,  rot:60,  sp:-0.80},
+      {sh:[21], t:'ell', rx:150, ry:150, rot:0,   sp: 1.70},
+      {sh:[22],         t:'fall', dist: 34, sp:0.9},
       {sh:[3,4,5],      t:'wave', amp:1.7, sp:2.4},
       {sh:[9,10,11,12], t:'wave', amp:1.2, sp:1.1}
     ],
@@ -1249,6 +1605,25 @@ export function mountPlateStage(host: HTMLElement, opts: PlateOptions = {}): Pla
       {sh:[36,37,38],t:'wave', amp:1.4, sp:1.6},
       {sh:[47,48],   t:'bre',  px:245, py:0, amp:0.10, sp:1.7},
       {sh:[52],      t:'bre',  px:300, py:0, amp:0.16, sp:1.7}
+    ],
+
+    /* Auxiliary plates. A settled diagram is not a still: light
+       arrives, a bridge breathes under load, a heart beats. */
+    LENS:[
+      {sh:[22,23],   t:'fall', dist: 62, sp:0.5},
+      {sh:[11,12,13,14,15], t:'wave', amp:1.1, sp:1.4},
+      {sh:[1],       t:'bre',  px:0, py:0, amp:0.018, sp:0.7}
+    ],
+    TRUSS:[
+      {sh:[21,22,23,24,25,26], t:'fall', dist: 14, sp:1.1},
+      {sh:[37],      t:'wave', amp:3.2, sp:0.75},
+      {sh:RG(27,34), t:'bre',  px:0, py:30, amp:0.02, sp:1.3}
+    ],
+    HEART:[
+      {sh:[0,2],     t:'bre',  px:0, py:0, amp:0.030, sp:1.9},
+      {sh:RG(16,19), t:'bre',  px:0, py:-150, amp:0.10, sp:1.9},
+      {sh:[24,25,26,27], t:'wave', amp:1.8, sp:1.5},
+      {sh:[22,23],   t:'wave', amp:1.3, sp:2.1}
     ]
   };
   var liveIdx={};
@@ -1428,7 +1803,14 @@ export function mountPlateStage(host: HTMLElement, opts: PlateOptions = {}): Pla
             [404,-58,470,-165,'TERMINAL','teal'],[-208,-198,60,-300,'DENDRITE','violet']],
     NET:[[-250,-80,-270,-238,'INPUT','blue'],[-85,-117,-60,-300,'HIDDEN LAYER','violet'],
          [245,-45,236,-238,'OUTPUT','amber'],[300,0,232,196,'LOSS','red'],
-         [165,-80,60,300,'BACKPROPAGATION','red']]
+         [165,-80,60,300,'BACKPROPAGATION','red']],
+
+    LENS:[[0,-150,-120,-300,'CONVEX LENS','blue'],[110,0,180,-190,'FOCAL POINT','red'],
+          [-300,-70,-330,-235,'OBJECT','green'],[174,44,300,290,'REAL IMAGE','orange']],
+    TRUSS:[[0,-60,-40,-250,'TOP CHORD','teal'],[-80,30,-330,-160,'DIAGONAL','orange'],
+           [-320,150,-330,264,'PINNED SUPPORT','grey'],[320,150,300,268,'ROLLER','blue']],
+    HEART:[[-100,-40,-330,-190,'RIGHT VENTRICLE','blue'],[100,-40,320,120,'LEFT VENTRICLE','red'],
+           [100,-290,300,-300,'AORTA','red'],[-86,-110,-330,60,'TRICUSPID VALVE','amber']]
   };
   /* A pen, not a plotter: a shaft that bows and trembles, an arrowhead
      made of two strokes that don't quite match, and a label in the
@@ -1528,7 +1910,23 @@ export function mountPlateStage(host: HTMLElement, opts: PlateOptions = {}): Pla
     S.fcx=(x0+x1)/2;
     S.fcy=(y0+y1)/2;
     S.fw=Math.max(620,(x1-x0)+2*PAD_X);
-    S.fh=Math.max(700,(y1-y0)+2*PAD_Y);
+    /* THE SAFE BAND, in one number.
+       The stage is drawn into a 1600×900 viewBox with `slice`, so on
+       any window shorter than 3:2 the top and bottom are cropped, and
+       a fixed chrome bar sits over what is left of the top. A 700px
+       floor put the frame's head under that bar; raising the frame to
+       fix it pushed its foot off the bottom instead. Neither is a
+       clamping problem — the mount was simply taller than the space
+       that is guaranteed visible.
+       BAND is that space. The mount is sized from the art and a small
+       pad, which for every plate in the set lands at or just under the
+       band — and it is deliberately NOT hard-capped to it. Capping
+       would keep the frame on screen by letting the drawing burst out
+       through its own mount, which is the one thing worse than losing
+       two pixels off a rule. A plate that genuinely needs more than the
+       band gets centred in it instead (see the clamp in the renderer),
+       so the overflow is split evenly and invisible. */
+    S.fh=Math.max(540,(y1-y0)+2*PAD_Y);
   });
 
   /* ══════════════════════════════════════════════════════════
@@ -1551,8 +1949,8 @@ export function mountPlateStage(host: HTMLElement, opts: PlateOptions = {}): Pla
     for(i=0;i<n-1;i++){
       var k1=(i>0)?smoothstep(-0.1,0.65,(segX[i-1]*segX[i]+segY[i-1]*segY[i])/(segL[i-1]*segL[i])):1;
       var k2=(i<n-2)?smoothstep(-0.1,0.65,(segX[i]*segX[i+1]+segY[i]*segY[i+1])/(segL[i]*segL[i+1])):1;
-      var p0x=bufX[i>0?i-1:i],    p0y=bufY[i>0?i-1:i];
-      var p3x=bufX[i<n-2?i+2:i+1],p3y=bufY[i<n-2?i+2:i+1];
+      var p0x=i>0?bufX[i-1]:bufX[0]-(bufX[1]-bufX[0]), p0y=i>0?bufY[i-1]:bufY[0]-(bufY[1]-bufY[0]);
+      var p3x=i<n-2?bufX[i+2]:bufX[n-1]+(bufX[n-1]-bufX[n-2]), p3y=i<n-2?bufY[i+2]:bufY[n-1]+(bufY[n-1]-bufY[n-2]);
       sb.push('C',R(bufX[i]+(bufX[i+1]-p0x)/6*k1),' ',R(bufY[i]+(bufY[i+1]-p0y)/6*k1),' ',
                   R(bufX[i+1]-(p3x-bufX[i])/6*k2),' ',R(bufY[i+1]-(p3y-bufY[i])/6*k2),' ',
                   R(bufX[i+1]),' ',R(bufY[i+1]));
@@ -1626,7 +2024,7 @@ export function mountPlateStage(host: HTMLElement, opts: PlateOptions = {}): Pla
     if(onScene&&settled!==lastSettled){lastSettled=settled;onScene(settled,scenes[settled].sc.name,gp)}
 
     var pf=RM?0:1;
-    setA(gPaper,'transform','translate('+(St.mx*5*pf)+','+(St.my*4*pf)+')');
+    // setA(gPaper,'transform','translate('+(St.mx*5*pf)+','+(St.my*4*pf)+')');
 
     /* ---- how close are we to a settled plate? drives every UI layer ---- */
     var near=[],i;
@@ -1757,12 +2155,50 @@ export function mountPlateStage(host: HTMLElement, opts: PlateOptions = {}): Pla
     /* ---- question set ---- */
     for(i=0;i<scenes.length;i++){
       var cv=(CHIPS&&i===settled&&!scenes[i].sc.finale)?chipVis:0;
-      setA(scenes[i].gc,'opacity',(cv*uiP).toFixed(3));
+      var Si=scenes[i];
+      setA(Si.gc,'opacity',(cv*uiP).toFixed(3));
       if(cv>0.002){
         var cxx=chipX(i)+(sideOf(i)==='right'?1:-1)*(1-cv)*40;
-        setA(scenes[i].gc,'transform','translate('+cxx.toFixed(1)+','+(St.my*10*pf).toFixed(1)+')');
-        for(var c2=0;c2<scenes[i].chips.length;c2++)
-          setA(scenes[i].chips[c2],'opacity',clamp(cv*1.6-c2*0.2,0,1).toFixed(3));
+        var gcY=St.my*10*pf;
+        setA(Si.gc,'transform','translate('+cxx.toFixed(1)+','+gcY.toFixed(1)+')');
+        var onRightI=sideOf(i)==='right';
+        var ax1=Si.ax+(Si.sc.ox||0)+nudge;
+        /* ---- STRICT SEQUENCE: line 1 draws out from the diagram, THEN
+           card 1 pops, THEN line 2 draws, THEN card 2 pops — never two
+           at once. `cv` is one continuous 0..1 driver; it is cut into
+           one equal slot per card, and each slot is itself cut into a
+           draw-half and a pop-half, so a later card's slot cannot begin
+           until the previous card's slot has finished animating. ---- */
+        var nChips=Si.chips.length||1;
+        for(var c2=0;c2<Si.chips.length;c2++){
+          var segT=clamp(cv*nChips-c2,0,1);          /* this card's own 0..1 window   */
+          var lineP=smoothstep(0,0.55,segT);          /* first: the leader line draws  */
+          var popT=smoothstep(0.5,1,segT);            /* then: the card pops in        */
+          var ez=popT*popT*(3-2*popT);                /* smoothstep — an easeful pop   */
+          var riseY=(1-ez)*26;                        /* rises 26px into its slot      */
+          var pop=0.90+0.10*ez;                       /* grows from 90% to full size   */
+          var baseY=CHIP_Y0+c2*(CHIP_H+CHIP_GAP);
+          setA(Si.chips[c2],'opacity',popT.toFixed(3));
+          setA(Si.chips[c2],'transform','translate(0,'+(baseY+riseY).toFixed(1)+') scale('+pop.toFixed(3)+')');
+
+          var link=Si.links&&Si.links[c2], lo2=Si.labels&&Si.labels[c2];
+          if(link&&lo2){
+            if(lineP>0.004){
+              var tx1=ax1+lo2.tx, ty1=ART_Y+lo2.ty;
+              var edgeX=onRightI?0:CHIP_W;
+              /* the line's target is the card's SETTLED slot, so it always
+                 draws toward exactly where the card is about to land */
+              var fullTx2=cxx+edgeX, fullTy2=gcY+baseY+(CHIP_H/2);
+              var tx2=tx1+(fullTx2-tx1)*lineP, ty2=ty1+(fullTy2-ty1)*lineP;
+              var mxm=(tx1+tx2)/2;
+              setA(link,'d','M'+tx1.toFixed(1)+' '+ty1.toFixed(1)+' C '+mxm.toFixed(1)+' '+ty1.toFixed(1)+
+                ', '+mxm.toFixed(1)+' '+ty2.toFixed(1)+', '+tx2.toFixed(1)+' '+ty2.toFixed(1));
+              setA(link,'stroke-opacity',(Math.min(1,lineP*3)*0.6*uiP).toFixed(3));
+            } else setA(link,'stroke-opacity','0');
+          }
+        }
+      } else if(Si.links){
+        for(var lkk=0;lkk<Si.links.length;lkk++)setA(Si.links[lkk],'stroke-opacity','0');
       }
     }
     setA(gSet,'opacity',((CHIPS&&!scenes[settled].sc.finale?chipVis:0)*uiP).toFixed(3));
@@ -1774,7 +2210,12 @@ export function mountPlateStage(host: HTMLElement, opts: PlateOptions = {}): Pla
     var fk=smoothstep(0.22,0.82,localT);
     var frameX=(A.ax+A.fcx)+((B.ax+B.fcx)-(A.ax+A.fcx))*fk+nudge;
     var frameY=ART_Y+A.fcy+(B.fcy-A.fcy)*fk;
-    layoutFrame(A.fw+(B.fw-A.fw)*fk, A.fh+(B.fh-A.fh)*fk);
+    var frameH=A.fh+(B.fh-A.fh)*fk;
+    /* Keep the mount inside the band it was sized for. Because fh can
+       never exceed BAND, this clamp always has somewhere to put it. */
+    if(frameH>=BAND) frameY=(SAFE_T+SAFE_B)/2;
+    else frameY=clamp(frameY,SAFE_T+frameH/2,SAFE_B-frameH/2);
+    layoutFrame(A.fw+(B.fw-A.fw)*fk, frameH);
     setA(gFrame,'transform','translate('+(frameX+St.mx*9*pf).toFixed(1)+','+(frameY+St.my*7*pf).toFixed(1)+')');
     gFrame.setAttribute('opacity',(0.85*(1-smoothstep(0.16,0.5,Math.min(localT,1-localT))*0.85)).toFixed(3));
     gMark.setAttribute('opacity','0');

@@ -1,18 +1,16 @@
 'use client'
 
 import * as React from 'react'
-import Link from 'next/link'
-import { motion, AnimatePresence } from 'framer-motion'
+import { AnimatePresence } from 'framer-motion'
 import {
-  Bot, Plus, Trash2, Sparkles, Loader2, Save, Globe, Lock, Brain, Edit2, RotateCcw
+  Bot, Plus, Trash2, Loader2, Save, Globe, Lock, Brain, Edit2, RotateCcw, AlertTriangle
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { PageHeader } from '@/components/layout/PageHeader'
+import { PageFrame, Ledger } from '@/components/layout/PageFrame'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Card } from '@/components/ui/card'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
@@ -92,110 +90,153 @@ export default function AgentsPage() {
     }
   }
 
+  const customised = systemAgents.filter((a) => a.hasOverride).length
+
   return (
-    <div className="relative flex min-h-screen flex-col text-foreground">
-      <PageHeader title="Agents & Prompt Editor" />
-
-      <div className="relative z-10 mx-auto w-full max-w-[1400px] flex-1 p-6 md:p-8">
-        {/* Header */}
-        <div className="mb-8 flex items-start justify-between gap-4">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2.5">
-              <div className="flex size-9 items-center justify-center border border-primary/45 bg-primary/10 text-primary rounded-lg">
-                <Brain className="size-5" />
-              </div>
-              <h1 className="text-2xl font-black tracking-tight md:text-[28px] uppercase">
-                Agent &amp; Prompt <span className="text-primary">Editor</span>
-              </h1>
-            </div>
-            <p className="max-w-2xl text-sm text-muted-foreground">
-              Customize the system instructions of the core pipeline agents, or build your own custom agents. 
-              Changes are saved to your account and apply to all future runs.
-            </p>
-          </div>
-          <Button onClick={() => { setEditingAgent(null); setShowForm((v) => !v) }} className="shrink-0 gap-1.5 rounded-full brutal-interactive">
-            <Plus className="size-4" />
-            New custom agent
-          </Button>
-        </div>
-
-        {/* Create Form */}
+    <PageFrame
+      eyebrow="Agents"
+      title="Agent & prompt editor"
+      lede="Rewrite the system instructions the four pipeline agents run on, or build your own. Changes are saved to your account and apply to every future run."
+      ledger={
+        <Ledger
+          cells={[
+            { k: 'Core', v: systemAgents.length },
+            { k: 'Custom', v: customAgents.length },
+            { k: 'Overridden', v: customised },
+            { k: 'Hosts', v: providerOptions.length },
+          ]}
+        />
+      }
+      actions={
+        <Button
+          onClick={() => {
+            setEditingAgent(null)
+            setShowForm((v) => !v)
+          }}
+          className="shrink-0"
+        >
+          <Plus className="size-4" />
+          {showForm ? 'Cancel' : 'New agent'}
+        </Button>
+      }
+      status={
+        <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-[var(--ink-2)]">
+          {systemAgents.length} core · {customAgents.length} custom ·{' '}
+          {customised > 0 ? `${customised} overridden` : 'all defaults'}
+        </span>
+      }
+    >
+      <div className="mx-auto w-full max-w-[1440px] pb-6">
+        {/* Create form */}
         <AnimatePresence>
           {showForm && (
             <AgentForm
               providerOptions={providerOptions}
               onClose={() => setShowForm(false)}
-              onCreated={() => { setShowForm(false); load() }}
+              onCreated={() => {
+                setShowForm(false)
+                load()
+              }}
             />
           )}
         </AnimatePresence>
 
-        {/* Edit Form */}
+        {/* Edit form */}
         <AnimatePresence>
           {editingAgent && (
             <AgentForm
               providerOptions={providerOptions}
               agentToEdit={editingAgent}
               onClose={() => setEditingAgent(null)}
-              onCreated={() => { setEditingAgent(null); load() }}
+              onCreated={() => {
+                setEditingAgent(null)
+                load()
+              }}
             />
           )}
         </AnimatePresence>
 
         {loading && customAgents.length === 0 && systemAgents.length === 0 ? (
           <div className="flex h-40 items-center justify-center">
-            <Loader2 className="size-5 animate-spin text-muted-foreground" />
+            <Loader2 className="size-5 animate-spin text-[var(--ink-2)]" />
           </div>
         ) : (
-          <div className="space-y-12">
-            {/* Core Pipeline Section */}
-            <div className="space-y-4">
-              <div className="border-b border-border/40 pb-2">
-                <h2 className="text-sm font-extrabold uppercase tracking-wider text-muted-foreground">
-                  Core Pipeline Agents
-                </h2>
-                <p className="text-xs text-muted-foreground">
-                  These 4 agents execute the visual analysis, question composing, solving, and grounding critic checks.
-                </p>
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                {systemAgents.map((agent) => (
+          <div className="space-y-9">
+            {/* ---------------- 01 · CORE PIPELINE ---------------- */}
+            <section>
+              <NumberedRule
+                n="01"
+                title="Core pipeline agents"
+                meta="vision · generate · solve · critique"
+              >
+                The four system prompts a run actually executes, in order. Editing one
+                changes every future run on this account — the originals are always one
+                click away.
+              </NumberedRule>
+              {/* Real gaps. The old grid welded the four cards edge to
+                  edge with negative margins, which is honest brutalism
+                  and unreadable in practice: four dense prompt bodies
+                  separated by nothing but a shared black rule is a wall
+                  of text, not four objects. */}
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                {systemAgents.map((agent, i) => (
                   <AgentCard
                     key={agent.id}
                     agent={agent}
+                    accent={`var(--bloom-${(i % 6) + 1})`}
                     providerOptions={providerOptions}
                     onEdit={() => { setShowForm(false); setEditingAgent(agent) }}
                     onReset={() => handleResetSystem(agent.id)}
                   />
                 ))}
               </div>
-            </div>
+            </section>
 
-            {/* Custom Agents Section */}
-            <div className="space-y-4">
-              <div className="border-b border-border/40 pb-2">
-                <h2 className="text-sm font-extrabold uppercase tracking-wider text-muted-foreground">
-                  Your Custom Agents
-                </h2>
-              </div>
+            {/* ---------------- 02 · CUSTOM ---------------- */}
+            <section>
+              <NumberedRule n="02" title="Your custom agents" meta={`${customAgents.length} saved`}>
+                Specialised agents with their own instructions and model host, for a task
+                the four core agents were not written for.
+              </NumberedRule>
               {customAgents.length === 0 ? (
-                <Card className="brutal-block flex flex-col items-center justify-center gap-3 p-10 text-center">
-                  <div className="flex size-10 items-center justify-center border border-border/70 bg-muted text-muted-foreground rounded-lg">
-                    <Bot className="size-5" />
-                  </div>
+                /* A compact prompt, not a canyon. The old empty state was
+                   a `flex-1` dashed box, so on an account with no custom
+                   agents it inflated to fill every pixel below the fold —
+                   the emptiest thing on the page rendered as the largest.
+                   It is now sized to its own content and offers the one
+                   action it is asking for. */
+                <div className="ticket mx-auto flex max-w-[560px] flex-col items-center gap-3 px-8 py-7 text-center">
+                  <span className="flex size-11 items-center justify-center rounded-[var(--r-s)] border-2 border-[var(--line)] bg-[var(--yellow)] text-[#0a0a0a]">
+                    <Bot className="size-5" strokeWidth={2.5} />
+                  </span>
                   <div className="space-y-1">
-                    <p className="text-xs font-semibold text-foreground/80">No custom agents yet</p>
-                    <p className="mx-auto max-w-sm text-[11px] text-muted-foreground leading-normal">
-                      Create specialized custom agents with customized LLM credentials for specific course tasks.
+                    <p className="font-[family-name:var(--font-archivo)] text-[15px] font-black uppercase tracking-[-0.01em]">
+                      No custom agents yet
+                    </p>
+                    <p className="mx-auto max-w-[46ch] text-[11.5px] leading-relaxed text-[var(--ink-2)]">
+                      Build one with its own instructions and model host — a marker for a
+                      specific rubric, say, or a reader tuned to circuit diagrams.
                     </p>
                   </div>
-                </Card>
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      setEditingAgent(null)
+                      setShowForm(true)
+                    }}
+                    className="mt-1"
+                  >
+                    <Plus className="size-3.5" />
+                    Build an agent
+                  </Button>
+                </div>
               ) : (
-                <div className="grid gap-4 sm:grid-cols-2">
-                  {customAgents.map((agent) => (
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                  {customAgents.map((agent, i) => (
                     <AgentCard
                       key={agent.id}
                       agent={agent}
+                      accent={`var(--bloom-${(i % 6) + 1})`}
                       providerOptions={providerOptions}
                       onEdit={() => { setShowForm(false); setEditingAgent(agent) }}
                       onDelete={() => handleDelete(agent.id)}
@@ -203,10 +244,59 @@ export default function AgentsPage() {
                   ))}
                 </div>
               )}
-            </div>
+            </section>
           </div>
         )}
       </div>
+    </PageFrame>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/* A numbered section rule.                                            */
+/*                                                                     */
+/* The numeral is outlined rather than filled. It has to be big enough */
+/* to act as a wayfinding mark down the left edge of a long page, and  */
+/* a solid 900-weight "01" at that size outweighs the heading it is    */
+/* supposed to be introducing. Hollow keeps the size and gives back    */
+/* the weight.                                                         */
+/* ------------------------------------------------------------------ */
+function NumberedRule({
+  n,
+  title,
+  meta,
+  children,
+}: {
+  n: string
+  title: string
+  meta?: string
+  children?: React.ReactNode
+}) {
+  return (
+    <div className="mb-4">
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <span
+          className="font-[family-name:var(--font-archivo)] text-[30px] font-black leading-none text-transparent"
+          style={{ WebkitTextStroke: '2px var(--ink)', paintOrder: 'stroke fill' }}
+          aria-hidden
+        >
+          {n}
+        </span>
+        <h2 className="font-[family-name:var(--font-archivo)] text-[17px] font-black uppercase leading-none tracking-[-0.01em]">
+          {title}
+        </h2>
+        <span className="h-[2px] min-w-[24px] flex-1 rounded-none bg-[var(--line)]/18" aria-hidden />
+        {meta && (
+          <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[var(--ink-2)]">
+            {meta}
+          </span>
+        )}
+      </div>
+      {children && (
+        <p className="mt-2 max-w-[76ch] text-[11.5px] leading-relaxed text-[var(--ink-2)]">
+          {children}
+        </p>
+      )}
     </div>
   )
 }
@@ -268,19 +358,35 @@ function AgentForm({
     }
   }
 
+  /* The editor is a sheet laid on top of the list, not another panel
+     welded into it: it gets the accent spine, a clipped corner so the
+     filled header cannot square off the card, and a footer that is
+     visibly the end of the sheet. */
   return (
-    <Card className="brutal-block mb-6 p-6">
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="flex items-center gap-2">
-          <Brain className="size-4 text-primary" />
-          <h3 className="text-xs font-bold uppercase tracking-wider">
-            {isEditing ? `Edit ${isSystem ? 'System instructions' : 'Custom agent'}` : 'Create a custom agent'}
-          </h3>
-        </div>
+    <div className="glass-surface mb-6 overflow-hidden border-2 border-[var(--line)] shadow-[6px_6px_0_var(--line)] [border-radius:var(--r-l)]">
+      <div className="h-[5px] rounded-none bg-[var(--red)]" aria-hidden />
+      <div className="flex items-center gap-2.5 border-b-2 border-[var(--line)]/20 px-5 py-3">
+        <span className="flex size-7 items-center justify-center rounded-[var(--r-xs)] border-[1.5px] border-[var(--line)] bg-[var(--yellow)] text-[#0a0a0a]">
+          <Brain className="size-3.5" strokeWidth={2.5} />
+        </span>
+        <h3 className="font-[family-name:var(--font-archivo)] text-[13px] font-black uppercase tracking-[0.03em]">
+          {isEditing
+            ? `Edit ${isSystem ? 'system instructions' : 'custom agent'}`
+            : 'Create a custom agent'}
+        </h3>
+        <button
+          type="button"
+          onClick={onClose}
+          className="ml-auto font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-2)] hover:text-[var(--red)]"
+        >
+          Close
+        </button>
+      </div>
+      <form onSubmit={handleSubmit} className="space-y-5 p-5">
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Label className="text-[11px] font-bold uppercase text-muted-foreground">Agent Name</Label>
+            <Label className="fig-label">Agent Name</Label>
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -291,7 +397,7 @@ function AgentForm({
             />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-[11px] font-bold uppercase text-muted-foreground">Role / Identifier</Label>
+            <Label className="fig-label">Role / Identifier</Label>
             <Input
               value={role}
               onChange={(e) => setRole(e.target.value)}
@@ -304,7 +410,7 @@ function AgentForm({
         </div>
 
         <div className="space-y-1.5">
-          <Label className="text-[11px] font-bold uppercase text-muted-foreground">System Instructions (Prompt Template)</Label>
+          <Label className="fig-label">System Instructions (Prompt Template)</Label>
           <Textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
@@ -313,15 +419,20 @@ function AgentForm({
             required
           />
           {isSystem && (
-            <p className="text-[10px] text-muted-foreground">
-              ⚠️ Be careful to preserve templated parameters (like <code>{"{{STRUCTURE}}"}</code>, <code>{"{{QUESTIONS}}"}</code>, etc.) so that run data compiles correctly!
+            <p className="flex items-start gap-2 rounded-[var(--r-s)] border-[1.5px] border-[var(--yellow)] bg-[color-mix(in_srgb,var(--yellow)_14%,transparent)] px-3 py-2 text-[11px] leading-relaxed">
+              <AlertTriangle className="mt-[2px] size-3.5 shrink-0" strokeWidth={2.5} />
+              <span>
+                Keep the templated parameters intact — <span className="chip-code">{"{{STRUCTURE}}"}</span>{' '}
+                <span className="chip-code">{"{{QUESTIONS}}"}</span> and the rest are substituted at
+                run time. <span className="mark">Delete one and the run cannot compile.</span>
+              </span>
             </p>
           )}
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Label className="text-[11px] font-bold uppercase text-muted-foreground">AI Provider</Label>
+            <Label className="fig-label">AI Provider</Label>
             <Select value={provider} onValueChange={setProvider}>
               <SelectTrigger className="h-10 text-xs">
                 <SelectValue />
@@ -341,7 +452,7 @@ function AgentForm({
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label className="text-[11px] font-bold uppercase text-muted-foreground">Model Override (Optional)</Label>
+            <Label className="fig-label">Model Override (Optional)</Label>
             <Input
               value={model}
               onChange={(e) => setModel(e.target.value)}
@@ -352,29 +463,35 @@ function AgentForm({
         </div>
 
         {!isSystem && (
-          <div className="brutal-block-sm flex items-center justify-between bg-muted/30 px-4 py-3 rounded-lg border border-border/40">
-            <div className="flex items-center gap-2">
-              {isPublic ? <Globe className="size-4 text-primary" /> : <Lock className="size-4 text-muted-foreground" />}
+          <div className="flex items-center justify-between gap-4 rounded-[var(--r-s)] border-[1.5px] border-[var(--line)]/30 bg-[var(--paper)] px-4 py-3">
+            <div className="flex items-center gap-2.5">
+              {isPublic ? (
+                <Globe className="size-4 text-[var(--red)]" />
+              ) : (
+                <Lock className="size-4 text-[var(--ink-2)]" />
+              )}
               <div>
-                <p className="text-xs font-bold">Share Publicly</p>
-                <p className="text-[10px] text-muted-foreground">Allow other accounts to use this agent</p>
+                <p className="text-xs font-bold">Share publicly</p>
+                <p className="text-[10.5px] text-[var(--ink-2)]">
+                  Allow other accounts to use this agent
+                </p>
               </div>
             </div>
             <Switch checked={isPublic} onCheckedChange={setIsPublic} />
           </div>
         )}
 
-        <div className="flex items-center justify-end gap-2 pt-2">
-          <Button type="button" variant="outline" onClick={onClose} className="rounded-full text-xs h-9">
+        <div className="-mx-5 -mb-5 mt-1 flex items-center justify-end gap-2 border-t-2 border-[var(--line)]/20 bg-[var(--paper)] px-5 py-3">
+          <Button type="button" variant="outline" size="sm" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" disabled={saving} className="gap-1.5 rounded-full text-xs h-9 brutal-interactive">
+          <Button type="submit" size="sm" disabled={saving}>
             {saving ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
             Save instructions
           </Button>
         </div>
       </form>
-    </Card>
+    </div>
   )
 }
 
@@ -383,12 +500,15 @@ function AgentForm({
 function AgentCard({
   agent,
   providerOptions,
+  accent = 'var(--line)',
   onEdit,
   onDelete,
   onReset,
 }: {
   agent: Agent
   providerOptions: ProviderOption[]
+  /** A Bloom hue, used only as a 3px spine down the card's left edge. */
+  accent?: string
   onEdit: () => void
   onDelete?: () => void
   onReset?: () => void
@@ -400,84 +520,119 @@ function AgentCard({
 
   const isSystem = agent.isSystem === true
 
+  /* One card per agent, standing on its own. The colour spine is the
+     only saturated ink on it: it tells four otherwise identical dense
+     cards apart at a glance, which is what the shared-border grid was
+     failing to do. Hover LIFTS — a card is an object to pick up, not a
+     button to push in. */
   return (
-    <Card className="brutal-block group p-5 flex flex-col justify-between h-56">
-      <div className="space-y-3">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-2.5">
-            <div className="flex size-9 items-center justify-center border border-primary/45 bg-primary/10 text-primary rounded-lg">
-              <Bot className="size-4.5" />
-            </div>
-            <div>
-              <h3 className="text-xs font-bold leading-tight uppercase tracking-wide">{agent.name}</h3>
-              <p className="text-[10px] text-muted-foreground font-mono">{agent.role}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all focus-within:opacity-100">
-            <button
-              onClick={onEdit}
-              className="border border-border/40 rounded p-1.5 text-muted-foreground hover:bg-muted transition-all"
-              aria-label="Edit agent instructions"
-            >
-              <Edit2 className="size-3" />
-            </button>
-            {isSystem && agent.hasOverride && onReset && (
-              <button
-                onClick={onReset}
-                className="border border-border/40 rounded p-1.5 text-amber-500 hover:bg-amber-500/10 transition-all"
-                title="Reset to default prompt template"
-                aria-label="Reset to default prompt"
-              >
-                <RotateCcw className="size-3" />
-              </button>
-            )}
-            {!isSystem && onDelete && agent.isOwner && (
-              <button
-                onClick={onDelete}
-                className="border border-border/40 rounded p-1.5 text-muted-foreground hover:border-destructive/30 hover:bg-destructive/15 hover:text-destructive transition-all"
-                aria-label="Delete custom agent"
-              >
-                <Trash2 className="size-3" />
-              </button>
-            )}
-          </div>
-        </div>
+    <article className="lift glass-surface group flex min-w-0 flex-col overflow-hidden border-2 border-[var(--line)] shadow-[4px_4px_0_var(--line)]">
+      <div className="h-[5px] shrink-0 rounded-none" style={{ background: accent }} aria-hidden />
 
-        <p className="line-clamp-4 text-[11px] leading-relaxed text-muted-foreground font-mono bg-muted/10 p-2 border border-border/30 rounded-md">
+      <header className="flex items-start gap-2.5 px-3.5 pb-2 pt-3">
+        <span className="flex size-7 shrink-0 items-center justify-center rounded-[var(--r-xs)] border-[1.5px] border-[var(--line)] bg-[var(--paper)]">
+          <Bot className="size-3.5" strokeWidth={2.5} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <h3
+            className="truncate font-[family-name:var(--font-archivo)] text-[12.5px] font-black uppercase leading-tight tracking-[0.01em]"
+            title={agent.name}
+          >
+            {agent.name}
+          </h3>
+          <p
+            className="truncate font-mono text-[9px] uppercase tracking-[0.12em] text-[var(--ink-2)]"
+            title={agent.role}
+          >
+            {agent.role}
+          </p>
+        </div>
+        <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
+          <IconBtn onClick={onEdit} label="Edit instructions">
+            <Edit2 className="size-3" />
+          </IconBtn>
+          {isSystem && agent.hasOverride && onReset && (
+            <IconBtn onClick={onReset} label="Reset to default prompt" tone="warn">
+              <RotateCcw className="size-3" />
+            </IconBtn>
+          )}
+          {!isSystem && onDelete && agent.isOwner && (
+            <IconBtn onClick={onDelete} label="Delete agent" tone="danger">
+              <Trash2 className="size-3" />
+            </IconBtn>
+          )}
+        </div>
+      </header>
+
+      {/* The prompt body, set on the paper ground rather than the card
+          ground so it reads as quoted source rather than as copy. */}
+      <div className="mx-3.5 mb-3 min-h-[92px] flex-1 rounded-[var(--r-s)] border-[1.5px] border-[var(--line)]/25 bg-[color-mix(in_srgb,var(--paper)_55%,transparent)] px-2.5 py-2">
+        <p className="line-clamp-5 font-mono text-[10px] leading-relaxed text-[var(--ink-2)]">
           {agent.prompt}
         </p>
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[9px]">
-        <div className="flex items-center gap-1.5">
-          <span className="inline-flex items-center gap-1 border border-border/70 bg-muted/65 rounded-full px-2 py-0.5 font-mono font-bold">
-            {providerLabel}
+      <footer className="flex flex-wrap items-center gap-1.5 border-t-2 border-[var(--line)]/15 px-3.5 py-2">
+        <span className="max-w-full truncate rounded-[var(--r-xs)] border-[1.5px] border-[var(--line)]/45 px-1.5 py-[2px] font-mono text-[9px] font-bold uppercase tracking-[0.1em]">
+          {providerLabel}
+        </span>
+        {agent.model && (
+          <span className="max-w-full truncate font-mono text-[9px] text-[var(--ink-2)]" title={agent.model}>
+            {agent.model}
           </span>
-          {agent.model && (
-            <span className="inline-flex items-center gap-1 border border-border/70 bg-muted/65 rounded-full px-2 py-0.5 font-mono font-bold">
-              {agent.model}
-            </span>
-          )}
-        </div>
-        
-        {isSystem ? (
-          agent.hasOverride ? (
-            <span className="inline-flex items-center gap-1 border border-amber-500/30 bg-amber-500/10 rounded-full px-2 py-0.5 font-bold text-amber-500">
-              Customized
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1 border border-border/80 bg-muted/40 rounded-full px-2 py-0.5 font-bold text-muted-foreground">
-              Default Template
-            </span>
-          )
-        ) : (
-          agent.isPublic && (
-            <span className="inline-flex items-center gap-1 border border-primary/30 bg-primary/10 rounded-full px-2 py-0.5 font-bold text-primary">
-              <Globe className="size-2" /> Public
-            </span>
-          )
         )}
-      </div>
-    </Card>
+        <span className="ml-auto shrink-0">
+          {isSystem ? (
+            agent.hasOverride ? (
+              <span className="rounded-[var(--r-xs)] border-[1.5px] border-[var(--line)] bg-[var(--yellow)] px-1.5 py-[2px] font-mono text-[9px] font-bold uppercase tracking-[0.1em] text-[#0a0a0a]">
+                Overridden
+              </span>
+            ) : (
+              <span className="font-mono text-[9px] uppercase tracking-[0.1em] text-[var(--ink-2)]">
+                default
+              </span>
+            )
+          ) : (
+            agent.isPublic && (
+              <span className="inline-flex items-center gap-1 rounded-[var(--r-xs)] border-[1.5px] border-[var(--line)] bg-[var(--ink)] px-1.5 py-[2px] font-mono text-[9px] font-bold uppercase tracking-[0.1em] text-[var(--paper)]">
+                <Globe className="size-2.5" /> public
+              </span>
+            )
+          )}
+        </span>
+      </footer>
+    </article>
+  )
+}
+
+function IconBtn({
+  onClick,
+  label,
+  children,
+  tone = 'default',
+}: {
+  onClick: () => void
+  label: string
+  children: React.ReactNode
+  tone?: 'default' | 'warn' | 'danger'
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      className={cn(
+        'inline-flex size-6 items-center justify-center rounded-[var(--r-xs)] border-[1.5px] border-[var(--line)] bg-[var(--card)] text-[var(--ink-2)]',
+        'transition-colors duration-[90ms]',
+        tone === 'danger'
+          ? 'hover:bg-[var(--red)] hover:text-white'
+          : tone === 'warn'
+          ? 'hover:bg-[var(--yellow)] hover:text-[#0a0a0a]'
+          : 'hover:bg-[var(--ink)] hover:text-[var(--paper)]',
+      )}
+    >
+      {children}
+    </button>
   )
 }

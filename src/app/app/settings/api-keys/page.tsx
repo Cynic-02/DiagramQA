@@ -4,16 +4,14 @@ import * as React from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  KeyRound, Plus, Trash2, Loader2, Save, ShieldCheck,
-  ServerCog, Globe2, Pencil, X, FlaskConical,
+  Plus, Trash2, Loader2, Save, ShieldCheck, Pencil, X, FlaskConical,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { PageHeader } from '@/components/layout/PageHeader'
+import { PageFrame, Ledger, SectionRule } from '@/components/layout/PageFrame'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import { Card } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 
 interface ProviderRow {
@@ -33,6 +31,7 @@ export default function ApiKeysSettingsPage() {
   const [providers, setProviders] = React.useState<ProviderRow[]>([])
   const [loading, setLoading] = React.useState(true)
   const [showCustomForm, setShowCustomForm] = React.useState(false)
+  const [showGuide, setShowGuide] = React.useState(false)
 
   const load = React.useCallback(async () => {
     setLoading(true)
@@ -53,96 +52,185 @@ export default function ApiKeysSettingsPage() {
   const builtIn = providers.filter((p) => !p.isCustom)
   const custom = providers.filter((p) => p.isCustom)
 
+  const withOwnKey = providers.filter((p) => p.hasOwnKey).length
+  const visionReady = providers.filter((p) => p.usable && p.supportsVision).length
+
   return (
-    <div className="relative flex min-h-screen flex-col">
-      <PageHeader title="API Keys" />
-
-      <div className="relative z-10 mx-auto w-full max-w-[1500px] flex-1 p-6 md:p-8">
-        <div className="mb-6 space-y-1.5">
-          <div className="flex items-center gap-2">
-            <div className="flex size-9 items-center justify-center border border-primary/45 bg-primary/10 text-primary rounded-lg">
-              <KeyRound className="size-5" />
-            </div>
-            <h1 className="text-2xl font-black tracking-tight md:text-[28px]">
-              API <span className="text-secondary">Keys</span>
-            </h1>
-          </div>
-          <p className="max-w-2xl text-sm text-muted-foreground">
-            Bring your own API key for any provider, or connect a fully custom
-            OpenAI-compatible endpoint under your own name. Your keys are only
-            ever used for runs and chats you start — nobody else can see or
-            use them.
-          </p>
-        </div>
-
-        {/* Step-by-Step API Key Integration Guide */}
-        <Card className="brutal-block mb-8 p-5 bg-primary/5 border-primary/20 space-y-4">
-          <h2 className="text-sm font-bold flex items-center gap-2 text-primary">
-            <ShieldCheck className="size-4" />
-            Step-by-Step API Setup Guide
-          </h2>
-          
-          <div className="grid gap-6 md:grid-cols-2 text-xs leading-relaxed text-foreground/80">
-            <div className="space-y-3">
-              <div>
-                <p className="font-bold text-foreground">1. How many API keys are needed?</p>
-                <p className="text-muted-foreground text-[11px] mt-0.5">
-                  Just **ONE**. Add a key for OpenAI, Anthropic, Gemini, GLM, Qwen, or OpenRouter — every one of those can read the diagram image, so the whole pipeline (all agents) runs on that single key automatically. You never pick a provider or model yourself; the console does that for you.
-                </p>
-                <p className="text-muted-foreground text-[11px] mt-1">
-                  Want more headroom? You can add **more than one key for the same provider** — paste each on its own line in the key field. If one hits its rate limit mid-run, the pipeline automatically rotates to the next one instead of failing.
-                </p>
+    <PageFrame
+      eyebrow="API keys"
+      title="API keys"
+      lede="One vision-capable key runs the whole pipeline — the console picks the provider and model for you. Keys are only ever used for runs and chats you start."
+      ledger={
+        <Ledger
+          cells={[
+            { k: 'Providers', v: providers.length },
+            { k: 'Your keys', v: withOwnKey },
+            { k: 'Vision ready', v: visionReady },
+            { k: 'Custom', v: custom.length },
+          ]}
+        />
+      }
+      actions={
+        <Button
+          variant={showGuide ? 'default' : 'outline'}
+          onClick={() => setShowGuide((v) => !v)}
+        >
+          <ShieldCheck className="size-4" />
+          Setup guide
+        </Button>
+      }
+      status={
+        <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-[var(--ink-2)]">
+          {visionReady > 0
+            ? `${visionReady} vision-capable host${visionReady === 1 ? '' : 's'} ready`
+            : 'No vision-capable host — the sample demo still runs without one'}
+        </span>
+      }
+    >
+      <>
+        {/* Setup guide — collapsed by default. It is reference material, not
+            something you read every visit, so it no longer occupies the top
+            third of the page permanently. */}
+        <AnimatePresence initial={false}>
+          {showGuide && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+              className="overflow-hidden"
+            >
+              <div className="mb-5 border-[3px] border-[var(--line)] bg-[var(--card)] shadow-[5px_5px_0_var(--line)]">
+                <div className="flex items-center gap-2 border-b-[3px] border-[var(--line)] bg-[var(--ink)] px-4 py-2.5">
+                  <ShieldCheck className="size-4 text-[var(--paper)]" />
+                  <h2 className="font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--paper)]">
+                    Setup guide
+                  </h2>
+                </div>
+                <div className="grid gap-0 md:grid-cols-2 xl:grid-cols-4">
+                  {[
+                    {
+                      n: '01',
+                      t: 'How many keys?',
+                      body: (
+                        <>
+                          <strong className="text-[var(--ink)]">One.</strong> A key for OpenAI,
+                          Anthropic, Gemini, GLM, Qwen or OpenRouter reads the diagram image, so
+                          every agent runs on it automatically. Paste several keys for the same
+                          provider — one per line — and the pipeline rotates when one hits its
+                          rate limit.
+                        </>
+                      ),
+                    },
+                    {
+                      n: '02',
+                      t: 'Where to get one',
+                      body: (
+                        <>
+                          <a
+                            href="https://platform.openai.com/api-keys"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-bold text-[var(--red)] underline underline-offset-2"
+                          >
+                            OpenAI
+                          </a>
+                          ,{' '}
+                          <a
+                            href="https://console.anthropic.com/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-bold text-[var(--red)] underline underline-offset-2"
+                          >
+                            Anthropic
+                          </a>{' '}
+                          or{' '}
+                          <a
+                            href="https://aistudio.google.com/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-bold text-[var(--red)] underline underline-offset-2"
+                          >
+                            Google AI Studio
+                          </a>
+                          . Groq and Kimi handle text but cannot read images, so they need one of
+                          the above alongside them.
+                        </>
+                      ),
+                    },
+                    {
+                      n: '03',
+                      t: 'Add and verify',
+                      body: (
+                        <>
+                          Find the provider below, hit{' '}
+                          <strong className="text-[var(--ink)]">Add your key</strong>, paste the
+                          token, save. Leave the model field blank for the default, and use{' '}
+                          <strong className="text-[var(--ink)]">Test</strong> to confirm the
+                          connection.
+                        </>
+                      ),
+                    },
+                    {
+                      n: '04',
+                      t: 'Run it',
+                      body: (
+                        <>
+                          Back to the{' '}
+                          <Link
+                            href="/app"
+                            className="font-bold text-[var(--red)] underline underline-offset-2"
+                          >
+                            console
+                          </Link>
+                          , drop a diagram, run the pipeline. No provider or model choice needed.
+                        </>
+                      ),
+                    },
+                  ].map((c, i) => (
+                    <div
+                      key={c.n}
+                      className={cn(
+                        'border-[var(--line)] p-4',
+                        i > 0 && 'border-t-2 md:border-t-0',
+                        i % 2 === 1 && 'md:border-l-2',
+                        i >= 2 && 'md:border-t-2 xl:border-t-0',
+                        'xl:[&:not(:first-child)]:border-l-2',
+                      )}
+                    >
+                      <div className="mb-2 flex items-baseline gap-2">
+                        <span className="dat text-[11px] font-bold text-[var(--red)]">{c.n}</span>
+                        <h3 className="font-[family-name:var(--font-archivo)] text-[12px] font-black uppercase tracking-[0.04em]">
+                          {c.t}
+                        </h3>
+                      </div>
+                      <p className="text-[11px] leading-relaxed text-[var(--ink-2)]">{c.body}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
-              
-              <div>
-                <p className="font-bold text-foreground">2. Where to get your API keys?</p>
-                <ul className="list-disc pl-4 mt-1 space-y-1 text-muted-foreground text-[11px]">
-                  <li><a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-primary underline hover:text-primary/80">OpenAI API Keys Page</a> (for GPT-4o / GPT-4o-mini)</li>
-                  <li><a href="https://console.anthropic.com/" target="_blank" rel="noopener noreferrer" className="text-primary underline hover:text-primary/80">Anthropic Console</a> (for Claude Sonnet)</li>
-                  <li><a href="https://aistudio.google.com/" target="_blank" rel="noopener noreferrer" className="text-primary underline hover:text-primary/80">Google AI Studio Console</a> (for Gemini models)</li>
-                </ul>
-                <p className="text-muted-foreground text-[11px] mt-1">
-                  Groq and Kimi keys work for text-only steps but can&apos;t read images, so on their own they can&apos;t run the diagram-extraction step — pair them with one of the providers above, or just use one of the above by itself.
-                </p>
-              </div>
-            </div>
-            
-            <div className="space-y-3">
-              <div>
-                <p className="font-bold text-foreground">3. How to add and verify keys?</p>
-                <p className="text-muted-foreground text-[11px] mt-0.5">
-                  Locate your provider card below, click **"Add your key"**, paste your API token, and click **"Save"**. Leave the model field blank — we use a sensible default. You can click **"Test"** to immediately verify the connection works.
-                </p>
-              </div>
-              
-              <div>
-                <p className="font-bold text-foreground">4. Running the pipeline smoothly</p>
-                <p className="text-muted-foreground text-[11px] mt-0.5">
-                  Once a key is saved, navigate back to the <Link href="/app" className="text-primary underline font-bold">Console</Link>, upload your diagram, and click **"Run pipeline"**. Every agent in the pipeline uses your saved key automatically — no provider or model selection needed.
-                </p>
-              </div>
-            </div>
-          </div>
-        </Card>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {loading ? (
           <div className="flex h-40 items-center justify-center">
-            <Loader2 className="size-5 animate-spin text-muted-foreground" />
+            <Loader2 className="size-5 animate-spin text-[var(--ink-2)]" />
           </div>
         ) : (
-          <div className="space-y-10">
+          <div className="space-y-7">
             {/* ---- Built-in providers ---- */}
-            <section className="space-y-3">
-              <div className="flex items-center gap-2">
-                <ServerCog className="size-4 text-primary" />
-                <h2 className="text-sm font-bold">Built-in providers</h2>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Add your own key to use a provider under your own account and
-                quota. Without one, runs fall back to the platform&apos;s key
-                (if configured) when you pick this provider.
-              </p>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <section>
+              <SectionRule
+                right={
+                  <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[var(--ink-2)]">
+                    your key overrides the platform key
+                  </span>
+                }
+              >
+                Built-in providers
+              </SectionRule>
+              <div className="grid gap-0 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {builtIn.map((p) => (
                   <BuiltInProviderCard key={p.id} provider={p} onSaved={load} />
                 ))}
@@ -150,21 +238,20 @@ export default function ApiKeysSettingsPage() {
             </section>
 
             {/* ---- Custom providers ---- */}
-            <section className="space-y-3">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <Globe2 className="size-4 text-primary" />
-                  <h2 className="text-sm font-bold">Your custom providers</h2>
-                </div>
-                <Button size="sm" onClick={() => setShowCustomForm((v) => !v)} className="gap-1.5">
-                  <Plus className="size-3.5" />
-                  Add provider
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Connect any OpenAI-compatible endpoint (self-hosted models,
-                a proxy, a provider not listed above) under whatever name you
-                like. Only you can see or select it.
+            <section>
+              <SectionRule
+                right={
+                  <Button size="xs" onClick={() => setShowCustomForm((v) => !v)}>
+                    <Plus className="size-3" />
+                    {showCustomForm ? 'Cancel' : 'Add endpoint'}
+                  </Button>
+                }
+              >
+                Your custom providers
+              </SectionRule>
+              <p className="mb-2.5 max-w-3xl text-[11px] leading-relaxed text-[var(--ink-2)]">
+                Any OpenAI-compatible endpoint — a self-hosted model, a proxy, a provider not
+                listed above — under whatever name you like. Only you can see or select it.
               </p>
 
               <AnimatePresence>
@@ -177,14 +264,13 @@ export default function ApiKeysSettingsPage() {
               </AnimatePresence>
 
               {custom.length === 0 ? (
-                <Card className="brutal-block flex flex-col items-center justify-center gap-2 p-8 text-center">
-                  <p className="text-xs text-muted-foreground">
-                    No custom providers yet. Add one to use your own model /
-                    endpoint under your own name.
+                <div className="flex flex-col items-center justify-center gap-2 border-[3px] border-dashed border-[var(--line)]/50 bg-[var(--card)] px-6 py-8 text-center">
+                  <p className="text-[11px] leading-relaxed text-[var(--ink-2)]">
+                    No custom endpoints yet.
                   </p>
-                </Card>
+                </div>
               ) : (
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-0 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                   {custom.map((p) => (
                     <CustomProviderCard key={p.id} provider={p} onSaved={load} onDeleted={load} />
                   ))}
@@ -193,8 +279,8 @@ export default function ApiKeysSettingsPage() {
             </section>
           </div>
         )}
-      </div>
-    </div>
+      </>
+    </PageFrame>
   )
 }
 
@@ -300,11 +386,13 @@ function BuiltInProviderCard({
   }
 
   return (
-    <Card className="brutal-block p-4">
+    <article className="flex min-w-0 flex-col border-[3px] border-[var(--line)] bg-[var(--card)] p-3 sm:-mr-[3px] sm:-mb-[3px]">
       <div className="flex items-start justify-between gap-2">
-        <div>
-          <p className="text-sm font-bold leading-tight">{provider.label}</p>
-          <p className="mt-0.5 font-mono text-[10px] text-muted-foreground">
+        <div className="min-w-0">
+          <p className="truncate text-[12px] font-bold uppercase leading-tight tracking-[0.02em]">
+            {provider.label}
+          </p>
+          <p className="mt-0.5 truncate font-mono text-[9px] text-[var(--ink-2)]">
             {provider.defaultModel}
           </p>
         </div>
@@ -381,28 +469,28 @@ function BuiltInProviderCard({
           </div>
         </div>
       )}
-    </Card>
+    </article>
   )
 }
 
 function StatusChip({ provider }: { provider: ProviderRow }) {
   if (provider.hasOwnKey) {
     return (
-      <span className="inline-flex shrink-0 items-center gap-1 border border-primary/30 bg-primary/10 rounded-full px-2 py-0.5 text-[10px] font-bold text-primary">
-        <ShieldCheck className="size-2.5" /> Your key
+      <span className="inline-flex shrink-0 items-center gap-1 border-2 border-[var(--line)] bg-[var(--ink)] px-1.5 py-[2px] font-mono text-[9px] font-bold uppercase tracking-[0.1em] text-[var(--paper)]">
+        <ShieldCheck className="size-2.5" /> yours
       </span>
     )
   }
   if (provider.hasPlatformKey) {
     return (
-      <span className="inline-flex shrink-0 items-center gap-1 border border-border/70 bg-muted/65 rounded-full px-2 py-0.5 text-[10px] font-bold text-muted-foreground">
-        Platform key
+      <span className="inline-flex shrink-0 items-center gap-1 border-2 border-[var(--line)] bg-[var(--muted)] px-1.5 py-[2px] font-mono text-[9px] font-bold uppercase tracking-[0.1em] text-[var(--ink-2)]">
+        platform
       </span>
     )
   }
   return (
-    <span className="inline-flex shrink-0 items-center gap-1 border border-border/70 bg-card rounded-full px-2 py-0.5 text-[10px] font-bold text-muted-foreground/60">
-      No key
+    <span className="inline-flex shrink-0 items-center gap-1 border-2 border-dashed border-[var(--line)]/50 px-1.5 py-[2px] font-mono text-[9px] font-bold uppercase tracking-[0.1em] text-[var(--ink-2)]">
+      no key
     </span>
   )
 }
@@ -485,8 +573,13 @@ function CustomProviderForm({
       transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
       className="overflow-hidden"
     >
-      <Card className="brutal-block p-5">
-        <form onSubmit={submit} className="space-y-3">
+      <div className="mb-4 border-[3px] border-[var(--line)] bg-[var(--card)] shadow-[5px_5px_0_var(--line)]">
+        <div className="border-b-[3px] border-[var(--line)] bg-[var(--ink)] px-4 py-2.5">
+          <h3 className="font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--paper)]">
+            New OpenAI-compatible endpoint
+          </h3>
+        </div>
+        <form onSubmit={submit} className="space-y-3 p-4">
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label className="text-xs">Provider name</Label>
@@ -525,7 +618,7 @@ function CustomProviderForm({
             </Button>
           </div>
         </form>
-      </Card>
+      </div>
     </motion.div>
   )
 }
@@ -619,16 +712,23 @@ function CustomProviderCard({
   }
 
   return (
-    <Card className={cn('brutal-block p-4', editing && 'sm:col-span-2')}>
+    <article
+      className={cn(
+        'flex min-w-0 flex-col border-[3px] border-[var(--line)] bg-[var(--card)] p-3 sm:-mr-[3px] sm:-mb-[3px]',
+        editing && 'sm:col-span-2',
+      )}
+    >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="truncate text-sm font-bold leading-tight">{provider.label}</p>
-          <p className="mt-0.5 truncate font-mono text-[10px] text-muted-foreground">
+          <p className="truncate text-[12px] font-bold uppercase leading-tight tracking-[0.02em]">
+            {provider.label}
+          </p>
+          <p className="mt-0.5 truncate font-mono text-[9px] text-[var(--ink-2)]" title={provider.baseURL}>
             {provider.baseURL}
           </p>
         </div>
-        <span className="inline-flex shrink-0 items-center gap-1 border border-primary/30 bg-primary/10 rounded-full px-2 py-0.5 text-[10px] font-bold text-primary">
-          <ShieldCheck className="size-2.5" /> Your key
+        <span className="inline-flex shrink-0 items-center gap-1 border-2 border-[var(--line)] bg-[var(--ink)] px-1.5 py-[2px] font-mono text-[9px] font-bold uppercase tracking-[0.1em] text-[var(--paper)]">
+          <ShieldCheck className="size-2.5" /> yours
         </span>
       </div>
 
@@ -682,6 +782,6 @@ function CustomProviderCard({
           </div>
         </div>
       )}
-    </Card>
+    </article>
   )
 }

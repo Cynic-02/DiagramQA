@@ -9,6 +9,8 @@ import {
   Sparkles, Trash2, ArrowRightLeft, Sliders, Loader2, Check, AlertTriangle, Eye, EyeOff
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { BLOOM_META } from '@/lib/bloom'
+import type { BloomLevel } from '@/lib/types'
 
 interface QuestionRow {
   id: string
@@ -192,23 +194,48 @@ export function TeacherWorkspace({ runId, questions, onQuestionsUpdate }: Teache
   }
 
   return (
-    <div className="space-y-4">
+    /* Review mode was still a single column of full-width rows while
+       View mode had already moved to a grid, so the same four questions
+       changed shape depending on which tab you were on. Same grid, same
+       even rows — the only difference between the two modes should be
+       what you can do to a question, not how wide it is. */
+    <div className="grid gap-4 xl:grid-cols-2 min-[2000px]:grid-cols-3">
       {questions.map((q, idx) => {
         const isEditing = editingId === q.id
         const isLoading = loadingId === q.id
         const isMcq = q.type === 'MCQ'
         
+        const hue = BLOOM_META[q.bloomLevel as BloomLevel]?.hue ?? 'var(--line)'
+
         return (
-          <Card key={q.id} className="relative overflow-hidden p-5 border border-border/70 hover:shadow-md transition-all">
+          /* Three grounds, one card, and the hue is the card's own Bloom
+             level rather than a decoration: a tinted header strip, the
+             graph-paper working area where the answer lives, and the
+             card ground under the controls. It costs one colour per
+             card and it is the difference between reading a page of
+             questions and scanning a stack of forms. */
+          <Card
+            key={q.id}
+            className="lift glass-surface relative h-full gap-0 overflow-hidden p-0 shadow-[2px_2px_0_var(--line)]"
+            style={{ '--sh': '2px' } as React.CSSProperties}
+          >
+            <span
+              className="absolute inset-y-0 left-0 w-[6px] rounded-none"
+              style={{ background: hue }}
+              aria-hidden
+            />
             {isLoading && (
-              <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/70 backdrop-blur-[1px]">
-                <Loader2 className="size-6 animate-spin text-primary" />
+              <div className="absolute inset-0 z-10 flex items-center justify-center bg-[var(--card)]/75">
+                <Loader2 className="size-6 animate-spin text-[var(--red)]" />
               </div>
             )}
-            
-            <div className="flex flex-col gap-4">
+
+            <div className="flex h-full flex-col pl-[6px]">
               {/* Header */}
-              <div className="flex items-center justify-between border-b border-border/30 pb-2">
+              <div
+                className="flex items-center justify-between gap-3 border-b-2 border-[var(--line)]/12 px-4 py-2.5"
+                style={{ background: `color-mix(in srgb, ${hue} 13%, transparent)` }}
+              >
                 <div className="flex items-center gap-2">
                   <span className="font-mono text-xs font-bold text-muted-foreground uppercase">
                     Question {idx + 1}
@@ -318,7 +345,7 @@ export function TeacherWorkspace({ runId, questions, onQuestionsUpdate }: Teache
                     />
                   </div>
 
-                  <div className="flex gap-2 justify-end pt-2">
+                  <div className="-mx-4 -mb-4 mt-auto flex justify-end gap-2 border-t-2 border-[var(--line)]/12 bg-[color-mix(in_srgb,var(--card)_45%,transparent)] px-4 py-2.5">
                     <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>
                       Cancel
                     </Button>
@@ -328,7 +355,7 @@ export function TeacherWorkspace({ runId, questions, onQuestionsUpdate }: Teache
                   </div>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="glass-inner flex flex-1 flex-col gap-3 px-4 py-4">
                   {/* Viewing */}
                   <p className="text-sm font-bold text-foreground">{q.text}</p>
                   
@@ -339,10 +366,10 @@ export function TeacherWorkspace({ runId, questions, onQuestionsUpdate }: Teache
                         return (
                           <li 
                             key={oIdx} 
-                            className={`flex items-center gap-2 text-xs border rounded-lg px-2.5 py-1.5 ${
-                              isCorrect 
-                                ? 'border-emerald-500/30 bg-emerald-500/5 text-emerald-600 font-bold' 
-                                : 'border-border bg-muted/20 text-muted-foreground'
+                            className={`flex items-center gap-2 rounded-[var(--r-s)] border-[1.5px] px-3 py-1.5 text-xs ${
+                              isCorrect
+                                ? 'border-[var(--line)] bg-[var(--bloom-3)] font-bold text-[#0a0a0a]'
+                                : 'border-[var(--line)]/20 bg-[var(--card)] text-[var(--ink-2)]'
                             }`}
                           >
                             <span className="font-mono text-[10px] font-bold">{String.fromCharCode(65 + oIdx)}</span>
@@ -355,20 +382,23 @@ export function TeacherWorkspace({ runId, questions, onQuestionsUpdate }: Teache
                   )}
 
                   {!isMcq && (
-                    <div className="border border-border/60 rounded bg-muted/65 px-3 py-2">
-                      <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-muted-foreground">Correct Answer</div>
-                      <p className="text-xs font-bold mt-0.5">{q.answer}</p>
+                    <div
+                      className="rounded-[var(--r-s)] border-[1.5px] border-[var(--line)]/25 bg-[var(--card)] px-3.5 py-2.5"
+                      style={{ borderLeft: `4px solid ${hue}` }}
+                    >
+                      <div className="fig-label mb-1">Correct answer</div>
+                      <p className="text-xs font-bold leading-relaxed">{q.answer}</p>
                     </div>
                   )}
 
                   {q.explanation && (
-                    <div className="border border-border/30 rounded bg-muted/10 px-3 py-2 text-[11px] leading-relaxed text-muted-foreground">
-                      <span className="font-bold text-[9px] uppercase tracking-wider block mb-0.5">Explanation</span>
+                    <div className="rounded-[var(--r-s)] border-[1.5px] border-dashed border-[var(--line)]/25 px-3.5 py-2.5 text-[11px] leading-relaxed text-[var(--ink-2)]">
+                      <span className="fig-label mb-1">Explanation</span>
                       {q.explanation}
                     </div>
                   )}
 
-                  <div className="flex items-center justify-between border-t border-border/30 pt-3">
+                  <div className="-mx-4 -mb-4 mt-auto flex flex-wrap items-center justify-between gap-2 border-t-2 border-[var(--line)]/12 bg-[color-mix(in_srgb,var(--card)_45%,transparent)] px-4 py-2.5">
                     <div className="flex items-center gap-2">
                       <Button
                         size="xs"

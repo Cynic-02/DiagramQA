@@ -99,6 +99,12 @@ export default function RootLayout({
         className={`${archivo.variable} ${instrument.variable} ${jetbrains.variable} ${caveat.variable} min-h-screen bg-background text-foreground antialiased`}
       >
         <ThemeProvider>
+          {/* The field. Two soft washes — cool top-left, warm
+              bottom-right — under the graph paper on every route, so
+              the Bloom spectrum's own cool-to-warm axis is the ground
+              the whole product is printed on. Behind everything, and
+              it never intercepts a pointer. */}
+          <div className="aurora-field" aria-hidden />
           {/* Printed-paper grain. The only texture in the system. */}
           <div className="grain-overlay" aria-hidden />
           <HapticFeedbackInitializer />

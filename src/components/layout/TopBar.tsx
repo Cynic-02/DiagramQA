@@ -2,16 +2,14 @@
 
 import * as React from 'react'
 import { motion } from 'framer-motion'
-import { RotateCcw, Menu, Check, X, Loader2, Activity } from 'lucide-react'
+import { Menu, Check, X, Loader2, Activity } from 'lucide-react'
 import { STAGES } from '@/lib/types'
 import { usePipelineStore } from '@/lib/store'
-import { BLOOM_META } from '@/lib/bloom'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { MainNav } from './MainNav'
 import { AppearanceMenu } from './AppearanceMenu'
 import { UserMenu } from './UserMenu'
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 
 interface TopBarProps {
   /** Mobile-only: opens the off-canvas sidebar Sheet. */
@@ -30,27 +28,26 @@ interface TopBarProps {
  *
  * Now:
  *   left    context   — stage title and agent
- *   middle  telemetry — Bloom level, run status, run id, reset
+ *   middle  telemetry — one badge, and only while it has news
  *   right   navigation— primary nav, appearance, account
  *
  * Telemetry describes the current run, so it belongs beside the stage
  * it refers to, not beside Sign out. That split alone takes the right
- * cluster from fifteen items to three.
+ * cluster from fifteen items to three; the middle zone then went from
+ * five permanent controls to one conditional badge, because everything
+ * else it held was already legible somewhere closer to where it
+ * mattered.
  */
 export function TopBar({ onOpenMobileSidebar, email }: TopBarProps) {
   const activeStage = usePipelineStore((s) => s.activeStage)
-  const bloomLevel = usePipelineStore((s) => s.bloomLevel)
   const running = usePipelineStore((s) => s.running)
   const completed = usePipelineStore((s) => s.completed)
   const failed = usePipelineStore((s) => s.failed)
-  const resetRun = usePipelineStore((s) => s.resetRun)
-  const runId = usePipelineStore((s) => s.runId)
 
   const active = STAGES.find((s) => s.id === activeStage) ?? STAGES[0]
-  const hue = BLOOM_META[bloomLevel].hue
 
   return (
-    <header className="glass-chrome sticky top-0 z-30 flex h-14 w-full shrink-0 items-center gap-3 border-b px-4 sm:px-6">
+    <header className="z-30 flex h-12 w-full shrink-0 items-center gap-3 border-b-2 border-[var(--line)] bg-[var(--card)] px-4 sm:px-6">
       {/* Mobile sidebar trigger */}
       {onOpenMobileSidebar && (
         <Button
@@ -73,71 +70,36 @@ export function TopBar({ onOpenMobileSidebar, email }: TopBarProps) {
         transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
         className="flex min-w-0 shrink items-baseline gap-2"
       >
-        <h2 className="truncate text-[13px] font-semibold leading-none text-foreground sm:text-sm">
+        <h2 className="truncate font-[family-name:var(--font-archivo)] text-[13px] font-black uppercase leading-none tracking-[-0.01em] text-[var(--ink)]">
           {active.label}
         </h2>
-        <span className="hidden truncate text-[11px] leading-none text-muted-foreground lg:inline">
+        <span className="hidden truncate font-mono text-[10px] uppercase leading-none tracking-[0.12em] text-[var(--ink-2)] lg:inline">
           · {active.agent}
         </span>
       </motion.div>
 
-      {/* ---- Zone 2: run telemetry ---- */}
+      {/* ---- Zone 2: run telemetry ----
+          Reduced to one badge, and only when that badge has something
+          to say.
+
+          It used to carry five things at once: the Bloom level, a
+          status pill, a separate LIVE pill, a truncated run id and a
+          reset button. Every one of them is already on screen
+          somewhere better — the level and the score summary are in the
+          stage masthead directly underneath, the run id is in the
+          sidebar footer, and "new run" belongs with the other run
+          actions rather than orbiting on its own. A status of DONE is
+          the loudest kind of redundancy: the page below it already
+          says "4 VERIFIED QUESTIONS", which is what done looks like.
+
+          So the badge appears while a run is live or has failed — the
+          two states you cannot read off the page itself — and the row
+          is otherwise empty, which is what lets the stage name on the
+          left actually register. */}
       <div className="flex min-w-0 flex-1 items-center gap-2">
-        <span
-          className="hidden shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-bold md:inline-flex"
-          style={{
-            backgroundColor: `color-mix(in srgb, ${hue} 15%, transparent)`,
-            borderColor: hue,
-            color: 'var(--foreground)',
-          }}
-          title={`Bloom level: ${bloomLevel}`}
-        >
-          <span
-            className="inline-block size-1.5 rounded-full border border-border"
-            style={{ backgroundColor: 'var(--foreground)' }}
-            aria-hidden
-          />
-          {bloomLevel}
-        </span>
-
-        <RunStatusBadge running={running} completed={completed} failed={failed} />
-
-        {running && (
-          <motion.span
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border/70 bg-accent/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-accent-foreground"
-          >
-            <span
-              className="thinking-dot inline-block size-1.5 rounded-full bg-foreground"
-              aria-hidden
-            />
-            Live
-          </motion.span>
+        {(running || failed) && (
+          <RunStatusBadge running={running} completed={completed} failed={failed} />
         )}
-
-        {runId && (
-          <span className="hidden shrink-0 font-mono text-[11px] text-muted-foreground/70 xl:inline">
-            {runId.slice(0, 8)}
-          </span>
-        )}
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={resetRun}
-              className="size-8 shrink-0 text-muted-foreground hover:text-foreground"
-              aria-label="Start a new run"
-              disabled={running}
-            >
-              <RotateCcw className="size-3.5" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">New run</TooltipContent>
-        </Tooltip>
       </div>
 
       {/* ---- Zone 3: navigation ---- */}
@@ -149,7 +111,7 @@ export function TopBar({ onOpenMobileSidebar, email }: TopBarProps) {
               new KeyboardEvent('keydown', { key: 'k', metaKey: true }),
             )
           }
-          className="hidden items-center rounded border border-border/70 bg-muted/65 px-2 py-1 font-mono text-[10px] font-bold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground xl:flex"
+          className="hidden items-center rounded-[var(--r-xs)] border-[1.5px] border-[var(--line)]/45 bg-transparent px-2 py-1 font-mono text-[10px] font-bold text-[var(--ink-2)] transition-colors hover:border-[var(--line)] hover:bg-[var(--yellow)] hover:text-[#0a0a0a] xl:flex"
           aria-label="Open command palette"
         >
           ⌘K
@@ -157,7 +119,7 @@ export function TopBar({ onOpenMobileSidebar, email }: TopBarProps) {
 
         <MainNav className="hidden sm:flex" />
 
-        <span className="mx-0.5 hidden h-5 w-px bg-border sm:inline-block" aria-hidden />
+        <span className="mx-0.5 hidden h-5 w-[2px] bg-[var(--line)]/30 sm:inline-block" aria-hidden />
 
         <AppearanceMenu />
         <UserMenu email={email} />
@@ -179,26 +141,26 @@ function RunStatusBadge({
 }) {
   let label = 'Idle'
   let icon: React.ReactNode = <Activity className="size-3" />
-  let cls = 'border-border bg-muted text-muted-foreground'
+  let cls = 'bg-[var(--card)] text-[var(--ink-2)]'
 
   if (running) {
     label = 'Running'
     icon = <Loader2 className="size-3 animate-spin" />
-    cls = 'border-accent/40 bg-accent/15 text-accent-foreground'
+    cls = 'bg-[var(--yellow)] text-[#0a0a0a]'
   } else if (failed) {
     label = 'Failed'
-    icon = <X className="size-3 text-destructive" />
-    cls = 'border-destructive/40 bg-destructive/15 text-destructive'
+    icon = <X className="size-3" />
+    cls = 'bg-[var(--red)] text-white'
   } else if (completed) {
     label = 'Done'
-    icon = <Check className="size-3 text-primary" />
-    cls = 'border-primary/40 bg-primary/10 text-primary-foreground dark:text-foreground'
+    icon = <Check className="size-3" />
+    cls = 'bg-[var(--ink)] text-[var(--paper)]'
   }
 
   return (
     <span
       className={cn(
-        'inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-bold',
+        'inline-flex shrink-0 items-center gap-1.5 rounded-[var(--r-xs)] border-[1.5px] border-[var(--line)] px-2 py-[3px] font-mono text-[9px] font-bold uppercase leading-none tracking-[0.14em]',
         cls,
       )}
     >

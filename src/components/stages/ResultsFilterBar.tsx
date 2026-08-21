@@ -1,9 +1,7 @@
 'use client'
 
-import * as React from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Filter, ArrowUpDown, Check, X, ChevronDown } from 'lucide-react'
-import { BLOOM_LEVELS, type BloomLevel } from '@/lib/types'
+import { Filter, Check, X } from 'lucide-react'
+import { type BloomLevel } from '@/lib/types'
 import { BLOOM_META } from '@/lib/bloom'
 import { cn } from '@/lib/utils'
 
@@ -13,14 +11,6 @@ export type SortOption =
   | 'difficulty-asc'
   | 'difficulty-desc'
   | 'verified-first'
-
-const SORT_OPTIONS: { value: SortOption; label: string }[] = [
-  { value: 'score-desc', label: 'Score: High → Low' },
-  { value: 'score-asc', label: 'Score: Low → High' },
-  { value: 'difficulty-asc', label: 'Difficulty: Low → High' },
-  { value: 'difficulty-desc', label: 'Difficulty: High → Low' },
-  { value: 'verified-first', label: 'Verified first' },
-]
 
 const BLOOM_ORDER: Record<BloomLevel, number> = {
   Remember: 0,
@@ -84,6 +74,20 @@ export function applyFilters<T extends {
 }
 
 /* ------------------------------------------------------------------ */
+/* The filter bar.                                                     */
+/*                                                                     */
+/* The sort control used to be a dropdown, and it was the worst kind:  */
+/* a popover that pushed the page around when it opened, over five     */
+/* options that between them express two axes and one flag. Five       */
+/* mutually exclusive choices behind a click, in a bar that has room   */
+/* to just show them, is a menu that exists only because menus exist.  */
+/*                                                                     */
+/* It is now three inline keys. Score and Level are direction toggles  */
+/* — click the active one to flip the arrow — and "verified first" is  */
+/* the third state. Nothing overlays, nothing reflows, the current     */
+/* sort is readable without opening anything, and changing it costs    */
+/* one click instead of two.                                           */
+/* ------------------------------------------------------------------ */
 
 export function ResultsFilterBar({
   state,
@@ -99,7 +103,6 @@ export function ResultsFilterBar({
   /** which Bloom levels actually appear in the results */
   availableLevels: BloomLevel[]
 }) {
-  const [sortOpen, setSortOpen] = React.useState(false)
   const isFiltered =
     state.selectedLevels.length > 0 ||
     state.sortBy !== 'score-desc' ||
@@ -113,35 +116,60 @@ export function ResultsFilterBar({
   }
 
   const clear = () => onChange({ ...DEFAULT_FILTERS })
+  const setSort = (v: SortOption) => onChange({ ...state, sortBy: v })
 
-  const currentSort = SORT_OPTIONS.find((o) => o.value === state.sortBy)
+  /** One sort key. Clicking the active key flips its direction. */
+  const SortKey = ({
+    label,
+    asc,
+    desc,
+  }: {
+    label: string
+    asc: SortOption
+    desc: SortOption
+  }) => {
+    const active = state.sortBy === asc || state.sortBy === desc
+    const isDesc = state.sortBy === desc
+    return (
+      <button
+        type="button"
+        onClick={() => setSort(active ? (isDesc ? asc : desc) : desc)}
+        aria-pressed={active}
+        title={active ? 'Click to reverse' : `Sort by ${label.toLowerCase()}`}
+        className={cn(
+          'inline-flex items-center gap-1 rounded-[var(--r-xs)] border-[1.5px] px-2 py-[3px]',
+          'font-mono text-[10px] font-bold uppercase leading-none tracking-[0.1em]',
+          'transition-colors duration-[90ms]',
+          active
+            ? 'border-[var(--line)] bg-[var(--ink)] text-[var(--paper)]'
+            : 'border-[var(--line)]/35 bg-transparent text-[var(--ink-2)] hover:border-[var(--line)] hover:bg-[var(--yellow)] hover:text-[#0a0a0a]',
+        )}
+      >
+        {label}
+        <span aria-hidden className={cn(!active && 'opacity-35')}>
+          {active && !isDesc ? '↑' : '↓'}
+        </span>
+      </button>
+    )
+  }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: -8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-      className="brutal-block flex flex-wrap items-center gap-3 bg-card p-3"
-    >
-      {/* filter icon + count */}
-      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-        <Filter className="size-3.5" />
-        <span className="font-mono">
-          {filteredCount}
-          {filteredCount !== totalCount && (
-            <span className="text-muted-foreground/60">/{totalCount}</span>
-          )}{' '}
-          shown
-        </span>
-      </div>
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+      {/* count */}
+      <span className="inline-flex shrink-0 items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--ink-2)]">
+        <Filter className="size-3" />
+        <span className="text-[var(--ink)]">{filteredCount}</span>
+        {filteredCount !== totalCount && <span>/{totalCount}</span>}
+        shown
+      </span>
 
-      <div className="hidden h-5 w-0.5 bg-border sm:block" />
+      <span className="hidden h-4 w-[2px] rounded-none bg-[var(--line)]/20 sm:block" aria-hidden />
 
       {/* Bloom level chips */}
       <div className="flex flex-wrap items-center gap-1.5">
         {availableLevels.map((lvl) => {
           const active = state.selectedLevels.includes(lvl)
-          const hue = BLOOM_META[lvl].hue
+          const meta = BLOOM_META[lvl]
           return (
             <button
               key={lvl}
@@ -149,23 +177,19 @@ export function ResultsFilterBar({
               onClick={() => toggleLevel(lvl)}
               aria-pressed={active}
               className={cn(
-                'inline-flex items-center gap-1 border-[2px] px-2 py-0.5 text-[11px] font-bold leading-none transition-all',
+                'inline-flex items-center gap-1.5 rounded-[var(--r-xs)] border-[1.5px] px-2 py-[3px]',
+                'font-mono text-[10px] font-bold uppercase leading-none tracking-[0.1em]',
+                'transition-colors duration-[90ms]',
                 active
-                  ? 'border-border text-foreground'
-                  : 'border-border bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                  ? 'border-[var(--line)]'
+                  : 'border-[var(--line)]/35 text-[var(--ink-2)] hover:border-[var(--line)]',
               )}
-              style={
-                active
-                  ? {
-                      backgroundColor: hue,
-                      color: 'var(--foreground)',
-                    }
-                  : undefined
-              }
+              style={active ? { backgroundColor: meta.hue, color: meta.fg } : undefined}
             >
               <span
-                className="size-1.5 rounded-full border border-border"
-                style={{ backgroundColor: hue }}
+                className="size-2 rounded-full border-[1.5px] border-[var(--line)]"
+                style={{ backgroundColor: meta.hue }}
+                aria-hidden
               />
               {lvl}
             </button>
@@ -173,90 +197,58 @@ export function ResultsFilterBar({
         })}
       </div>
 
-      <div className="ml-auto flex items-center gap-2">
-        {/* verified-only toggle */}
+      <div className="ml-auto flex flex-wrap items-center gap-1.5">
+        <span className="mr-0.5 hidden font-mono text-[9px] font-bold uppercase tracking-[0.14em] text-[var(--ink-2)] md:inline">
+          sort
+        </span>
+        <SortKey label="Score" asc="score-asc" desc="score-desc" />
+        <SortKey label="Level" asc="difficulty-asc" desc="difficulty-desc" />
+        <button
+          type="button"
+          onClick={() => setSort('verified-first')}
+          aria-pressed={state.sortBy === 'verified-first'}
+          className={cn(
+            'inline-flex items-center gap-1 rounded-[var(--r-xs)] border-[1.5px] px-2 py-[3px]',
+            'font-mono text-[10px] font-bold uppercase leading-none tracking-[0.1em]',
+            'transition-colors duration-[90ms]',
+            state.sortBy === 'verified-first'
+              ? 'border-[var(--line)] bg-[var(--ink)] text-[var(--paper)]'
+              : 'border-[var(--line)]/35 text-[var(--ink-2)] hover:border-[var(--line)] hover:bg-[var(--yellow)] hover:text-[#0a0a0a]',
+          )}
+        >
+          Verified first
+        </button>
+
+        <span className="mx-1 hidden h-4 w-[2px] rounded-none bg-[var(--line)]/20 sm:block" aria-hidden />
+
         <button
           type="button"
           onClick={() => onChange({ ...state, verifiedOnly: !state.verifiedOnly })}
           aria-pressed={state.verifiedOnly}
           className={cn(
-            'inline-flex items-center gap-1.5 border-[2px] px-2.5 py-1 text-[11px] font-bold leading-none transition-all',
+            'inline-flex items-center gap-1.5 rounded-[var(--r-xs)] border-[1.5px] px-2 py-[3px]',
+            'font-mono text-[10px] font-bold uppercase leading-none tracking-[0.1em]',
+            'transition-colors duration-[90ms]',
             state.verifiedOnly
-              ? 'border-border bg-accent text-accent-foreground'
-              : 'border-border bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+              ? 'border-[var(--line)] bg-[var(--bloom-3)] text-[#0a0a0a]'
+              : 'border-[var(--line)]/35 text-[var(--ink-2)] hover:border-[var(--line)] hover:bg-[var(--yellow)] hover:text-[#0a0a0a]',
           )}
         >
-          <Check className="size-3" />
+          <Check className="size-3" strokeWidth={3} />
           Verified only
         </button>
 
-        {/* sort dropdown */}
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => setSortOpen((v) => !v)}
-            className="inline-flex items-center gap-1.5 border-[2px] border-border bg-muted px-2.5 py-1 text-[11px] font-bold leading-none text-muted-foreground transition-all hover:bg-accent hover:text-accent-foreground"
-          >
-            <ArrowUpDown className="size-3" />
-            <span className="hidden sm:inline">{currentSort?.label ?? 'Sort'}</span>
-            <ChevronDown
-              className={cn('size-3 transition-transform', sortOpen && 'rotate-180')}
-            />
-          </button>
-          <AnimatePresence>
-            {sortOpen && (
-              <>
-                <div
-                  className="fixed inset-0 z-40"
-                  onClick={() => setSortOpen(false)}
-                />
-                <motion.ul
-                  initial={{ opacity: 0, y: -6, scale: 0.97 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -6, scale: 0.97 }}
-                  transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }}
-                  className="brutal-block absolute right-0 top-full z-50 mt-1.5 min-w-[180px] overflow-hidden bg-popover py-1"
-                >
-                  {SORT_OPTIONS.map((opt) => (
-                    <li key={opt.value}>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          onChange({ ...state, sortBy: opt.value })
-                          setSortOpen(false)
-                        }}
-                        className={cn(
-                          'flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left text-xs font-medium transition-colors hover:bg-accent hover:text-accent-foreground',
-                          state.sortBy === opt.value
-                            ? 'text-primary'
-                            : 'text-muted-foreground'
-                        )}
-                      >
-                        {opt.label}
-                        {state.sortBy === opt.value && (
-                          <Check className="size-3" />
-                        )}
-                      </button>
-                    </li>
-                  ))}
-                </motion.ul>
-              </>
-            )}
-          </AnimatePresence>
-        </div>
-
-        {/* clear */}
         {isFiltered && (
           <button
             type="button"
             onClick={clear}
-            className="inline-flex items-center gap-1 border-[2px] border-border bg-muted px-2 py-1 text-[11px] font-bold leading-none text-muted-foreground transition-all hover:bg-destructive hover:text-destructive-foreground"
+            className="inline-flex items-center gap-1 rounded-[var(--r-xs)] border-[1.5px] border-[var(--line)]/35 px-2 py-[3px] font-mono text-[10px] font-bold uppercase leading-none tracking-[0.1em] text-[var(--ink-2)] transition-colors duration-[90ms] hover:border-[var(--red)] hover:bg-[var(--red)] hover:text-white"
           >
-            <X className="size-3" />
+            <X className="size-3" strokeWidth={3} />
             Clear
           </button>
         )}
       </div>
-    </motion.div>
+    </div>
   )
 }

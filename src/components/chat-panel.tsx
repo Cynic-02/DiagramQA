@@ -1,13 +1,25 @@
 'use client'
 
+/**
+ * ChatPanel — the follow-up chatbot, as dock content.
+ *
+ * It used to be a floating bubble in the bottom-right corner plus a
+ * `fixed` card portalled to document.body. Both are gone: the panel now
+ * fills whatever container the ConsoleDock gives it, takes no props, and
+ * reads the run straight from the store. No portal, no fixed positioning,
+ * nothing overlapping the page.
+ */
+
 import * as React from 'react'
-import { createPortal } from 'react-dom'
-import { motion, AnimatePresence } from 'framer-motion'
-import { X, Send, MessageSquare, Sparkles, Copy, Check } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { Send, Sparkles, Copy, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ProviderSelect } from '@/components/provider-select'
+import { PenScribble } from '@/components/ui/pen-scribble'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import { usePipelineStore } from '@/lib/store'
+import { demoChatReply, isDemoRun } from '@/lib/demo-run'
 import ReactMarkdown from 'react-markdown'
 
 interface ChatMsg {
@@ -17,17 +29,16 @@ interface ChatMsg {
   createdAt?: string
 }
 
-interface ChatPanelProps {
-  runId: string | null
-  open: boolean
-  onOpenChange: (v: boolean) => void
-}
+const STARTERS = [
+  'Which component is the single point of failure?',
+  'Trace the full request path.',
+  'What is this diagram missing?',
+]
 
-/**
- * ChatPanel — a premium, floating chatbot panel widget in the bottom-right corner.
- * Triggered by a circular FAB bubble with pulsing notification dot.
- */
-export function ChatPanel({ runId, open, onOpenChange }: ChatPanelProps) {
+export function ChatPanel() {
+  const runId = usePipelineStore((s) => s.runId)
+  const finalQA = usePipelineStore((s) => s.finalQA)
+
   const [messages, setMessages] = React.useState<ChatMsg[]>([])
   const [input, setInput] = React.useState('')
   const [loading, setLoading] = React.useState(false)
@@ -35,9 +46,13 @@ export function ChatPanel({ runId, open, onOpenChange }: ChatPanelProps) {
   const [provider, setProvider] = React.useState<string | null>(null)
   const scrollRef = React.useRef<HTMLDivElement>(null)
 
-  // Load chat history when the panel opens (or runId changes)
+  const ready = !!runId && finalQA.length > 0
+  const demo = isDemoRun(runId)
+
+  // Load chat history when the run changes. A scripted demo run has no
+  // server-side history — its whole conversation lives in this component.
   React.useEffect(() => {
-    if (!open || !runId) return
+    if (!runId || isDemoRun(runId)) return
     setLoadingHistory(true)
     fetch(`/api/chat?runId=${runId}`)
       .then((r) => r.json())
@@ -46,27 +61,33 @@ export function ChatPanel({ runId, open, onOpenChange }: ChatPanelProps) {
       })
       .catch(() => {})
       .finally(() => setLoadingHistory(false))
-  }, [open, runId])
+  }, [runId])
 
-  // Auto-scroll to bottom on new messages
   React.useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
-    }
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight
   }, [messages, loading])
 
-  const send = async () => {
-    const text = input.trim()
+  const send = async (override?: string) => {
+    const text = (override ?? input).trim()
     if (!text || !runId || loading) return
 
-    const userMsg: ChatMsg = {
-      id: `u-${Date.now()}`,
-      role: 'user',
-      content: text,
-    }
-    setMessages((prev) => [...prev, userMsg])
+    setMessages((prev) => [...prev, { id: `u-${Date.now()}`, role: 'user', content: text }])
     setInput('')
     setLoading(true)
+
+    // Demo runs answer locally so the chatbot works with no key and no
+    // account — the same contract as the rest of the scripted run.
+    if (isDemoRun(runId)) {
+      const reply = demoChatReply(text)
+      window.setTimeout(() => {
+        setMessages((prev) => [
+          ...prev,
+          { id: `a-${Date.now()}`, role: 'assistant', content: reply },
+        ])
+        setLoading(false)
+      }, 480)
+      return
+    }
 
     try {
       const res = await fetch('/api/chat', {
@@ -76,14 +97,9 @@ export function ChatPanel({ runId, open, onOpenChange }: ChatPanelProps) {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Chat failed')
-
       setMessages((prev) => [
         ...prev,
-        {
-          id: `a-${Date.now()}`,
-          role: 'assistant',
-          content: data.reply,
-        },
+        { id: `a-${Date.now()}`, role: 'assistant', content: data.reply },
       ])
     } catch (e) {
       toast.error('Could not get a response', {
@@ -94,164 +110,119 @@ export function ChatPanel({ runId, open, onOpenChange }: ChatPanelProps) {
     }
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
-      send()
+      void send()
     }
   }
 
-  // Render through a portal straight to document.body. This makes the
-  // widget's `fixed` positioning immune to any ancestor applying a CSS
-  // transform/filter/perspective anywhere in the tree — any of those
-  // creates a new "containing block" for fixed-position descendants,
-  // silently repositioning them relative to that ancestor instead of the
-  // real viewport. That's a real, hard-to-spot class of bug (page
-  // transition animations, stage transitions, etc. all use transforms),
-  // so a portal sidesteps it permanently rather than requiring every
-  // future animated wrapper to remember not to break this.
-  const [mounted, setMounted] = React.useState(false)
-  React.useEffect(() => setMounted(true), [])
+  /* ---- not ready: nothing to talk about yet ---- */
+  if (!ready) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
+        <span className="flex size-11 items-center justify-center border-[3px] border-[var(--line)] bg-[var(--yellow)] text-[#0a0a0a]">
+          <Sparkles className="size-5" strokeWidth={2.5} />
+        </span>
+        <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[var(--ink-2)]">
+          No verified set yet
+        </p>
+        <p className="max-w-[240px] text-[11px] leading-relaxed text-[var(--ink-2)]">
+          Finish a run and this becomes a tutor grounded in the extracted
+          structure and the generated Q&amp;A.
+        </p>
+      </div>
+    )
+  }
 
-  const content = (
-    <>
-      {/* Floating Chat Trigger — larger, labeled, impossible to miss */}
-      {!open && (
-        <button
-          type="button"
-          onClick={() => onOpenChange(true)}
-          className="fixed bottom-6 right-6 z-[100] flex h-14 items-center gap-2 rounded-full border-2 border-border bg-primary text-primary-foreground px-5 shadow-xl hover:scale-105 active:scale-95 transition-all cursor-pointer"
-          aria-label="Ask a follow-up question about this diagram"
-        >
-          <MessageSquare className="size-5" />
-          <span className="text-sm font-bold whitespace-nowrap">Ask a follow-up</span>
-          <span className="absolute -top-1 -right-1 flex size-3.5">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent opacity-75"></span>
-            <span className="relative inline-flex size-3.5 rounded-full border-2 border-card bg-accent"></span>
+  return (
+    <div className="flex h-full min-h-0 flex-col">
+      {/* provider — hidden for demo runs, which never call a model */}
+      {!demo && (
+        <div className="shrink-0 border-b-2 border-[var(--line)] px-2.5 py-2">
+          <ProviderSelect
+            value={provider}
+            onChange={setProvider}
+            className="h-8 w-full px-2 text-[11px]"
+          />
+        </div>
+      )}
+      {demo && (
+        <div className="shrink-0 border-b-2 border-[var(--line)] bg-[var(--yellow)]/25 px-3 py-1.5">
+          <span className="font-mono text-[9px] font-bold uppercase tracking-[0.16em] text-[var(--ink)]">
+            Scripted demo · answered offline
           </span>
-        </button>
+        </div>
       )}
 
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, y: 15, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 15, scale: 0.96 }}
-            transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-            className="brutal-block !fixed bottom-6 right-6 z-[90] flex h-[min(540px,calc(100vh-7rem))] w-[min(400px,calc(100vw-2.5rem))] flex-col overflow-hidden !bg-card !backdrop-filter-none"
-          >
-            {/* Header */}
-            <div className="flex h-12 shrink-0 items-center justify-between border-b border-border/60 px-4">
-              <div className="flex items-center gap-2">
-                <div className="flex size-6 items-center justify-center border border-border bg-accent text-accent-foreground rounded-md">
-                  <MessageSquare className="size-3.5" />
-                </div>
-                <div className="leading-tight">
-                  <div className="text-[12px] font-bold">Follow-up Q&amp;A</div>
-                  <div className="text-[9px] text-muted-foreground">
-                    Ask about this diagram
-                  </div>
-                </div>
-              </div>
+      {/* messages */}
+      <div ref={scrollRef} className="scroll-slim min-h-0 flex-1 space-y-3 overflow-y-auto p-3">
+        {loadingHistory && messages.length === 0 ? (
+          <div className="flex h-full items-center justify-center">
+            <PenScribble size={20} className="text-[var(--ink-2)]" />
+          </div>
+        ) : messages.length === 0 ? (
+          <div className="flex flex-col gap-3 pt-2">
+            <p className="text-[11px] leading-relaxed text-[var(--ink-2)]">
+              Grounded in the extracted structure and the generated set. Start
+              with one of these:
+            </p>
+            {STARTERS.map((s) => (
               <button
-                onClick={() => onOpenChange(false)}
-                className="inline-flex size-6 items-center justify-center border border-transparent text-muted-foreground rounded hover:border-border hover:bg-destructive hover:text-white transition-all cursor-pointer"
-                aria-label="Close chat"
+                key={s}
+                type="button"
+                onClick={() => void send(s)}
+                className="border-2 border-[var(--line)] bg-[var(--card)] px-3 py-2 text-left text-[11px] font-medium shadow-[3px_3px_0_var(--line)] transition-[transform,box-shadow] duration-[90ms] hover:translate-x-[3px] hover:translate-y-[3px] hover:shadow-none"
               >
-                <X className="size-3.5" />
+                {s}
               </button>
-            </div>
-
-            {/* Provider picker */}
-            <div className="shrink-0 border-b border-border/40 px-3 py-1.5 bg-muted/20">
-              <ProviderSelect value={provider} onChange={setProvider} className="h-7 w-full text-[10px] px-2.5 py-0" />
-            </div>
-
-            {/* Messages */}
-            <div
-              ref={scrollRef}
-              className="scroll-slim flex-1 space-y-3 overflow-y-auto p-4"
-            >
-              {loadingHistory && messages.length === 0 ? (
-                <div className="flex h-full items-center justify-center">
-                  <PenScribble size={20} className="text-muted-foreground" />
-                </div>
-              ) : messages.length === 0 ? (
-                <div className="flex h-full flex-col items-center justify-center gap-2.5 text-center p-2">
-                  <div className="flex size-9 items-center justify-center border border-border bg-accent text-accent-foreground rounded-lg">
-                    <Sparkles className="size-4.5" />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-xs font-semibold text-foreground/80">
-                      Ask anything about this diagram
-                    </p>
-                    <p className="mx-auto max-w-[220px] text-[10px] text-muted-foreground leading-normal">
-                      The assistant is grounded in the extracted structure and
-                      generated Q&amp;A. Try &quot;Explain the relationship
-                      between X and Y.&quot;
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                messages.map((msg) => <ChatBubble key={msg.id} msg={msg} />)
-              )}
-              {loading && (
-                <div className="flex justify-start items-start gap-2">
-                  <div className="shrink-0 flex items-center justify-center size-7 rounded-full border-2 border-accent/50 overflow-hidden bg-muted/40 shadow-sm">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/images/teacher.svg" alt="Teacher" className="size-5 object-contain" />
-                  </div>
-                  <div className="flex items-center gap-1.5 border border-border bg-muted/30 px-3 py-1.5 rounded-2xl rounded-tl-none">
-                    <span className="thinking-dot size-1.5 rounded-full bg-accent" />
-                    <span
-                      className="thinking-dot size-1.5 rounded-full bg-accent"
-                      style={{ animationDelay: '150ms' }}
-                    />
-                    <span
-                      className="thinking-dot size-1.5 rounded-full bg-accent"
-                      style={{ animationDelay: '300ms' }}
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Input */}
-            <div className="shrink-0 border-t border-border/60 p-3 bg-muted/10">
-              <div className="flex items-end gap-2">
-                <textarea
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Ask a follow-up question…"
-                  rows={1}
-                  className="scroll-slim max-h-24 min-h-[38px] flex-1 resize-none border border-border/80 bg-card px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none rounded-lg"
-                  disabled={loading}
-                />
-                <Button
-                  size="icon"
-                  onClick={send}
-                  disabled={!input.trim() || loading}
-                  className="brutal-interactive size-9 shrink-0 rounded-lg cursor-pointer"
-                >
-                  {loading ? (
-                    <PenScribble size={16} className="text-primary-foreground" />
-                  ) : (
-                    <Send className="size-3.5" />
-                  )}
-                </Button>
-              </div>
-            </div>
-          </motion.div>
+            ))}
+          </div>
+        ) : (
+          messages.map((msg) => <ChatBubble key={msg.id} msg={msg} />)
         )}
-      </AnimatePresence>
-    </>
-  )
 
-  if (!mounted) return null
-  return createPortal(content, document.body)
+        {loading && (
+          <div className="flex items-center gap-1.5 border-2 border-[var(--line)] bg-[var(--muted)] px-3 py-2">
+            {[0, 150, 300].map((d) => (
+              <span
+                key={d}
+                className="thinking-dot size-1.5 rounded-full bg-[var(--red)]"
+                style={{ animationDelay: `${d}ms` }}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* input */}
+      <div className="shrink-0 border-t-2 border-[var(--line)] p-2.5">
+        <div className="flex items-end gap-2">
+          <textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Ask a follow-up…"
+            rows={1}
+            className="scroll-slim max-h-24 min-h-[38px] flex-1 resize-none border-2 border-[var(--line)] bg-[var(--card)] px-2.5 py-2 text-[11px] text-[var(--ink)] placeholder:text-[var(--ink-2)] focus:outline-none"
+            disabled={loading}
+          />
+          <Button
+            size="icon"
+            onClick={() => void send()}
+            disabled={!input.trim() || loading}
+            className="size-[38px] shrink-0"
+            aria-label="Send"
+          >
+            {loading ? <PenScribble size={16} /> : <Send className="size-3.5" />}
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
 }
+
+/* ------------------------------------------------------------------ */
 
 function ChatBubble({ msg }: { msg: ChatMsg }) {
   const isUser = msg.role === 'user'
@@ -260,55 +231,43 @@ function ChatBubble({ msg }: { msg: ChatMsg }) {
   const handleCopy = () => {
     navigator.clipboard.writeText(msg.content)
     setCopied(true)
-    toast.success('Explanation copied to clipboard')
+    toast.success('Copied to clipboard')
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const Avatar = (
-    <div
-      className={cn(
-        'shrink-0 flex items-center justify-center size-7 rounded-full border-2 overflow-hidden bg-muted/40 shadow-sm',
-        isUser ? 'border-primary/40' : 'border-accent/50'
-      )}
-      title={isUser ? 'You (Student)' : 'AI Teacher'}
-    >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={isUser ? '/images/student.svg' : '/images/teacher.svg'}
-        alt={isUser ? 'Student' : 'Teacher'}
-        className="size-5 object-contain"
-      />
-    </div>
-  )
-
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
+      initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.15 }}
-      className={cn('flex group relative items-start gap-2', isUser ? 'justify-end' : 'justify-start')}
+      className={cn('group flex flex-col gap-1', isUser ? 'items-end' : 'items-stretch')}
     >
-      {/* Teacher avatar + copy button for AI messages */}
-      {!isUser && (
-        <div className="flex flex-col items-center gap-1 shrink-0">
-          {Avatar}
+      <div className="flex items-center gap-1.5 px-0.5">
+        <span className="font-mono text-[9px] font-bold uppercase tracking-[0.16em] text-[var(--ink-2)]">
+          {isUser ? 'You' : 'Tutor'}
+        </span>
+        {!isUser && (
           <button
-            onClick={handleCopy}
             type="button"
-            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground shrink-0"
-            title="Copy explanation"
+            onClick={handleCopy}
+            title="Copy"
+            className="opacity-0 transition-opacity group-hover:opacity-100"
           >
-            {copied ? <Check className="size-3 text-emerald-500" /> : <Copy className="size-3" />}
+            {copied ? (
+              <Check className="size-3 text-[var(--bloom-2)]" />
+            ) : (
+              <Copy className="size-3 text-[var(--ink-2)]" />
+            )}
           </button>
-        </div>
-      )}
+        )}
+      </div>
 
       <div
         className={cn(
-          'max-w-[80%] border border-border/60 px-3.5 py-2 text-[11px] leading-relaxed rounded-2xl shadow-sm',
+          'border-2 border-[var(--line)] px-3 py-2 text-[11px] leading-relaxed',
           isUser
-            ? 'bg-primary text-primary-foreground rounded-tr-none'
-            : 'bg-card text-foreground/90 rounded-tl-none'
+            ? 'max-w-[88%] bg-[var(--ink)] text-[var(--paper)]'
+            : 'bg-[var(--card)] text-[var(--ink)] shadow-[3px_3px_0_var(--line)]',
         )}
       >
         {isUser ? (
@@ -317,38 +276,49 @@ function ChatBubble({ msg }: { msg: ChatMsg }) {
           <ReactMarkdown
             components={{
               p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
-              ul: ({ children }) => <ul className="list-disc pl-4 mb-2 space-y-1">{children}</ul>,
-              ol: ({ children }) => <ol className="list-decimal pl-4 mb-2 space-y-1">{children}</ol>,
-              li: ({ children }) => <li className="marker:text-primary">{children}</li>,
+              strong: ({ children }) => (
+                <strong className="font-bold text-[var(--ink)]">{children}</strong>
+              ),
+              ul: ({ children }) => (
+                <ul className="mb-2 list-disc space-y-1 pl-4 last:mb-0">{children}</ul>
+              ),
+              ol: ({ children }) => (
+                <ol className="mb-2 list-decimal space-y-1 pl-4 last:mb-0">{children}</ol>
+              ),
+              li: ({ children }) => <li className="marker:text-[var(--red)]">{children}</li>,
+              table: ({ children }) => (
+                <div className="my-2 overflow-x-auto">
+                  <table className="w-full border-collapse text-[10px]">{children}</table>
+                </div>
+              ),
+              th: ({ children }) => (
+                <th className="border-2 border-[var(--line)] bg-[var(--muted)] px-1.5 py-1 text-left font-bold">
+                  {children}
+                </th>
+              ),
+              td: ({ children }) => (
+                <td className="border-2 border-[var(--line)] px-1.5 py-1">{children}</td>
+              ),
               code: ({ className, children, ...props }) => {
                 const match = /language-(\w+)/.exec(className || '')
                 return match ? (
-                  <pre className="overflow-x-auto rounded bg-muted/60 p-2 font-mono text-[10px] my-2 border border-border/40">
+                  <pre className="my-2 overflow-x-auto border-2 border-[var(--line)] bg-[var(--muted)] p-2 font-mono text-[10px]">
                     <code className={className} {...props}>
                       {children}
                     </code>
                   </pre>
                 ) : (
-                  <code className="rounded bg-muted/70 px-1 py-0.5 font-mono text-[10px]" {...props}>
+                  <code className="bg-[var(--muted)] px-1 font-mono text-[10px]" {...props}>
                     {children}
                   </code>
                 )
               },
-              strong: ({ children }) => <strong className="font-bold text-foreground">{children}</strong>,
-              a: ({ href, children }) => (
-                <a href={href} target="_blank" rel="noopener noreferrer" className="text-primary underline hover:text-primary/80">
-                  {children}
-                </a>
-              )
             }}
           >
             {msg.content}
           </ReactMarkdown>
         )}
       </div>
-
-      {/* Student avatar for user messages */}
-      {isUser && Avatar}
     </motion.div>
   )
 }

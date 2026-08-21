@@ -211,14 +211,29 @@ export default function Landing() {
               </div>
 
               {s.level === 1 ? (
-                <h1>
-                  {s.head.map((line, j) => (
-                    <span className="mask" key={j}>
-                      <span style={s.accentLast && j === s.head.length - 1 ? { color: 'var(--red)' } : undefined}>
-                        {line}
-                      </span>
+                /* ---- THE MASTHEAD ------------------------------------
+                   Three lines, three weights. Solid, boxed, hollow.
+
+                   One display face doing three jobs is what stops a
+                   three-line headline from reading as one undifferentiated
+                   slab: the eye is told where to start, what the subject
+                   is, and where the sentence lands. The boxed word is the
+                   noun the whole product is about; the hollow last line is
+                   the outcome, drawn rather than stated — and it is drawn
+                   in the marking pen, so the accent colour survives the
+                   loss of the fill. ---------------------------------- */
+                <h1 className="mast">
+                  <span className="mask">
+                    <span>TURN ANY</span>
+                  </span>
+                  <span className="mask">
+                    <span>
+                      <span className="mastbox">DIAGRAM</span> INTO
                     </span>
-                  ))}
+                  </span>
+                  <span className="mask">
+                    <span className="masthollow">QUESTIONS.</span>
+                  </span>
                 </h1>
               ) : (
                 <h2>
@@ -237,13 +252,14 @@ export default function Landing() {
                     questions across all six Bloom levels, and{' '}
                     <span className="marker">verify every answer</span> before you ever see it.
                   </p>
-                  <div className="cta fade">
+                  <div className="cta fade" style={{ alignItems: 'center' }}>
                     <Link className="btn" href="/login">
                       Start free →
                     </Link>
                     <a className="btn sec" href="#pipeline">
                       See how it works
                     </a>
+                    <SpinBadge />
                   </div>
                   <p className="fade" style={{ marginTop: 26 }}>
                     <span className="hand">keep scrolling — it works on anything you can draw</span>
@@ -282,7 +298,10 @@ export default function Landing() {
                   {PIPELINE.map(([n, tone, title, desc]) => (
                     <div className="row" key={n}>
                       <b>{n}</b>
-                      <span className="dot" style={{ background: `var(--${tone})` }} />
+                      <span
+                        className="dot dot--live"
+                        style={{ background: `var(--${tone})`, color: `var(--${tone})` }}
+                      />
                       <span>
                         <span className="t">{title}</span>
                         <br />
@@ -413,6 +432,32 @@ export default function Landing() {
         </div>
       </footer>
     </div>
+  )
+}
+
+/* ------------------------------------------------------------------
+   The verification stamp. A rotating ring of mono type around a
+   solid core — a literal "verified" seal next to the CTA, drawn as
+   flat ink (site palette, no gradient) instead of a soft drop shadow.
+   ------------------------------------------------------------------ */
+function SpinBadge() {
+  return (
+    <svg
+      viewBox="0 0 100 100"
+      width="60"
+      height="60"
+      aria-hidden
+      className="spin-badge"
+      style={{ flex: '0 0 auto' }}
+    >
+      <defs>
+        <path id="spinbadge-circle" d="M50,50 m-38,0 a38,38 0 1,1 76,0 a38,38 0 1,1 -76,0" />
+      </defs>
+      <circle cx="50" cy="50" r="16" fill="var(--red)" stroke="var(--line)" strokeWidth="2.5" />
+      <text fontFamily="var(--font-jetbrains), ui-monospace, monospace" fontWeight={700} fontSize="7.6" letterSpacing="2" fill="var(--ink)">
+        <textPath href="#spinbadge-circle">VERIFIED · SIX AGENTS · ONE RUN · </textPath>
+      </text>
+    </svg>
   )
 }
 

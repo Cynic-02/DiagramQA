@@ -66,6 +66,15 @@ interface PipelineState {
    *  the page level) can share state without prop drilling. */
   chatOpen: boolean
 
+  /* --- right-hand console dock ---
+     The agent log and the follow-up chat used to float over the content
+     as two separate overlays. They are now one docked rail with two
+     tabs, so nothing covers the page and both are reachable from every
+     stage. `chatOpen` is kept as an alias for "dock open on the chat
+     tab" so existing call sites keep working. */
+  dockOpen: boolean
+  dockTab: 'log' | 'chat'
+
   // actions
   setBloomLevel: (b: BloomLevel) => void
   setSelectedProvider: (p: string | null) => void
@@ -79,6 +88,8 @@ interface PipelineState {
   appendLog: (line: Omit<LogLine, 'id' | 'timestamp'>) => void
   setSidebarCollapsed: (v: boolean) => void
   setChatOpen: (v: boolean) => void
+  setDock: (open: boolean, tab?: 'log' | 'chat') => void
+  toggleDock: (tab?: 'log' | 'chat') => void
   setActiveStage: (s: StageId) => void
   hydrateFromHistory: (payload: HydratePayload) => void
 }
@@ -142,6 +153,8 @@ export const usePipelineStore = create<PipelineState>((set) => ({
   errorMessage: null,
   sidebarCollapsed: false,
   chatOpen: false,
+  dockOpen: false,
+  dockTab: 'log',
 
   setBloomLevel: (b) => set({ bloomLevel: b }),
   setSelectedProvider: (p) => set({ selectedProvider: p }),
@@ -261,7 +274,21 @@ export const usePipelineStore = create<PipelineState>((set) => ({
     }),
 
   setSidebarCollapsed: (v) => set({ sidebarCollapsed: v }),
-  setChatOpen: (v) => set({ chatOpen: v }),
+  setChatOpen: (v) => set({ chatOpen: v, dockOpen: v, dockTab: v ? 'chat' : 'log' }),
+  setDock: (open, tab) =>
+    set((s) => ({
+      dockOpen: open,
+      dockTab: tab ?? s.dockTab,
+      chatOpen: open && (tab ?? s.dockTab) === 'chat',
+    })),
+  toggleDock: (tab) =>
+    set((s) => {
+      // Clicking the tab you are already on closes the rail; clicking the
+      // other tab switches to it without closing.
+      const nextTab = tab ?? s.dockTab
+      const open = s.dockOpen && s.dockTab === nextTab ? false : true
+      return { dockOpen: open, dockTab: nextTab, chatOpen: open && nextTab === 'chat' }
+    }),
   setActiveStage: (s) => set({ activeStage: s }),
 
   hydrateFromHistory: (payload) =>

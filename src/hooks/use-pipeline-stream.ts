@@ -25,6 +25,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { openPipelineStream, closePipelineStream } from '@/lib/pipeline-stream'
 import { usePipelineStore } from '@/lib/store'
+import { isDemoRun } from '@/lib/demo-run'
 import type { StageEvent, LogLine, RunRecord } from '@/lib/types'
 
 const POLL_INTERVAL_MS = 2000
@@ -39,7 +40,11 @@ export function usePipelineStream(): { connected: boolean } {
 
   // 1. Open the SSE stream for the active run and wire up listeners.
   useEffect(() => {
-    if (!runId || !running) return
+    // Scripted demo runs are replayed client-side by lib/demo-run and have
+    // no server record at all. Opening an EventSource for one would 404,
+    // trip the error path, and start a polling loop against a run id that
+    // will never exist.
+    if (!runId || !running || isDemoRun(runId)) return
 
     const source = openPipelineStream(runId)
 
@@ -82,7 +87,7 @@ export function usePipelineStream(): { connected: boolean } {
 
   // 3. Polling fallback.
   function startPolling() {
-    if (!runId || pollTimer.current) return
+    if (!runId || pollTimer.current || isDemoRun(runId)) return
     pollTimer.current = setInterval(async () => {
       try {
         const res = await fetch(`/api/runs/${runId}`)

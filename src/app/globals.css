@@ -62,11 +62,11 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --radius-sm: 0px;
-  --radius-md: 0px;
-  --radius-lg: 0px;
-  --radius-xl: 0px;
-  --radius-2xl: 0px;
+  --radius-sm: var(--r-xs);
+  --radius-md: var(--r-s);
+  --radius-lg: var(--r);
+  --radius-xl: var(--r-l);
+  --radius-2xl: var(--r-xl);
 }
 
 /* ==================================================================
@@ -74,8 +74,19 @@
    ================================================================== */
 :root,
 [data-theme="light"] {
-  --radius: 0px;
-  --radius-pill: 0px;
+  /* ---- CORNERS ------------------------------------------------
+     The one rule that has been relaxed. Ink, paper and hard shadows
+     stay; the 0px corner does not. A soft 10px cap keeps the block
+     reading as a printed card while dropping the razor edge that
+     made every dense screen feel hostile. Five steps, so a 6px chip
+     and a 24px panel are not capped at the same radius. */
+  --r-xs:  4px;   /* chips, tags, dots-that-are-not-dots  */
+  --r-s:   7px;   /* inputs, small controls               */
+  --r:    10px;   /* cards, buttons, panels — the default */
+  --r-l:  14px;   /* large surfaces                       */
+  --r-xl: 20px;   /* hero blocks, modals                  */
+  --radius: var(--r);
+  --radius-pill: 999px;
 
   --paper:    #efeae0;
   --surface:  #fffdf8;
@@ -143,11 +154,21 @@
   --grid-tile-strong: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22'%3E%3Cg fill='none' stroke='%230a0a0a' stroke-opacity='0.17' stroke-width='1' stroke-dasharray='4 5'%3E%3Cpath d='M0 .5H22'/%3E%3Cpath d='M.5 0V22' stroke-dashoffset='2.5'/%3E%3C/g%3E%3C/svg%3E");
 
   /* structural constants — never change per mode */
-  --bw-s: 2px;   /* inline elements */
-  --bw:   3px;   /* cards           */
-  --bw-l: 4px;   /* hero + sections */
-  --sh:   4px;   /* default hard offset */
-  --sh-l: 8px;   /* hero */
+  /* Line weights, stepped down one notch across the board. A 3px rule
+     around every panel on a dense console screen reads as a cage; 2px
+     reads as structure. The hero keeps the heavier rule because it has
+     the room for it. */
+  --bw-s: 1.5px; /* inline elements */
+  --bw:   2px;   /* cards           */
+  --bw-l: 3px;   /* hero + sections */
+  /* The offset shadow is a printing mark, not a drop shadow — it says
+     "this sheet is sitting on that one". Four pixels of solid black
+     under every card in a grid of them stops reading as depth and
+     starts reading as a black outline on two sides, so the whole scale
+     comes down a notch. */
+  --sh:   3px;   /* default hard offset */
+  --sh-l: 6px;   /* hero */
+  --sh-s: 2px;   /* small controls */
   --snap:   90ms cubic-bezier(.2, 0, 0, 1);
   --reveal: 320ms cubic-bezier(.16, 1, .3, 1);
 }
@@ -178,7 +199,7 @@
   --grid-tile-strong: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22'%3E%3Cg fill='none' stroke='%23f5f2ea' stroke-opacity='0.18' stroke-width='1' stroke-dasharray='4 5'%3E%3Cpath d='M0 .5H22'/%3E%3Cpath d='M.5 0V22' stroke-dashoffset='2.5'/%3E%3C/g%3E%3C/svg%3E");
 
   --bw-s: 1px;
-  --bw:   2px;
+  --bw:   1.5px;
   --bw-l: 2px;
 }
 
@@ -203,14 +224,29 @@
    BASE
    ================================================================== */
 @layer base {
+  /* Every box gets the corner cap. Written on the bare universal
+     selector with NO !important, so any explicit `rounded-*` utility,
+     or a component that asks for a different corner, still wins — the
+     old rule slammed the door on both. */
   * {
     @apply border-border;
-    border-radius: 0 !important;
+    border-radius: var(--r);
   }
-  /* Dots are the only round things, because they are dots. Higher
-     specificity than the `*` reset above, so it wins the !important tie. */
+  /* Anything tighter than a card should not carry a card's corner. */
+  input, textarea, select,
+  [data-slot="input"], [data-slot="select-trigger"] { border-radius: var(--r-s); }
+
+  .rounded-none, [data-square] { border-radius: 0 !important; }
   .rounded-full,
   [data-round] { border-radius: 9999px !important; }
+
+  /* A rule is a rule, not a box: an element that only carries one or
+     two edges must not round the corners those edges never reach. */
+  .border-b-2, .border-t-2, .border-l-2, .border-r-2,
+  .border-b-\[2px\], .border-t-\[2px\], .border-l-\[2px\], .border-r-\[2px\],
+  .border-b-\[3px\], .border-t-\[3px\], .border-l-\[3px\], .border-r-\[3px\] {
+    border-radius: 0;
+  }
 
   html {
     -webkit-text-size-adjust: 100%;
@@ -548,25 +584,11 @@
    MOTION ADDITIONS — from the Motion Rubric study. Tier 1/2 only,
    all additive, all covered by the reduced-motion contract above.
 
-   THE MARCHING FRAME — the upload dropzone's dashes march while the
-   zone waits, and stand down the moment a drag enters (the accent
-   border takes over). Dashes are ink at rest: affordance without
-   alarm.
+   (The upload dropzone's "marching ants" frame was removed: the
+   animation overrode the four edge background-positions, which pulled
+   the bottom and right dashes inward and drew a crosshair across the
+   box. The zone now uses a plain dashed border.)
    ================================================================== */
-@keyframes ants-march {
-  to { background-position: 12px 0, -12px 0, 0 -12px, 0 12px; }
-}
-.dropzone-march { position: relative; }
-.dropzone-march::before {
-  content: ""; position: absolute; inset: 0; pointer-events: none;
-  background:
-    repeating-linear-gradient(90deg, var(--ink-2) 0 6px, transparent 6px 12px) top    / 100% 2px no-repeat,
-    repeating-linear-gradient(90deg, var(--ink-2) 0 6px, transparent 6px 12px) bottom / 100% 2px no-repeat,
-    repeating-linear-gradient(0deg,  var(--ink-2) 0 6px, transparent 6px 12px) left   / 2px 100% no-repeat,
-    repeating-linear-gradient(0deg,  var(--ink-2) 0 6px, transparent 6px 12px) right  / 2px 100% no-repeat;
-  animation: ants-march 1.4s linear infinite;
-}
-.dropzone-march[data-fast]::before { display: none; }
 
 /* THE VERDICT POP — a passing verdict's seal lands like a stamp:
    overshoot from above, one wobble, dead still. `backwards` holds it
@@ -722,4 +744,464 @@
 
   --n-red:#ff6a5c;    --n-orange:#ff9a45; --n-amber:#ffcf5c; --n-green:#a9e04a;
   --n-teal:#3fdcdc;   --n-blue:#7b95ff;   --n-violet:#b79bff; --n-pink:#ff8fa8;
+}
+
+/* ==================================================================
+   THE SOFTENED RUBRIC — corners, surfaces, treatments.
+
+   The original seven rules were written for a poster. This product is
+   a console that teachers sit in front of for twenty minutes at a
+   time, so three of them have been relaxed on purpose:
+
+     rule 1  radius 0            → a 10px corner cap, five steps
+     rule 2  every border 3px    → 2px is structure, 3px was a cage
+     rule 4  THE PRESS only      → surfaces may LIFT as well as press
+
+   Everything else survives: ink borders, hard offset shadows with
+   zero blur, declared structure, the Bloom spectrum, the marginalia
+   budget. This is the same design language spoken at conversational
+   volume instead of shouted.
+   ================================================================== */
+@layer utilities {
+
+  /* ---------------- 01 · HOLLOW DISPLAY TYPE ----------------------
+     Outlined display type. The counterpart to the solid black slab:
+     same letterform, no fill, so a numeral can sit at 4rem beside a
+     heading without competing with it. Used for section numerals,
+     stage indices, and the third line of the hero.
+
+     `paint-order` is what keeps the stroke from eating the inside of
+     the letter — without it a 3px stroke on a 900-weight grotesque
+     closes up the counters in `0`, `8` and `e`. */
+  .hollow {
+    color: transparent;
+    -webkit-text-stroke: 2px var(--ink);
+    paint-order: stroke fill;
+  }
+  .hollow-thin  { -webkit-text-stroke-width: 1.5px; }
+  .hollow-thick { -webkit-text-stroke-width: 3px; }
+  .hollow-red    { -webkit-text-stroke-color: var(--red); }
+  .hollow-accent { -webkit-text-stroke-color: var(--yellow); }
+
+  /* A solid letter wearing an offset outlined copy of itself. The
+     hero's middle line. `data-text` carries the duplicate so there is
+     no second DOM node to keep in sync. */
+  .type-shadowed {
+    position: relative;
+    display: inline-block;
+    color: var(--ink);
+  }
+  .type-shadowed::before {
+    content: attr(data-text);
+    position: absolute;
+    left: 0.055em; top: 0.055em;
+    z-index: -1;
+    color: transparent;
+    -webkit-text-stroke: 2px var(--ink);
+    paint-order: stroke fill;
+  }
+
+  /* The boxed word: solid type on paper, ruled and hard-shadowed, set
+     inline inside a running headline. */
+  .type-boxed {
+    display: inline-block;
+    background: var(--surface);
+    border: var(--bw) solid var(--line);
+    border-radius: var(--r);
+    box-shadow: var(--sh) var(--sh) 0 var(--line);
+    padding: 0.04em 0.16em 0.10em;
+    margin: 0 0.04em;
+  }
+
+  /* ---------------- 02 · TREATMENTS -------------------------------
+     Marking, not decoration. A teacher's four gestures: highlight it,
+     cross it out, quote the machine, point somewhere else. */
+
+  /* highlighter — a wobbling swipe, not a rectangle of paint */
+  .mark, .marker-highlight {
+    background-image: linear-gradient(
+      180deg,
+      transparent 8%,
+      var(--yellow) 8%,
+      var(--yellow) 92%,
+      transparent 92%);
+    color: var(--ink);
+    padding: 0 0.18em;
+    border-radius: 2px;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+  .mark-red   { background-image: linear-gradient(180deg,transparent 8%,color-mix(in srgb,var(--red) 30%,transparent) 8%,color-mix(in srgb,var(--red) 30%,transparent) 92%,transparent 92%); }
+  .mark-blue  { background-image: linear-gradient(180deg,transparent 8%,color-mix(in srgb,var(--blue) 22%,transparent) 8%,color-mix(in srgb,var(--blue) 22%,transparent) 92%,transparent 92%); }
+
+  /* struck through — finished work, in the marking pen */
+  .strike {
+    text-decoration: line-through;
+    text-decoration-color: var(--red);
+    text-decoration-thickness: 2px;
+    color: var(--ink-2);
+  }
+
+  /* inline token — what the machine actually said */
+  .chip-code {
+    font-family: var(--font-jetbrains), ui-monospace, monospace;
+    font-size: 0.86em;
+    font-weight: 700;
+    background: var(--ink);
+    color: var(--paper);
+    border: 1.5px solid var(--yellow);
+    border-radius: var(--r-xs);
+    padding: 0.08em 0.42em;
+    white-space: nowrap;
+  }
+
+  /* a link is solid ink with an accent underline that floods on hover */
+  .link-ink {
+    color: var(--ink);
+    font-weight: 700;
+    text-decoration: none;
+    background-image: linear-gradient(var(--yellow), var(--yellow));
+    background-repeat: no-repeat;
+    background-position: 0 100%;
+    background-size: 100% 0.18em;
+    transition: background-size var(--snap), color var(--snap);
+  }
+  .link-ink:hover,
+  .link-ink:focus-visible { background-size: 100% 100%; color: #0a0a0a; }
+
+  /* ---------------- 03 · BOXES & SURFACES -------------------------
+     Four surfaces, one border language. Each is a different amount of
+     weight, so a screen can rank its own contents instead of shouting
+     every panel at the same volume. */
+
+  /* PAPER — the workhorse. Opaque, ruled, hard-shadowed. */
+  .paper {
+    background: var(--card);
+    border: var(--bw) solid var(--line);
+    border-radius: var(--r);
+    box-shadow: var(--sh) var(--sh) 0 var(--line);
+  }
+  .paper-flat  { background: var(--card); border: var(--bw) solid var(--line); border-radius: var(--r); box-shadow: none; }
+  .paper-quiet { background: var(--card); border: var(--bw-s) solid color-mix(in srgb, var(--line) 32%, transparent); border-radius: var(--r); box-shadow: none; }
+  .paper-lg    { border-radius: var(--r-l); box-shadow: var(--sh-l) var(--sh-l) 0 var(--line); }
+
+  /* GLASS — 16px blur over live shapes. The border stays hard: the
+     glass never loses the outline, which is what keeps it inside this
+     system rather than borrowed from a different one. Opt-in only. */
+  .glass-surface {
+    background: color-mix(in srgb, var(--card) 62%, transparent);
+    backdrop-filter: blur(16px) saturate(150%);
+    -webkit-backdrop-filter: blur(16px) saturate(150%);
+    border: var(--bw) solid var(--line);
+    border-radius: var(--r);
+  }
+
+  /* TICKET — an admission slip. Two punched notches, a torn rule. The
+     one place a run, an export or a session gets to feel like an
+     object you were handed. */
+  .ticket {
+    position: relative;
+    background: var(--card);
+    border: var(--bw) solid var(--line);
+    border-radius: var(--r);
+    box-shadow: var(--sh) var(--sh) 0 var(--line);
+  }
+  .ticket::before,
+  .ticket::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 18px; height: 18px;
+    margin-top: -9px;
+    border: var(--bw) solid var(--line);
+    border-radius: 999px;
+    background: var(--paper);
+  }
+  .ticket::before { left: -10px; }
+  .ticket::after  { right: -10px; }
+  .ticket-rule {
+    border-top: var(--bw-s) dashed color-mix(in srgb, var(--line) 55%, transparent);
+  }
+
+  /* STACK — a card that is visibly a pile of cards. For anything that
+     represents "several of these": a run's question set, a folder. */
+  .stack-card { position: relative; }
+  .stack-card::before,
+  .stack-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border: var(--bw) solid var(--line);
+    border-radius: inherit;
+    z-index: -1;
+  }
+  .stack-card::before { transform: translate(5px, 5px);   background: var(--card); }
+  .stack-card::after  { transform: translate(10px, 10px); background: var(--yellow); }
+
+  /* FIGURE LABEL — every surface is captioned, and the caption starts
+     with a filled square so a column of them scans as a list. */
+  .fig-label {
+    display: flex; align-items: center; gap: 8px;
+    font-family: var(--font-jetbrains), ui-monospace, monospace;
+    font-size: 9.5px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.14em;
+    color: var(--ink-2);
+  }
+  .fig-label::before {
+    content: '';
+    width: 9px; height: 9px; flex: 0 0 9px;
+    background: var(--yellow);
+    border: 1.5px solid var(--line);
+    border-radius: 2px;
+  }
+
+  /* ---------------- 04 · THE LIFT ---------------------------------
+     THE PRESS is still how a control answers a click. But a card is
+     not a control — a card that sinks when you point at it reads as
+     already-clicked. A card LIFTS: three pixels up and back, shadow
+     growing to meet it. Same 90ms, same zero blur. */
+  .lift {
+    transition: transform var(--snap), box-shadow var(--snap), border-color var(--snap);
+  }
+  .lift:hover, .lift:focus-within {
+    transform: translate(-3px, -3px);
+    box-shadow: calc(var(--sh) + 3px) calc(var(--sh) + 3px) 0 var(--line);
+  }
+  .lift:active { transform: translate(0, 0); box-shadow: var(--sh) var(--sh) 0 var(--line); }
+
+  /* ---------------- 05 · CORNER HYGIENE ---------------------------
+     A filled strip inside a rounded box squares off the box's own
+     corner unless the box clips. `.clip` is that opt-in. */
+  .clip { overflow: hidden; }
+}
+
+/* The retired-effects block above maps `.glass` onto the paper card so
+   twenty legacy call sites keep working. Restate the corner here so
+   those call sites pick up the cap too. */
+.brutal-block, .brutal-block-lg, .glass, .glass-strong, .glass-primary, .hw-panel {
+  border-radius: var(--r);
+}
+.brutal-block-sm { border-radius: var(--r-s); }
+
+/* Sonner opted out of corners entirely. It is a printed slip, and a
+   printed slip now has corners like everything else. */
+.toaster [data-sonner-toast] { border-radius: var(--r) !important; }
+
+/* Composite elements whose PARTS must not each carry a corner: the
+   Bloom spectrum is one bar made of six blocks, not six pills. */
+.spectrum { border-radius: var(--r-xs); overflow: hidden; }
+.spectrum > * { border-radius: 0; }
+.block-label { border-radius: 0; }
+.odo, .odo-col, .odo-strip, .odo-strip > span { border-radius: 0; }
+.thinking-caret { border-radius: 0; }
+.grain-overlay { border-radius: 0; }
+
+/* A segmented control is one control. Only its outer corners round. */
+[data-segmented] { border-radius: var(--r-s); overflow: hidden; }
+[data-segmented] > * { border-radius: 0; }
+
+/* ==================================================================
+   THE WEIGHT BUDGET.
+
+   Every console screen was authored with `border-[3px]` on panels and
+   `border-[4px]` on section rules, and the result — with a sidebar, a
+   top bar, a masthead, a controls strip, a right rail and a status
+   footer all on screen at once — is a page divided into cells by a
+   grid of heavy black bars. Individually each rule is defensible;
+   together they read as a cage, and no amount of per-component tuning
+   fixes that because the problem is the sum.
+
+   So the step-down happens once, here, on the utility itself. Every
+   3px panel rule becomes 2px and every 4px section rule becomes 3px
+   across the entire product, and the twenty components that wrote
+   those numbers inline do not need to be touched. Dark mode's own
+   step-down still wins: it is written at higher specificity.
+   ================================================================== */
+.border-\[3px\]   { border-width: 2px; }
+.border-\[4px\]   { border-width: 3px; }
+.border-b-\[3px\] { border-bottom-width: 2px; }
+.border-t-\[3px\] { border-top-width: 2px; }
+.border-l-\[3px\] { border-left-width: 2px; }
+.border-r-\[3px\] { border-right-width: 2px; }
+
+/* Interior rules — the line between a card's header and its body, or
+   between two rows — are structure, not enclosure. They get a fraction
+   of the ink so the OUTER edge of a panel stays the strongest line on
+   it and the eye can still find where one object ends. */
+[data-slot="card"] > .border-b-2,
+.paper > .border-b-2 { border-bottom-color: color-mix(in srgb, var(--line) 22%, transparent); }
+
+@layer base {
+  /* A rule two to six pixels tall is a LINE, and a line with a 10px
+     corner cap is an ellipse. Accent strips, spectrum bars, dividers
+     and progress tracks opt out of the corner by their own height.
+     Written in the base layer so an explicit `rounded-full` on a
+     progress bar still wins. */
+  .h-px, .h-0\.5, .h-1, .h-1\.5,
+  .h-\[2px\], .h-\[3px\], .h-\[4px\], .h-\[5px\], .h-\[6px\],
+  .w-px, .w-0\.5, .w-1, .w-\[2px\], .w-\[3px\], .w-\[4px\], .w-\[5px\], .w-\[6px\] {
+    border-radius: 0;
+  }
+}
+
+/* ==================================================================
+   POSITION UTILITIES WIN.
+
+   `.brutal-block` (and its aliases) declare `position: relative` so a
+   stamp can be pinned inside them. They are authored in a custom
+   `@layer utilities` block, which lands AFTER Tailwind's generated
+   utilities in the same layer — so on any element written as
+   `className="brutal-block absolute"` the recipe beat the utility and
+   the element silently stayed in flow.
+
+   That is what wedged the results filter bar: its sort menu is an
+   `absolute` popover, it rendered as a block *inside* the bar, the bar
+   is a `shrink-0` row in a fixed-height column, and the question pane
+   below it lost the height the menu had taken. The page looked like it
+   had scrolled away and could not be scrolled back.
+
+   Unlayered CSS outranks every layer, so this settles it everywhere at
+   once rather than one call site at a time.
+   ================================================================== */
+.static   { position: static; }
+.relative { position: relative; }
+.absolute { position: absolute; }
+.fixed    { position: fixed; }
+.sticky   { position: sticky; }
+
+
+/* ==================================================================
+   SHADOW BUDGET — the inline offsets, stepped down with the token.
+
+   Twenty components wrote their shadow inline as `shadow-[4px_4px_0_…]`
+   rather than reading `--sh`, so lowering the token alone would have
+   left them at the old weight and the page half-corrected. Same trick
+   as the border step-down: fix the utility once, leave the call sites
+   alone. THE PRESS still travels by its own translate distance, which
+   is deliberately unchanged — the press should out-travel the shadow
+   slightly, so the element lands flush.
+   ================================================================== */
+.shadow-\[4px_4px_0_var\(--line\)\]  { --tw-shadow: 0 0 #0000; box-shadow: 3px 3px 0 var(--line); }
+.shadow-\[5px_5px_0_var\(--line\)\]  { --tw-shadow: 0 0 #0000; box-shadow: 3px 3px 0 var(--line); }
+.shadow-\[6px_6px_0_var\(--line\)\]  { --tw-shadow: 0 0 #0000; box-shadow: 4px 4px 0 var(--line); }
+.shadow-\[8px_8px_0_var\(--line\)\]  { --tw-shadow: 0 0 #0000; box-shadow: 5px 5px 0 var(--line); }
+.shadow-\[3px_3px_0_var\(--line\)\]  { --tw-shadow: 0 0 #0000; box-shadow: 2px 2px 0 var(--line); }
+.shadow-\[2px_2px_0_var\(--line\)\]  { --tw-shadow: 0 0 #0000; box-shadow: 2px 2px 0 var(--line); }
+
+/* ==================================================================
+   THE FIELD — ambient colour under the graph paper.
+
+   Two very large, very soft radial washes: cool at the top left, warm
+   at the bottom right. They are not decoration for its own sake. The
+   product's whole colour argument is the Bloom spectrum running cool
+   to warm, and putting that same axis into the ground the page is
+   printed on means every screen is quietly making the argument before
+   a single question loads.
+
+   Rules that keep it from becoming a gradient background:
+     · it never touches type contrast — peak alpha is ~0.16 in light
+       and ~0.22 in dark, spread over 60vmax, so local contrast moves
+       by a fraction of a step;
+     · it lives BEHIND the dashed grid, so the paper still reads as
+       paper, not as a mesh gradient;
+     · it drifts on a 40-second cycle, which is slow enough that you
+       never catch it moving — and stops entirely under reduced motion.
+   ================================================================== */
+.aurora-field {
+  position: fixed;
+  inset: -25vmax;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  /* Layout + paint only. `contain: strict` would add size containment,
+     and this box takes its size from its insets. */
+  contain: layout paint;
+  opacity: 0.58;
+}
+.aurora-field::before,
+.aurora-field::after {
+  content: '';
+  position: absolute;
+  width: 78vmax;
+  height: 78vmax;
+  border-radius: 50%;
+  /* A radial-gradient with a soft alpha ramp, not a hard disc that has
+     been blurred — `filter: blur()` on something this large is a
+     genuinely expensive full-screen pass on every frame it moves. */
+  will-change: transform;
+}
+.aurora-field::before {
+  top: -6vmax;
+  left: -10vmax;
+  background: radial-gradient(circle at 50% 50%,
+    color-mix(in srgb, var(--blue) 42%, transparent) 0%,
+    color-mix(in srgb, var(--blue) 20%, transparent) 34%,
+    transparent 68%);
+  animation: aurora-drift-a 44s ease-in-out infinite alternate;
+}
+.aurora-field::after {
+  right: -14vmax;
+  bottom: -10vmax;
+  background: radial-gradient(circle at 50% 50%,
+    color-mix(in srgb, var(--red) 38%, transparent) 0%,
+    color-mix(in srgb, var(--bloom-5) 18%, transparent) 36%,
+    transparent 68%);
+  animation: aurora-drift-b 52s ease-in-out infinite alternate;
+}
+@keyframes aurora-drift-a {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to   { transform: translate3d(7vmax, 5vmax, 0) scale(1.14); }
+}
+@keyframes aurora-drift-b {
+  from { transform: translate3d(0, 0, 0) scale(1.08); }
+  to   { transform: translate3d(-8vmax, -4vmax, 0) scale(1); }
+}
+/* It is the first element in the body and carries z-index 0, so every
+   later sibling paints over it without needing a z-index of its own.
+   No stacking context is created anywhere else to fight with. */
+[data-theme="dark"] .aurora-field { opacity: 0.42; }
+
+@media (prefers-reduced-motion: reduce) {
+  .aurora-field::before,
+  .aurora-field::after { animation: none; }
+}
+
+/* ==================================================================
+   GLASS SURFACES.
+
+   The original rule sheet banned backdrop-filter outright, on the
+   grounds that a blurred translucent panel hides its own edges and
+   brutalism is about declared structure. That objection is answered
+   rather than ignored: the border stays hard, full-strength ink at
+   the same weight it always was, and only the FILL goes translucent.
+   The panel keeps its outline and loses its opacity — so structure is
+   still declared, and the field above is allowed to show through the
+   page instead of being blanked out by a wall of card-coloured
+   rectangles.
+
+   `--glass` is the one dial. Anything that must stay legible over
+   arbitrary content — menus, popovers, toasts — is deliberately NOT
+   in this list.
+   ================================================================== */
+@layer utilities {
+  .glass-surface,
+  .paper.glass,
+  .glass-card {
+    background: color-mix(in srgb, var(--card) var(--glass, 66%), transparent);
+    backdrop-filter: blur(16px) saturate(150%);
+    -webkit-backdrop-filter: blur(16px) saturate(150%);
+    border: var(--bw) solid var(--line);
+    border-radius: var(--r);
+  }
+  /* A pane inside a glass card should not blur a second time — two
+     stacked backdrop-filters cost twice and read as fog. Transparent
+     is the correct fill for an interior: it is already looking through
+     the parent's glass. */
+  .glass-inner { background: transparent; }
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .glass-surface, .paper.glass, .glass-card {
+    background: color-mix(in srgb, var(--card) 92%, transparent);
+  }
 }
