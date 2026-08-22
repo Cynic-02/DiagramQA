@@ -233,10 +233,19 @@ export function mountPlateStage(host: HTMLElement, opts: PlateOptions = {}): Pla
     ['circle',{cx:190,cy:-170,r:5},2.2],
     ['path',{d:'M-168 156 L-168 184 L-138 170 Z'},2.6],
     ['path',{d:'M-138 154 L-138 186'},2.6],
-    /* a voltmeter on the battery wire, and an open switch on the top run */
-    ['circle',{cx:-250,cy:0,r:20},1.8],
-    ['path',{d:'M-258 -7 L-250 8 L-242 -7'},1.6],
-    ['path',{d:'M-190 -170 L-156 -190'},1.8]
+    /* a voltmeter across the battery, and an open switch on the top run.
+       26–27 used to sit at (-250,0) — dead on the battery plates, a meter
+       glyph printed over the very cell it measures. It now hangs on its
+       own parallel branch inside the loop: leads tapped on the wire above
+       and below the cell (29), run right to the meter, junction dots where
+       the taps meet the run (30–31). Nothing in a real schematic is drawn
+       on top of the component it is measuring. */
+    ['circle',{cx:-160,cy:0,r:20},1.8],
+    ['path',{d:'M-168 -7 L-160 8 L-152 -7'},1.6],
+    ['path',{d:'M-190 -170 L-156 -190'},1.8],
+    ['path',{d:'M-250 -60 H-160 M-250 60 H-160 M-160 -60 V-20 M-160 60 V20'},1.6],
+    ['circle',{cx:-250,cy:-60,r:5},2.2],
+    ['circle',{cx:-250,cy:60,r:5},2.2]
   ];
 
   var S_ORBIT=[['circle',{cx:0,cy:0,r:52},3]];
@@ -270,37 +279,48 @@ export function mountPlateStage(host: HTMLElement, opts: PlateOptions = {}): Pla
        a scattered field of stars behind all of it, and a sun with a
        second, fainter corona instead of one clean ring of spikes. ---- */
 
-    /* 29 — a fifth, outermost orbital path, farther out than the belt */
-    ['ellipse',{cx:0,cy:0,rx:382,ry:164},1.6],
-    /* 30 — the ice giant riding it, out past everything else */
-    ['circle',{cx:-331,cy:82,r:13},2.4],
+    /* 29 — a fifth, outermost orbital path, farther out than the belt.
+       Sized to the SAFE BAND, not to ambition: the stage's viewBox is
+       1600×900 with `slice` and a chrome bar over the top, and the art
+       centre sits at y=452 — so anything drawn past ~±330 vertically
+       is cropped off on short windows and the outer rings read as
+       broken circles. 382/164 breached it; 344/146 clears it with the
+       stars still outside the path (see 37–48). */
+    ['ellipse',{cx:0,cy:0,rx:344,ry:146},1.6],
+    /* 30 — the ice giant riding it, out past everything else. Its
+       centre sits ON the 344/146 ellipse so it rides its own orbit
+       the way the inner planets ride theirs. */
+    ['circle',{cx:-288,cy:79,r:13},2.4],
     /* 31 — its own ring, thin and sharply tilted — edge-on, unlike
        the amber planet's near-face-on one, so the two ringed bodies
        don't read as the same drawing repeated */
-    ['ellipse',{cx:-331,cy:82,rx:26,ry:6,transform:'rotate(18 -331 82)'},1.6],
+    ['ellipse',{cx:-288,cy:79,rx:26,ry:6,transform:'rotate(18 -288 79)'},1.6],
     /* 32 — a moon riding close beside the ringed planet at 19/20 */
     ['circle',{cx:246,cy:30,r:5},2],
-    /* 33 — a comet's head, well outside every planetary orbit */
-    ['circle',{cx:-424,cy:-182,r:6},2.2],
+    /* 33 — a comet's head, outside every planetary orbit but inside
+       the band — it is sky detail, not a reason to crop the plate */
+    ['circle',{cx:-376,cy:-166,r:6},2.2],
     /* 34 — its tail, swept back and away from the sun */
-    ['path',{d:'M-424 -182 C -462 -212, -498 -226, -540 -246'},1.6],
+    ['path',{d:'M-376 -166 C -408 -192, -438 -204, -470 -222'},1.6],
     /* 35–36 — two fainter flecks trailing off the tail's end */
-    ['circle',{cx:-486,cy:-232,r:2.2},1.2],
-    ['circle',{cx:-518,cy:-244,r:1.8},1.2],
-    /* 37–48 — a scattered field of background stars, well outside the
-       outermost orbit so they read as sky, not as one more body */
-    ['circle',{cx:-40,cy:-330,r:1.6},0.8],
-    ['circle',{cx:120,cy:-360,r:1.3},0.8],
-    ['circle',{cx:300,cy:-300,r:1.8},0.8],
-    ['circle',{cx:400,cy:-160,r:1.4},0.8],
-    ['circle',{cx:420,cy:60,r:1.7},0.8],
-    ['circle',{cx:360,cy:260,r:1.3},0.8],
-    ['circle',{cx:160,cy:340,r:1.6},0.8],
-    ['circle',{cx:-140,cy:330,r:1.4},0.8],
-    ['circle',{cx:-340,cy:250,r:1.8},0.8],
-    ['circle',{cx:-420,cy:0,r:1.3},0.8],
-    ['circle',{cx:-380,cy:-220,r:1.6},0.8],
-    ['circle',{cx:60,cy:-390,r:1.4},0.8]
+    ['circle',{cx:-424,cy:-198,r:2.2},1.2],
+    ['circle',{cx:-448,cy:-212,r:1.8},1.2],
+    /* 37–48 — a scattered field of background stars, outside the
+       outermost orbit so they read as sky, not as one more body —
+       and held inside |x|≤390, |y|≤330 so the field of stars never
+       costs the plate its safe band. */
+    ['circle',{cx:-40,cy:-306,r:1.6},0.8],
+    ['circle',{cx:120,cy:-318,r:1.3},0.8],
+    ['circle',{cx:300,cy:-272,r:1.8},0.8],
+    ['circle',{cx:380,cy:-150,r:1.4},0.8],
+    ['circle',{cx:386,cy:54,r:1.7},0.8],
+    ['circle',{cx:340,cy:240,r:1.3},0.8],
+    ['circle',{cx:160,cy:296,r:1.6},0.8],
+    ['circle',{cx:-140,cy:296,r:1.4},0.8],
+    ['circle',{cx:-330,cy:230,r:1.8},0.8],
+    ['circle',{cx:-390,cy:0,r:1.3},0.8],
+    ['circle',{cx:-350,cy:-200,r:1.6},0.8],
+    ['circle',{cx:60,cy:-322,r:1.4},0.8]
   ]);
   /* 49–58 — a second, fainter corona: ten shorter spikes at a
      spacing that doesn't line up with the twelve primary rays, so
@@ -540,7 +560,7 @@ export function mountPlateStage(host: HTMLElement, opts: PlateOptions = {}): Pla
   var SCENES=[
     {key:'GLOBE',  name:'THE GLOBE',       shapes:S_GLOBE, clip:{id:'globe',from:10,to:19},
      anchors:[[-60,-90],[190,150],[0,-232]],
-     tags:[[-300,-190],[250,250],[150,-290]],
+     tags:[[-300,-380],[250,250],[150,-290]],
      qs:[[1,'Remember','Name the landmass indicated at 01.'],
          [4,'Analyze','Why is the ocean at 02 warmer on its western edge?'],
          [3,'Apply','Predict the effect on sea level if 03 halves.']]},
@@ -554,28 +574,28 @@ export function mountPlateStage(host: HTMLElement, opts: PlateOptions = {}): Pla
 
     {key:'ATOM',   name:'THE ATOM',        shapes:S_ATOM,
      anchors:[[0,0],[252,0],[-112,252]],
-     tags:[[-6,-300],[350,-70],[-340,300]],
+     tags:[[-6,-300],[350,-70],[-340,180]],
      qs:[[2,'Understand','Explain why the outer shell governs bonding here.'],
          [4,'Analyze','Which bond breaks first under heat? Justify from the figure.'],
          [6,'Create','Design a stable variant that uses one fewer electron.']]},
 
     {key:'CIRCUIT',name:'THE CIRCUIT',     shapes:S_CIRCUIT,
      anchors:[[0,-194],[250,4],[0,170]],
-     tags:[[-60,-300],[380,60],[190,270]],
+     tags:[[-60,-300],[330,130],[190,270]],
      qs:[[1,'Remember','Identify the component at 01 and give its unit.'],
          [4,'Analyze','The lamp dims. Which single failure best explains it?'],
          [3,'Apply','Compute the current if the resistance doubles.']]},
 
     {key:'ORBIT',  name:'THE ORBIT',       shapes:S_ORBIT,
      anchors:[[0,0],[204,62],[-286,-60]],
-     tags:[[-40,-250],[330,190],[-360,-160]],
+     tags:[[-40,-250],[330,190],[-330,220]],
      qs:[[2,'Understand','Explain why the outermost body has the longest period.'],
          [5,'Evaluate','Judge which orbit best suits a survey mission, and why.'],
          [3,'Apply','Predict the effect on period if the central mass doubles.']]},
 
     {key:'CYCLE',  name:'THE WATER CYCLE', shapes:S_CYCLE,
      anchors:[[10,-160],[254,-214],[60,206]],
-     tags:[[-140,-290],[352,-300],[300,262]],
+     tags:[[-140,-290],[360,-380],[300,262]],
      qs:[[1,'Remember','Label the stage at which water leaves the surface.'],
          [4,'Analyze','Clearing the slope at 03 — trace the downstream effect.'],
          [6,'Create','Design one intervention that increases retention here.']]},
@@ -729,6 +749,8 @@ export function mountPlateStage(host: HTMLElement, opts: PlateOptions = {}): Pla
       R(m,24,25,[null,0,W('violet')]);/* the meter marks      */
       m[26]=[null,0,W('violet')];     /* voltmeter            */
       m[27]=[null,0,W('violet')];
+      m[29]=[null,0,W('violet')];     /* the meter leads      */
+      R(m,30,31,[W('red'),.95,W('red')]); /* the taps         */
       m[28]=[null,0,W('amber')];      /* switch lever         */
       return m;})(),
 
@@ -845,18 +867,19 @@ export function mountPlateStage(host: HTMLElement, opts: PlateOptions = {}): Pla
   /* ══════════════════════════════════════════════════════════════════
      THE INK SYSTEM
      ------------------------------------------------------------------
-     The page owns a FIXED INVENTORY OF INK: 52 persistent strands, each
-     carrying 32 points. It is created once, at load, and never destroyed.
+     The page owns a FIXED INVENTORY OF INK: a set of persistent strands
+     (sized to the busiest plate) each carrying 44 points. It is created
+     once, at load, and never destroyed.
 
      A "scene" is not a drawing — it is an instruction telling those same
-     52 strands where to sit. CELL is one configuration. ATOM is another.
+     strands where to sit. CELL is one configuration. ATOM is another.
      Scrolling does not erase a plate and draw the next one; it tells the
      ink to become the next idea, and the ink travels across the page to
      get there.
 
           Scene geometry
                ↓  normalizeScene()      primitives → sampled polylines
-               ↓  allocateStrands()     → exactly 52 strands, 32 pts each
+               ↓  allocateStrands()     → one strand inventory, 44 pts each
                ↓  correspond()          greedy least-cost source→target
                ↓  align()               reversal + rotational phase
                ↓  morph()               bezier flow field + hierarchy
@@ -868,7 +891,7 @@ export function mountPlateStage(host: HTMLElement, opts: PlateOptions = {}): Pla
      ══════════════════════════════════════════════════════════════════ */
 
   var UID='pl'+Math.floor(Math.random()*1e9).toString(36);
-  var STRANDS=0, PTS=34;
+  var STRANDS=0, PTS=44;
   var ART_Y=452, ART_X_RIGHT=1040, ART_X_LEFT=560;
   /* Smaller than the original card: ~47% less area, so a column of three
      reads as a compact log rather than three posters stacked in a rail. */
@@ -1050,7 +1073,7 @@ export function mountPlateStage(host: HTMLElement, opts: PlateOptions = {}): Pla
 
   /* ══════════════════════════════════════════════════════════
      2 · STRAND ALLOCATOR
-     The 52 strands are shared out by ink length, so a long
+     The strands are shared out by ink length, so a long
      membrane gets many and a tick mark gets one. Long contours
      are split; the split pieces stay adjacent in the pool.
      ══════════════════════════════════════════════════════════ */
@@ -1591,9 +1614,14 @@ export function mountPlateStage(host: HTMLElement, opts: PlateOptions = {}): Pla
   }
 
   /* living idle — a settled plate is never mathematically frozen.
-     Whole-strand drift only; nothing is added while the ink is in flight. */
-  function idle(k,amount,phase){
-    var w=Math.sin(k*1.7+phase)*amount, w2=Math.cos(k*2.3+phase*0.8)*amount;
+     Whole-strand drift only; nothing is added while the ink is in flight.
+     Keyed to the strand's FAMILY, not its slot: a long orbit is several
+     adjacent strands, and drift keyed by slot moved each piece a
+     slightly different amount — the seams opened and a closed ellipse
+     read as a broken circle. All pieces of one contour share a family,
+     so they now breathe as one line. */
+  function idle(fam,amount,phase){
+    var w=Math.sin(fam*1.7+phase)*amount, w2=Math.cos(fam*2.3+phase*0.8)*amount;
     for(var i=0;i<PTS;i++){bufX[i]+=w2*0.7;bufY[i]+=w}
   }
 
@@ -1655,7 +1683,7 @@ export function mountPlateStage(host: HTMLElement, opts: PlateOptions = {}): Pla
       {sh:[0],      t:'bre', px:0, py:0, amp:0.035, sp:1.05},
       /* the ice giant and its ring, slowest of everything — it has
          the farthest orbit, so it should read as the farthest */
-      {sh:[30,31],  t:'ell', rx:382, ry:164, rot:0, sp:0.16},
+      {sh:[30,31],  t:'ell', rx:344, ry:146, rot:0, sp:0.16},
       /* the moon rides the ringed planet's own orbit at the same
          angular speed, holding a fixed lead/lag ahead of it rather
          than drifting off on its own */
@@ -1867,14 +1895,14 @@ export function mountPlateStage(host: HTMLElement, opts: PlateOptions = {}): Pla
   var NOTES={
     GLOBE:[[-60,-90,-320,-238,'CONTINENT','green'],[190,150,60,300,'OCEAN','blue'],
            [0,-232,-140,-300,'POLAR ICE','teal'],[-250,0,-330,58,'EQUATOR','amber']],
-    CELL:[[-82,-58,-300,-190,'NUCLEUS','violet'],[146,116,90,300,'MITOCHONDRION','red'],
+    CELL:[[-82,-58,-300,-120,'NUCLEUS','violet'],[146,116,90,300,'MITOCHONDRION','red'],
           [0,-248,-215,-318,'CELL MEMBRANE','green'],[158,-122,150,-300,'VACUOLE','blue']],
     ATOM:[[0,0,-235,-235,'NUCLEUS','red'],[252,0,326,-236,'ELECTRON','teal'],
           [-126,-218,120,-300,'ORBITAL SHELL','violet'],[-112,252,-232,286,'COVALENT BOND','green']],
     CIRCUIT:[[0,-194,-290,-285,'RESISTOR','orange'],[250,0,150,-125,'CAPACITOR','blue'],
              [0,170,-290,250,'LAMP','amber'],[-250,0,-330,-95,'BATTERY','red']],
     ORBIT:[[0,0,-215,-240,'THE SUN','red'],[204,62,338,232,'PLANET','amber'],
-           [-250,-100,-196,-300,'ORBITAL PATH','violet'],[-286,-60,-330,55,'OUTER BODY','blue']],
+           [-250,-100,-196,-300,'ORBITAL PATH','violet'],[-286,-60,-320,170,'OUTER BODY','blue']],
     CYCLE:[[254,-214,110,-320,'THE SUN','red'],[10,-184,-300,-250,'CLOUD','blue'],
            [200,60,150,318,'EVAPORATION','teal'],[-186,-24,-330,105,'RUNOFF','green']],
     NEURON:[[-12,2,-70,-255,'SOMA','pink'],[224,-2,300,-215,'MYELIN SHEATH','amber'],
@@ -2144,7 +2172,7 @@ export function mountPlateStage(host: HTMLElement, opts: PlateOptions = {}): Pla
       var la=1;
       if(nearFrom>0.004)la*=applyLive(A.sc.key,sa,TT,nearFrom*(1-mres.u));
       if(nearTo>0.004)  la*=applyLive(B.sc.key,sb2,TT,nearTo*mres.u);
-      if(idleAmt>0.002)idle(k,idleAmt,phase);
+      if(idleAmt>0.002)idle((localT<0.5?sa.gid:sb2.gid),idleAmt,phase);
       var ca=resolveCol(sa.col), cb=resolveCol(sb2.col);
       /* premium keeps its colour until the line is nearly landed — a strand
          that changes identity mid-air reads as a glitch, one that arrives

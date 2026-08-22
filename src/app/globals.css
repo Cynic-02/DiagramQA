@@ -1089,23 +1089,29 @@
 .shadow-\[2px_2px_0_var\(--line\)\]  { --tw-shadow: 0 0 #0000; box-shadow: 2px 2px 0 var(--line); }
 
 /* ==================================================================
-   THE FIELD — ambient colour under the graph paper.
+   THE FIELD — ink soaked through from the back of the paper.
 
-   Two very large, very soft radial washes: cool at the top left, warm
-   at the bottom right. They are not decoration for its own sake. The
-   product's whole colour argument is the Bloom spectrum running cool
-   to warm, and putting that same axis into the ground the page is
-   printed on means every screen is quietly making the argument before
-   a single question loads.
+   Reinvented. The old field was two clean discs, one blue and one
+   orange, parked in opposite corners — a gradient backdrop that
+   happened to sit behind the plate. This one is built from the
+   plate's OWN wash inks, the same --w-* colours the diagrams print
+   with: a cool cluster (blue at its heart, sky and teal blooming off
+   it) upper left, a warm cluster (orange, amber low, red at the rim)
+   lower right, and one broad violet breath bridging them across the
+   middle. That is the whole Bloom argument — cool to warm — expressed
+   as water damage in the paper rather than as a mesh gradient.
 
-   Rules that keep it from becoming a gradient background:
-     · it never touches type contrast — peak alpha is ~0.16 in light
-       and ~0.22 in dark, spread over 60vmax, so local contrast moves
-       by a fraction of a step;
-     · it lives BEHIND the dashed grid, so the paper still reads as
-       paper, not as a mesh gradient;
-     · it drifts on a 40-second cycle, which is slow enough that you
-       never catch it moving — and stops entirely under reduced motion.
+   Rules that keep it paper, not a poster:
+     · each cluster is several offset radial washes composited on one
+       layer, so no silhouette is a circle — the edges are uneven the
+       way ink through fibres is uneven, and the field can never read
+       as two blobs;
+     · every wash carries a two-stop alpha ramp peaking at ~0.22, so
+       contrast on anything that has to be read never moves more than
+       a fraction of a step;
+     · it stays BEHIND the dashed grid, drifts on slow 78s/84s loops
+       that are closed and coprime-ish so the pair never repeats a
+       figure together — and stops dead under reduced motion.
    ================================================================== */
 .aurora-field {
   position: fixed;
@@ -1116,66 +1122,84 @@
   /* Layout + paint only. `contain: strict` would add size containment,
      and this box takes its size from its insets. */
   contain: layout paint;
-  /* Turned up. At 0.58 over a warm cream paper the washes were doing the
-     work but staying below the threshold where you actually register
-     them as colour rather than as a slightly uneven page. The ceiling
-     here is contrast, not taste: type sits on card and paper surfaces
-     that are painted over this layer, so raising it moves the ground
-     under the glass without touching the contrast of anything that has
-     to be read. */
-  opacity: 0.9;
+  opacity: 0.92;
+  /* THE THIRD LAYER is the element itself: one broad, static violet
+     breath across the middle of the page. It is the bridge between
+     the drifting clusters — and because it never moves, the eye reads
+     the two cool/warm blooms against one steady ground instead of
+     three things sliding around. */
+  background:
+    radial-gradient(46vmax at 64% 32%,
+      color-mix(in srgb, var(--w-violet) 9%, transparent) 0%,
+      color-mix(in srgb, var(--w-violet) 4%, transparent) 44%,
+      transparent 74%);
 }
 .aurora-field::before,
 .aurora-field::after {
   content: '';
   position: absolute;
-  width: 50vmax;
-  height: 50vmax;
-  border-radius: 50%;
-  /* A radial-gradient with a soft alpha ramp, not a hard disc that has
-     been blurred — `filter: blur()` on something this large is a
-     genuinely expensive full-screen pass on every frame it moves. */
+  width: 92vmax;
+  height: 92vmax;
+  /* No border-radius on purpose: every wash fades to transparent well
+     inside the box, so the silhouette the eye finds is the cluster's
+     own uneven edge, not a clipped circle. No `filter: blur()`
+     either — on a layer this large that is a full-screen pass on
+     every frame it moves. */
   will-change: transform;
 }
 .aurora-field::before {
-  top: -4vmax;
-  left: -6vmax;
-  /* EARTH BLUE, NOT TEAL.
-     Swapped the cool wash from `--bloom-2` teal to `--f-ocean` — the
-     same light sea-blue the globe plate fills its own sphere with, so
-     the ambient field reads as the same ink as the diagram rather than
-     a separate Bloom tag colour. The ramp now moves lightness as well
-     as alpha — a deeper edge of the blue at the core, `--f-ocean` at
-     full strength through the middle, `--f-sea` (paler) toward the
-     rim — so the wash is a genuine dark-to-light gradient and not just
-     one flat hue fading to transparent. */
-  background: radial-gradient(circle at 50% 50%,
-    color-mix(in srgb, var(--f-ocean) 62%, black 14%) 0%,
-    color-mix(in srgb, var(--f-ocean) 46%, transparent) 30%,
-    color-mix(in srgb, var(--f-sea) 26%, transparent) 55%,
-    transparent 76%);
+  top: -20vmax;
+  left: -24vmax;
+  /* THE COOL CLUSTER. Blue at the heart (the same wash the atom shells
+     and the globe meridians print with), sky and teal blooming off it
+     at deliberately uneven offsets and radii. */
+  background:
+    radial-gradient(38vmax at 32% 28%,
+      color-mix(in srgb, var(--w-blue) 22%, transparent) 0%,
+      color-mix(in srgb, var(--w-blue) 10%, transparent) 38%,
+      transparent 70%),
+    radial-gradient(26vmax at 54% 12%,
+      color-mix(in srgb, var(--w-sky) 18%, transparent) 0%,
+      color-mix(in srgb, var(--w-sky) 8%, transparent) 40%,
+      transparent 66%),
+    radial-gradient(20vmax at 14% 52%,
+      color-mix(in srgb, var(--w-teal) 15%, transparent) 0%,
+      color-mix(in srgb, var(--w-teal) 7%, transparent) 42%,
+      transparent 62%),
+    radial-gradient(56vmax at 32% 28%,
+      color-mix(in srgb, var(--w-blue) 9%, transparent) 0%,
+      color-mix(in srgb, var(--w-blue) 4%, transparent) 46%,
+      transparent 78%);
   animation: aurora-drift-a 78s linear infinite;
 }
 .aurora-field::after {
-  right: -6vmax;
-  bottom: -4vmax;
-  /* Same treatment on the warm end: a darker edge of `--bloom-5` at the
-     core lightening through the wash before it fades, instead of one
-     flat orange at falling alpha. */
-  background: radial-gradient(circle at 50% 50%,
-    color-mix(in srgb, var(--bloom-5) 58%, black 14%) 0%,
-    color-mix(in srgb, var(--bloom-5) 42%, transparent) 30%,
-    color-mix(in srgb, var(--red) 20%, transparent) 55%,
-    transparent 76%);
+  right: -24vmax;
+  bottom: -20vmax;
+  /* THE WARM CLUSTER. Orange at the heart, amber blooming low and
+     inside it, red only at the far rim — the cool-to-warm spectrum
+     ending the way the plate's own pen inks end. */
+  background:
+    radial-gradient(36vmax at 66% 70%,
+      color-mix(in srgb, var(--w-orange) 21%, transparent) 0%,
+      color-mix(in srgb, var(--w-orange) 10%, transparent) 38%,
+      transparent 70%),
+    radial-gradient(24vmax at 56% 86%,
+      color-mix(in srgb, var(--w-amber) 18%, transparent) 0%,
+      color-mix(in srgb, var(--w-amber) 8%, transparent) 40%,
+      transparent 66%),
+    radial-gradient(22vmax at 86% 52%,
+      color-mix(in srgb, var(--w-red) 13%, transparent) 0%,
+      color-mix(in srgb, var(--w-red) 6%, transparent) 42%,
+      transparent 64%),
+    radial-gradient(54vmax at 68% 72%,
+      color-mix(in srgb, var(--w-orange) 9%, transparent) 0%,
+      color-mix(in srgb, var(--w-orange) 4%, transparent) 46%,
+      transparent 78%);
   animation: aurora-drift-b 84s linear infinite;
 }
-/* Slow and wide, not a corner wobble. Each wash now walks a loop across
-   a real fraction of the page — tens of vmax of travel over 78s/84s —
-   instead of jittering a few vmax inside its own corner. Four stops
-   instead of a two-point alternate so the path reads as drifting
-   rather than bouncing, and the loop closes on itself so the animation
-   can run infinite without a visible seam. Coprime-ish durations keep
-   the pair from ever settling into a repeating pattern together. */
+/* Same loops the field has always walked: four stops each, closing on
+   themselves so the infinite run has no seam, tens of vmax of travel
+   over 78s/84s so it reads as drifting, never bouncing. */
 @keyframes aurora-drift-a {
   0%   { transform: translate3d(-4vmax, -2vmax, 0) scale(1); }
   25%  { transform: translate3d(24vmax, 12vmax, 0) scale(1.12); }
@@ -1192,7 +1216,9 @@
 }
 /* It is the first element in the body and carries z-index 0, so every
    later sibling paints over it without needing a z-index of its own.
-   No stacking context is created anywhere else to fight with. */
+   No stacking context is created anywhere else to fight with. The
+   wash tokens themselves already darken for the dark theme, so all
+   the field needs is a little less presence. */
 [data-theme="dark"] .aurora-field { opacity: 0.6; }
 
 @media (prefers-reduced-motion: reduce) {
