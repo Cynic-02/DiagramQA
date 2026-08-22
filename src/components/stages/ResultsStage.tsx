@@ -498,7 +498,7 @@ export function ResultsStage() {
                  with a question floating at the top. Even and hollow is
                  worse than uneven. Rows are content-sized again; the
                  cards inside a row still match each other. */
-              <div className="grid w-full gap-5 md:grid-cols-2 min-[1800px]:grid-cols-3">
+              <div className="grid w-full gap-6 md:grid-cols-2 min-[1500px]:grid-cols-3 min-[2100px]:grid-cols-4">
                 <AnimatePresence mode="popLayout">
                   {filteredQA.map((qa, i) => (
                     <FinalQACard key={qa.id} qa={qa} index={i} revealAll={revealAll} />
@@ -844,55 +844,69 @@ function FinalQACard({
          field and the graph paper carry on underneath the card; the
          border stays hard ink at full strength, which is what keeps a
          see-through panel from losing its own edges. */
-      className="lift glass-surface group flex h-full min-h-[300px] overflow-hidden rounded-[var(--r-l)] border-2 border-[var(--line)] shadow-[3px_3px_0_var(--line)]"
-      style={{ '--sh': '3px' } as React.CSSProperties}
+      className="lift glass-surface group flex h-full min-h-[236px] overflow-hidden rounded-[var(--r-l)] border-2 border-[var(--line)] shadow-[2px_2px_0_var(--line)]"
+      style={{ '--sh': '2px' } as React.CSSProperties}
     >
       {/* the Bloom spine */}
       <span
-        className="w-[6px] shrink-0 rounded-none"
+        className="w-[5px] shrink-0 rounded-none"
         style={{ background: meta.hue }}
         aria-hidden
         title={qa.bloomLevel}
       />
 
+      {/* FOUR ZONES, FOUR GROUNDS.
+          Title, question, working area, verdict. Each partition sits on
+          its own surface, stepped down the same Bloom hue — 22% for the
+          title bar, 8% for the question, bare glass for the working
+          area, card for the verdict. One colour, four values: the card
+          is legible as a structure before a single word of it is read,
+          and it does not cost a second colour to say so. */}
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* ---- question ----
-            Two grounds, one card. The question sits on a whisper of its
-            own Bloom hue and the working area below sits on paper, so
-            "what is being asked" and "what you do about it" are told
-            apart by the surface they are printed on rather than by yet
-            another rule. Nine percent is the whole budget — any more and
-            six of these in a column turn the page into a paint chart. */}
+        {/* ---- zone 1 · title ---- */}
         <div
-          className="flex items-start gap-3 border-b-2 border-[var(--line)]/12 px-4 py-3.5"
-          style={{ background: `color-mix(in srgb, ${meta.hue} 13%, transparent)` }}
+          className="flex shrink-0 items-center gap-2 border-b-2 border-[var(--line)]/12 px-3 py-1.5"
+          style={{ background: `color-mix(in srgb, ${meta.hue} 24%, transparent)` }}
         >
-          <span
-            className="mt-[1px] shrink-0 font-[family-name:var(--font-archivo)] text-[22px] font-black leading-none text-transparent"
-            style={{ WebkitTextStroke: '1.5px var(--ink)', paintOrder: 'stroke fill' }}
-            aria-label={`Question ${index + 1}`}
-          >
+          <span className="font-[family-name:var(--font-archivo)] text-[11.5px] font-black uppercase leading-none tracking-[0.04em]">
             Q{index + 1}
           </span>
-          <p className="min-w-0 flex-1 text-[14.5px] font-bold leading-snug">{qa.question}</p>
-          <ScoreRing score={qa.score} pending={!showAnswer} pass={pass} />
-          <button
-            type="button"
-            onClick={copyQA}
-            aria-label="Copy Q&A"
-            className="shrink-0 rounded-[var(--r-xs)] border-[1.5px] border-transparent p-1 text-[var(--ink-2)] opacity-0 transition-all hover:border-[var(--line)] hover:bg-[var(--yellow)] hover:text-[#0a0a0a] focus-visible:opacity-100 group-hover:opacity-100"
+          <span
+            className="rounded-[var(--r-xs)] border-[1.5px] border-[var(--line)] px-1.5 py-[2px] font-mono text-[8.5px] font-bold uppercase leading-none tracking-[0.12em]"
+            style={{ backgroundColor: meta.hue, color: meta.fg }}
           >
-            {copied ? <CheckCheck className="size-3.5" /> : <Copy className="size-3.5" />}
-          </button>
+            {qa.bloomLevel}
+          </span>
+          <span className="truncate font-mono text-[8.5px] uppercase tracking-[0.12em] text-[var(--ink-2)]">
+            {qa.cognitiveSkill}
+          </span>
+          <span className="ml-auto flex shrink-0 items-center gap-1">
+            <ScoreRing score={qa.score} pending={!showAnswer} pass={pass} />
+            <button
+              type="button"
+              onClick={copyQA}
+              aria-label="Copy Q&A"
+              className="shrink-0 rounded-[var(--r-xs)] border-[1.5px] border-transparent p-1 text-[var(--ink-2)] opacity-0 transition-all hover:border-[var(--line)] hover:bg-[var(--yellow)] hover:text-[#0a0a0a] focus-visible:opacity-100 group-hover:opacity-100"
+            >
+              {copied ? <CheckCheck className="size-3.5" /> : <Copy className="size-3.5" />}
+            </button>
+          </span>
         </div>
 
-        {/* ---- options / answer ----
+        {/* ---- zone 2 · the question ---- */}
+        <div
+          className="shrink-0 border-b-2 border-[var(--line)]/10 px-3.5 py-2.5"
+          style={{ background: `color-mix(in srgb, ${meta.hue} 8%, transparent)` }}
+        >
+          <p className="text-[13px] font-bold leading-snug">{qa.question}</p>
+        </div>
+
+        {/* ---- zone 3 · the working area ----
             `justify-center` so a card that only has a "Show answer"
-            button in this slot doesn't leave it stranded at the top of
-            the now-taller (min-h-[300px]) card with a wall of empty
-            paper underneath — the content centers in whatever room the
-            square-ish card gives it instead. */}
-        <div className="glass-inner flex flex-1 flex-col justify-center gap-2.5 px-4 py-3">
+            button in this slot doesn't leave it stranded at the top with
+            a wall of empty paper underneath — the content centres in
+            whatever room the card gives it. */}
+        <div className="glass-inner flex flex-1 flex-col justify-center gap-2 px-3.5 py-2.5">
           {isMcq && (
             <ul className="space-y-1.5">
               {qa.options!.map((opt, i) => {
@@ -958,21 +972,17 @@ function FinalQACard({
           )}
         </div>
 
-        {/* ---- verdict strip ---- */}
-        <div className="mt-auto flex flex-wrap items-center gap-2 border-t-2 border-[var(--line)]/15 bg-[color-mix(in_srgb,var(--card)_45%,transparent)] px-4 py-2">
-          <span
-            className="rounded-[var(--r-xs)] border-[1.5px] border-[var(--line)] px-2 py-[2px] font-mono text-[9.5px] font-bold uppercase tracking-[0.12em]"
-            style={{ backgroundColor: meta.hue, color: meta.fg }}
-          >
-            {qa.bloomLevel}
-          </span>
-          <span className="font-mono text-[9.5px] uppercase tracking-[0.12em] text-[var(--ink-2)]">
-            {qa.cognitiveSkill}
-          </span>
-          {showAnswer && (
+        {/* ---- zone 4 · the verdict ----
+             The level and the skill moved up into the title bar, where
+             they belong: they identify the card, they are not a
+             conclusion about it. This strip now carries only the thing
+             the pipeline actually decided. */}
+        <div className="mt-auto flex shrink-0 flex-wrap items-center gap-2 border-t-2 border-[var(--line)]/15 bg-[color-mix(in_srgb,var(--card)_50%,transparent)] px-3.5 py-1.5">
+          <span className="fig-label">Verifier</span>
+          {showAnswer ? (
             <span
               className={cn(
-                'ml-auto inline-flex items-center gap-1.5 rounded-[var(--r-xs)] border-[1.5px] px-2 py-[2px] font-mono text-[9.5px] font-bold uppercase tracking-[0.12em]',
+                'ml-auto inline-flex items-center gap-1.5 rounded-[var(--r-xs)] border-[1.5px] px-2 py-[2px] font-mono text-[9px] font-bold uppercase tracking-[0.12em]',
                 pass
                   ? 'border-[var(--line)] bg-[var(--bloom-3)] text-[#0a0a0a]'
                   : 'border-[var(--red)] bg-[color-mix(in_srgb,var(--red)_12%,transparent)] text-[var(--red)]',
@@ -980,6 +990,10 @@ function FinalQACard({
             >
               {pass ? <Check className="size-2.5" strokeWidth={3.5} /> : <AlertTriangle className="size-2.5" />}
               {pass ? 'verified' : 'flagged'}
+            </span>
+          ) : (
+            <span className="ml-auto font-mono text-[9px] uppercase tracking-[0.12em] text-[var(--ink-2)]">
+              hidden until answered
             </span>
           )}
         </div>

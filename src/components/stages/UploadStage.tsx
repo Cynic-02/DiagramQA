@@ -565,11 +565,18 @@ export function UploadStage() {
       <div className="scroll-slim flex min-h-0 flex-1 flex-col overflow-y-auto px-5 py-4 md:px-8">
         {hasRunDiagram ? (
           /* ---------- post-launch: the run is registered ---------- */
+          /* The registered-run panel used to be a `max-w-[1100px]` card
+             sitting at the top of an otherwise empty deck: a small box
+             marooned in three-quarters of a screen of graph paper, with
+             the diagram — the one thing worth looking at here — printed
+             at thumbnail size inside it. It now takes the deck's full
+             height and width, and the preview gets every pixel that is
+             left after the configuration column. */
           <motion.section
             {...rise(0.04)}
-            className="paper clip mx-auto w-full max-w-[1100px]"
+            className="glass-surface clip flex min-h-0 w-full flex-1 flex-col border-2 border-[var(--line)] shadow-[3px_3px_0_var(--line)]"
           >
-            <header className="flex flex-wrap items-center gap-3 border-b-2 border-[var(--line)]/20 px-4 py-3">
+            <header className="flex shrink-0 flex-wrap items-center gap-3 border-b-2 border-[var(--line)]/20 px-4 py-3">
               <span
                 className={cn(
                   'size-2.5 rounded-full',
@@ -585,26 +592,34 @@ export function UploadStage() {
               </span>
             </header>
 
-            <div className="grid gap-0 md:grid-cols-[minmax(0,1fr)_300px]">
-              <div className="flex items-center justify-center bg-[var(--paper)] p-6">
+            <div className="grid min-h-0 flex-1 gap-0 md:grid-cols-[minmax(0,1fr)_290px]">
+              <div className="grid-faint flex min-h-0 items-center justify-center p-6">
                 {previewUrl?.startsWith('data:application/pdf') ? (
                   <div className="flex h-52 flex-col items-center justify-center gap-2 text-[var(--ink-2)]">
                     <FileText className="size-12" />
                     <span className="font-mono text-xs uppercase tracking-widest">PDF source</span>
                   </div>
                 ) : (
-                  <Lens lensSize={320} zoomFactor={2.1}>
+                  /* Fill the bay, keep the ratio. `object-contain` on a
+                     box that is itself 100%×100% of the cell scales the
+                     diagram up to whichever of width or height runs out
+                     first and stops — so it is as large as it can be
+                     without ever being cropped or stretched. The old
+                     `w-auto` + `max-h` pair capped it at the image's own
+                     intrinsic size, which is why a 1360×680 export sat
+                     small in the middle of a half-empty panel. */
+                  <Lens lensSize={380} zoomFactor={2.1} className="flex h-full w-full items-center justify-center">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={previewUrl ?? ''}
                       alt={previewName ?? 'Diagram preview'}
-                      className="max-h-[230px] w-auto max-w-full rounded-[var(--r-s)] border-[1.5px] border-[var(--line)]/50 object-contain"
+                      className="h-full max-h-full w-full max-w-full rounded-[var(--r-s)] border-[1.5px] border-[var(--line)]/50 bg-[var(--surface)] object-contain"
                     />
                   </Lens>
                 )}
               </div>
 
-              <div className="flex flex-col gap-4 border-t-2 border-[var(--line)]/20 p-5 md:border-l-2 md:border-t-0">
+              <div className="flex min-h-0 flex-col gap-4 overflow-y-auto border-t-2 border-[var(--line)]/20 p-5 md:border-l-2 md:border-t-0">
                 <div>
                   <div className="fig-label">Configuration</div>
                   <dl className="mt-3 space-y-2">
@@ -658,7 +673,7 @@ export function UploadStage() {
                Both columns now consume the height they are given, so the
                drop target grows into the space instead of a void
                opening under it. */
-            className="grid min-h-0 flex-1 items-stretch gap-4 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]"
+            className="grid min-h-0 flex-1 items-stretch gap-6 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]"
           >
             {/* ================= A · SOURCE ================= */}
             <section className="glass-surface flex min-h-0 min-w-0 flex-col overflow-hidden border-2 border-[var(--line)] shadow-[4px_4px_0_var(--line)]">
@@ -786,7 +801,7 @@ export function UploadStage() {
             </section>
 
             {/* ================= B / C / D · SETTINGS ================= */}
-            <div className="flex min-h-0 min-w-0 flex-col gap-4">
+            <div className="flex min-h-0 min-w-0 flex-col gap-6">
               <Instrument
                 index="B"
                 title="Cognitive level"
@@ -837,7 +852,7 @@ export function UploadStage() {
                 </div>
               </Instrument>
 
-              <div className="grid min-h-0 flex-1 gap-4 sm:grid-cols-2">
+              <div className="grid min-h-0 flex-1 gap-6 sm:grid-cols-2">
                 <Instrument
                   index="C"
                   title="Output shape"

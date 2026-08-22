@@ -31,8 +31,12 @@ import { BLOOM_META } from '@/lib/bloom'
 import { cn } from '@/lib/utils'
 import { ShaderLogo } from '@/components/shader-icons'
 
-const EXPANDED_WIDTH = 264
-const COLLAPSED_WIDTH = 68
+/* The rail is a table of contents, not a panel. At 264px it was taking
+   a seventh of a 1920 screen to show six short labels and a progress
+   bar, and every stage below it lost that width for its actual work.
+   208 still fits "Question Generation" on one line at its type size. */
+const EXPANDED_WIDTH = 208
+const COLLAPSED_WIDTH = 60
 
 interface PipelineSidebarProps {
   collapsed: boolean
@@ -47,7 +51,7 @@ export function PipelineSidebar({ collapsed, variant = 'rail' }: PipelineSidebar
       animate={{ width: collapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH }}
       transition={{ type: 'spring', stiffness: 340, damping: 38 }}
       aria-label="Pipeline navigation"
-      className="relative z-20 hidden min-h-0 shrink-0 border-r-[3px] border-[var(--line)] bg-[var(--card)] lg:flex lg:flex-col"
+      className="relative z-20 hidden min-h-0 shrink-0 border-r-2 border-[var(--line)] bg-[var(--card)] lg:flex lg:flex-col"
     >
       <SidebarContent collapsed={collapsed} variant="rail" />
     </motion.aside>
@@ -76,8 +80,8 @@ function SidebarContent({
       {/* ---------- mark ---------- */}
       <header
         className={cn(
-          'flex h-12 shrink-0 items-center border-b-[3px] border-[var(--line)]',
-          collapsed ? 'justify-center px-1' : 'justify-between px-3',
+          'flex h-12 shrink-0 items-center border-b-2 border-[var(--line)]',
+          collapsed ? 'justify-center px-1' : 'justify-between px-2.5',
         )}
       >
         <Link
@@ -87,7 +91,12 @@ function SidebarContent({
         >
           <ShaderLogo size={collapsed ? 20 : 16} />
           {!collapsed && (
-            <span className="font-[family-name:var(--font-archivo)] text-[13px] font-black uppercase tracking-[-0.02em] text-[var(--ink)]">
+            /* The wordmark is DiagramMind, not DIAGRAMMIND. Two capitals
+               inside one word are the whole shape of the name — flatten
+               them with `uppercase` and it reads as one long unbroken run
+               of letters. Everything else in this rail stays uppercased;
+               the name is the exception. */
+            <span className="font-[family-name:var(--font-archivo)] text-[13px] font-black tracking-[-0.02em] text-[var(--ink)]">
               DiagramMind
             </span>
           )}
@@ -102,8 +111,8 @@ function SidebarContent({
       {/* ---------- progress ---------- */}
       <div
         className={cn(
-          'shrink-0 border-b-[3px] border-[var(--line)]',
-          collapsed ? 'px-2 py-2.5' : 'px-3 py-2.5',
+          'shrink-0 border-b-2 border-[var(--line)]',
+          collapsed ? 'px-2 py-2' : 'px-2.5 py-2',
         )}
       >
         {!collapsed && (
@@ -116,13 +125,13 @@ function SidebarContent({
             </span>
           </div>
         )}
-        <div className="flex h-2 border-2 border-[var(--line)]">
+        <div className="flex h-2 overflow-hidden rounded-[var(--r-xs)] border-[1.5px] border-[var(--line)]">
           {STAGE_ORDER.map((id, i) => (
             <span
               key={id}
               className={cn(
-                'flex-1 transition-colors duration-200',
-                i > 0 && 'border-l-2 border-[var(--line)]',
+                'flex-1 rounded-none transition-colors duration-200',
+                i > 0 && 'border-l-[1.5px] border-[var(--line)]',
                 i <= reachedIndex
                   ? stages[id]?.status === 'error'
                     ? 'bg-[var(--red)]'
@@ -162,7 +171,7 @@ function SidebarContent({
       {variant === 'rail' && (
         <div
           className={cn(
-            'flex h-10 shrink-0 items-center border-t-[3px] border-[var(--line)]',
+            'flex h-9 shrink-0 items-center border-t-2 border-[var(--line)]',
             collapsed ? 'justify-center px-1' : 'justify-end px-2',
           )}
         >
@@ -218,7 +227,7 @@ function StageRow({
       className={cn(
         'group relative flex w-full items-center border-b-2 border-[var(--line)]/30 text-left',
         'transition-[background-color] duration-[90ms] ease-[cubic-bezier(.2,0,0,1)]',
-        collapsed ? 'justify-center px-1 py-2.5' : 'gap-2.5 px-3 py-2.5',
+        collapsed ? 'justify-center px-1 py-2' : 'gap-2 px-2.5 py-2',
         locked && 'opacity-40',
         active ? 'bg-[var(--yellow)]' : 'hover:bg-[var(--muted)]',
       )}

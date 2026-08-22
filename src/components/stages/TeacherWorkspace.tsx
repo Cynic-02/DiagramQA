@@ -199,7 +199,7 @@ export function TeacherWorkspace({ runId, questions, onQuestionsUpdate }: Teache
        changed shape depending on which tab you were on. Same grid, same
        even rows — the only difference between the two modes should be
        what you can do to a question, not how wide it is. */
-    <div className="grid gap-4 xl:grid-cols-2 min-[2000px]:grid-cols-3">
+    <div className="grid gap-6 xl:grid-cols-2 min-[2000px]:grid-cols-3">
       {questions.map((q, idx) => {
         const isEditing = editingId === q.id
         const isLoading = loadingId === q.id

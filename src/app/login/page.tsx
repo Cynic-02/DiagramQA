@@ -190,7 +190,7 @@ export default function LoginPage() {
     <div className="plate-login">
       {/* ---- chrome ---- */}
       <div className="chrome">
-        <Link href="/">← DiagramMind</Link>
+        <Link href="/" className="wordmark">← DiagramMind</Link>
         <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
           <span className="lbl beatread">PLATE · {plate}</span>
           <ThemeBtn />
@@ -206,7 +206,7 @@ export default function LoginPage() {
               ◆
             </span>
             <span className="lbl" style={{ color: 'var(--ink)' }}>
-              DiagramMind · multi-agent pipeline
+              <b className="wordmark">DiagramMind</b> · multi-agent pipeline
             </span>
           </div>
           <h2 className="pitch">
@@ -251,7 +251,7 @@ export default function LoginPage() {
             <div className="face" inert={flipped}>
               <Spectrum />
               <div className="facehead">
-                <span className="lbl" style={{ color: 'var(--ink)' }}>
+                <span className="wordmark" style={{ color: 'var(--ink)' }}>
                   DiagramMind
                 </span>
                 <span className="lbl">ID · 2026</span>
@@ -324,7 +324,7 @@ export default function LoginPage() {
             <div className="face back" inert={!flipped}>
               <Spectrum />
               <div className="facehead">
-                <span className="lbl" style={{ color: 'var(--ink)' }}>
+                <span className="wordmark" style={{ color: 'var(--ink)' }}>
                   DiagramMind
                 </span>
                 <span className="lbl">NEW · 2026</span>

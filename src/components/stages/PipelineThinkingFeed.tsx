@@ -11,13 +11,29 @@
  * every ~10 seconds, and there was no way to scroll back and re-read what
  * an earlier agent had actually said.
  *
- * This component replaces that sequence, for the whole time the pipeline
- * is actively running. Every agent's console lives in one scrolling feed,
- * stacked top to bottom in run order, like a chat thread: an agent that
- * has finished settles into a read-only, "done" bubble and stays put —
- * it is never unmounted — while only the newest agent is actively
- * "typing". The page itself never changes; it just grows downward, and
- * auto-scrolls to keep the live agent in view.
+ * THE GROUP CHAT
+ * --------------
+ * The feed was already a thread in behaviour — agents speak in turn,
+ * nothing is torn down, it grows downward — but it did not LOOK like one.
+ * Five identical full-width panels stacked vertically read as a report
+ * with five sections, not as five participants talking, and a reader had
+ * to check the header of each panel to work out who was speaking.
+ *
+ * So it is drawn as a group chat now, and the chat conventions are doing
+ * real work rather than being decoration:
+ *
+ *   · a persistent avatar gutter — the agent's colour and initial sit in
+ *     the margin, so who is speaking is legible in peripheral vision
+ *     without reading a word;
+ *   · bubbles with a tail pointing back at their speaker, capped short
+ *     of full width so the thread has a ragged right edge like a real
+ *     conversation instead of a column of blocks;
+ *   · consecutive turns by the same agent group under one avatar;
+ *   · a day-divider style rule between agents, carrying the handoff
+ *     ("Vision → Generator"), because in this thread the handoff IS the
+ *     information — it is the pipeline advancing a stage;
+ *   · the live agent shows a typing indicator; finished ones settle to a
+ *     quiet, read-only bubble with a timestamp.
  *
  * Wired in from app/app/page.tsx: shown instead of the normal per-stage
  * switch whenever `running` is true and the active stage is one of the
@@ -29,7 +45,8 @@
 import * as React from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 import { usePipelineStore } from '@/lib/store'
-import type { StageId } from '@/lib/types'
+import { STAGES, type StageId } from '@/lib/types'
+import { cn } from '@/lib/utils'
 import { AgentThinkingConsole } from './AgentThinkingConsole'
 
 const FEED_ORDER: StageId[] = ['extraction', 'generation', 'answering', 'verification', 'results']
@@ -40,6 +57,28 @@ const STAGE_LABEL: Partial<Record<StageId, string>> = {
   answering: 'Solver agent answering blind…',
   verification: 'Critic agent cross-checking Q&A pairs…',
   results: 'Curator agent assembling the verified set…',
+}
+
+/** Each speaker gets one hue off the Bloom spectrum and keeps it. */
+const AGENT_HUE: Record<string, string> = {
+  extraction: 'var(--bloom-1)',
+  generation: 'var(--bloom-3)',
+  answering: 'var(--bloom-2)',
+  verification: 'var(--bloom-5)',
+  results: 'var(--bloom-6)',
+}
+
+/** Readable ink on each of those hues. */
+const AGENT_FG: Record<string, string> = {
+  extraction: '#ffffff',
+  generation: '#0a0a0a',
+  answering: '#ffffff',
+  verification: '#0a0a0a',
+  results: '#ffffff',
+}
+
+function agentName(id: StageId): string {
+  return STAGES.find((s) => s.id === id)?.agent ?? id
 }
 
 export function PipelineThinkingFeed() {
@@ -61,23 +100,31 @@ export function PipelineThinkingFeed() {
   return (
     <div className="flex h-full min-h-0 flex-col">
       {/* ---- masthead ---- */}
-      <div className="shrink-0 border-b-2 border-[var(--line)] bg-[var(--card)] px-5 py-3.5 md:px-8">
-        <div className="lbl text-[var(--ink-2)]">Pipeline · live</div>
-        <h1 className="font-[family-name:var(--font-archivo)] text-xl font-black uppercase leading-none tracking-[-0.03em] md:text-2xl">
-          Agents at work
-        </h1>
-        <p className="mt-1.5 max-w-3xl text-[12px] leading-snug text-[var(--ink-2)]">
-          Each agent reasons in turn on this one page — nothing is torn down between
-          them, so you can scroll back and read what any of them actually said.
+      <div className="shrink-0 border-b-2 border-[var(--line)] bg-[var(--card)] px-5 py-3 md:px-8">
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+          <h1 className="font-[family-name:var(--font-archivo)] text-xl font-black uppercase leading-none tracking-[-0.03em] md:text-[24px]">
+            Agents at work
+          </h1>
+          <span className="inline-flex items-center gap-1.5 rounded-full border-[1.5px] border-[var(--line)] bg-[var(--yellow)] px-2 py-[3px] font-mono text-[9px] font-bold uppercase tracking-[0.14em] text-[#0a0a0a]">
+            <span className="thinking-dot size-1.5 rounded-full bg-[#0a0a0a]" aria-hidden />
+            live
+          </span>
+          <span className="ml-auto font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--ink-2)]">
+            {visible.length} of {FEED_ORDER.length} agents
+          </span>
+        </div>
+        <p className="mt-1 max-w-3xl text-[11.5px] leading-snug text-[var(--ink-2)]">
+          One thread, five speakers. Nothing is torn down between them, so you can
+          scroll back and read what any agent actually said.
         </p>
       </div>
 
-      {/* ---- the feed ---- */}
+      {/* ---- the thread ---- */}
       <div
         ref={bodyRef}
-        className="scroll-slim min-h-0 flex-1 overflow-y-auto px-5 py-5 md:px-8"
+        className="scroll-slim min-h-0 flex-1 overflow-y-auto px-4 py-5 md:px-8"
       >
-        <div className="mx-auto flex w-full max-w-[880px] flex-col gap-4 pb-6">
+        <div className="mx-auto flex w-full max-w-[940px] flex-col pb-8">
           {visible.length === 0 && (
             <div className="ticket mx-auto flex max-w-[420px] flex-col items-center gap-2 px-8 py-7 text-center">
               <p className="font-[family-name:var(--font-archivo)] text-[14px] font-black uppercase tracking-[-0.01em]">
@@ -89,16 +136,86 @@ export function PipelineThinkingFeed() {
               </p>
             </div>
           )}
-          {visible.map((id) => (
-            <motion.div
-              key={id}
-              initial={reduce ? false : { opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
-            >
-              <AgentThinkingConsole stageId={id} label={STAGE_LABEL[id]} />
-            </motion.div>
-          ))}
+
+          {visible.map((id, i) => {
+            const status = stages[id]?.status ?? 'idle'
+            const live = status === 'running'
+            const hue = AGENT_HUE[id] ?? 'var(--line)'
+            const fg = AGENT_FG[id] ?? '#0a0a0a'
+            const name = agentName(id)
+            const prev = i > 0 ? visible[i - 1] : null
+
+            return (
+              <React.Fragment key={id}>
+                {/* ---- handoff divider ----
+                    The moment one agent passes to the next is the single
+                    most informative event in the run, so it gets the
+                    thread's day-divider slot rather than being implied by
+                    a gap. */}
+                {prev && (
+                  <div className="my-4 flex items-center gap-3" aria-hidden>
+                    <span className="h-[1.5px] flex-1 rounded-none bg-[var(--line)]/15" />
+                    <span className="shrink-0 font-mono text-[9px] font-bold uppercase tracking-[0.16em] text-[var(--ink-2)]">
+                      {agentName(prev)} → {name}
+                    </span>
+                    <span className="h-[1.5px] flex-1 rounded-none bg-[var(--line)]/15" />
+                  </div>
+                )}
+
+                <motion.div
+                  initial={reduce ? false : { opacity: 0, y: 14 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+                  className="flex items-start gap-3"
+                >
+                  {/* ---- avatar gutter ---- */}
+                  <div className="flex w-9 shrink-0 flex-col items-center gap-1.5 pt-1">
+                    <span
+                      className={cn(
+                        'flex size-9 items-center justify-center rounded-full border-2 border-[var(--line)]',
+                        'font-[family-name:var(--font-archivo)] text-[13px] font-black leading-none',
+                        live && 'animate-pulse',
+                      )}
+                      style={{ background: hue, color: fg }}
+                      title={name}
+                      aria-hidden
+                    >
+                      {name.charAt(0).toUpperCase()}
+                    </span>
+                    {/* the thread line, joining this speaker to the next */}
+                    {i < visible.length - 1 && (
+                      <span
+                        className="w-[2px] flex-1 rounded-none bg-[var(--line)]/15"
+                        aria-hidden
+                      />
+                    )}
+                  </div>
+
+                  {/* ---- the bubble ---- */}
+                  <div className="relative min-w-0 flex-1">
+                    {/* the tail, pointing back at the avatar */}
+                    <span
+                      aria-hidden
+                      className="absolute left-[-7px] top-[15px] size-3 rotate-45 rounded-[2px] border-b-2 border-l-2 border-[var(--line)] bg-[var(--card)]"
+                    />
+                    <div className="mb-1.5 flex items-baseline gap-2">
+                      <span className="font-[family-name:var(--font-archivo)] text-[12px] font-black uppercase tracking-[0.02em]">
+                        {name}
+                      </span>
+                      <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[var(--ink-2)]">
+                        {live ? 'typing…' : status === 'error' ? 'failed' : 'sent'}
+                      </span>
+                    </div>
+                    <AgentThinkingConsole
+                      stageId={id}
+                      label={STAGE_LABEL[id]}
+                      className="!max-w-[min(100%,760px)]"
+                    />
+                  </div>
+                </motion.div>
+              </React.Fragment>
+            )
+          })}
         </div>
       </div>
     </div>

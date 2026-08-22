@@ -242,7 +242,13 @@
    (0.22em pad + 2px rule + 5px shadow + the rotation's corner throw)
    with room to spare, and the negative margin hands every pixel of it
    straight back so the type never leaves its baseline grid. */
-.plate-home h1.mast .mask { padding: 0 34px 18px; margin: 0 -34px -17px; }
+/* Vertical room as well as horizontal. The box carries a 3px rule and a
+   6px offset shadow and is rotated, which throws its corners about 7px
+   further again — all of that lives OUTSIDE the text's own line box, so
+   with `padding-top: 0` the top edge of the box was being clipped away
+   by the mask. The negative margins hand every pixel back, so the type
+   still sits exactly on its baseline grid. */
+.plate-home h1.mast .mask { padding: 20px 34px; margin: -19px -34px; }
 /* The overlap: the third line climbs under the tilted box instead of
    clearing it. Two lines of display type that touch read as one
    object made of parts; two that clear each other read as a list. */
@@ -285,6 +291,18 @@
   transform: rotate(-1.6deg);
   transform-origin: 12% 80%;
   z-index: 2;
+  /* THE HALO STAYS INSIDE THE GLASS.
+     The two washes below were positioned to bleed past the box on every
+     side — `top:-18%`, `height:130%`, plus an 18px blur on top of that.
+     Two things went wrong with that. The colour spilled out and read as
+     a smudge leaking from under the word rather than as light caught in
+     it; and because each headline line is clipped to its own overflow
+     box by the reveal animation, the part that spilled upward was
+     sheared clean off, so the box itself looked cut in half.
+     Clipping the halo to the box fixes both at once: it is glass with
+     light inside it, which is what it was always meant to be, and there
+     is nothing left outside the border for the mask to cut. */
+  overflow: hidden;
 }
 /* The halo the blur is there to catch — two soft washes in the site's
    own accent pair, so the box reads as glass catching light rather
@@ -300,15 +318,19 @@
   border-radius: 50%;
   filter: blur(18px);
 }
+/* Sized to sit INSIDE the box now that it clips: each wash is anchored
+   to one end and reaches a little past the middle, so the pair still
+   crosses the word and still reads as two lights rather than one tint,
+   but neither one needs to leave the frame to do it. */
 .plate-home .mastbox::before {
-  width: 62%; height: 130%;
-  left: -10%; top: -18%;
-  background: color-mix(in srgb, var(--yellow) 70%, transparent);
+  width: 58%; height: 190%;
+  left: -6%; top: -45%;
+  background: color-mix(in srgb, var(--yellow) 85%, transparent);
 }
 .plate-home .mastbox::after {
-  width: 54%; height: 110%;
-  right: -12%; bottom: -16%;
-  background: color-mix(in srgb, var(--blue) 55%, transparent);
+  width: 52%; height: 175%;
+  right: -8%; bottom: -40%;
+  background: color-mix(in srgb, var(--blue) 70%, transparent);
 }
 
 .plate-home .masthollow {
@@ -607,9 +629,30 @@
    gets the space the headline and the status line do not want, and it
    scales into it.
    ================================================================== */
+/* ==================================================================
+   THE SIGN-IN, REBUILT.
+
+   The old layout was two equal-ish halves of empty paper with one small
+   card floating in the middle of the right one, and a plate on the left
+   squeezed into the middle row of a three-row grid — headline above it,
+   status line below it — so the drawing, the only thing on the page
+   worth looking at, got whatever height the text did not want.
+
+   Two changes carry the whole redesign:
+
+     1. THE PLATE IS THE PAGE. The left column is now a single stacking
+        context with the plate filling it edge to edge, and the copy
+        LAID OVER it — eyebrow and headline pinned top-left, live
+        readout pinned bottom-left. The drawing gets the entire column
+        instead of a third of it.
+     2. THE RIGHT COLUMN IS A PANEL, NOT A VOID. It has its own surface
+        running the full height of the screen, so the card reads as
+        content inside a designed sheet rather than an object adrift in
+        a field. Fixed width, so it stops stretching on wide monitors.
+   ================================================================== */
 .plate-login {
   display: grid;
-  grid-template-columns: minmax(0, 1.14fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) clamp(400px, 34vw, 520px);
   /* One screen, no scroll: the login is a plate you look at, not a page
      you read. Both panes are built to fit (their paddings and type scale
      down on short screens), and the clip is the guarantee. */
@@ -653,60 +696,109 @@
 .plate-login .chromeprog { position: absolute; left: 0; bottom: -1px; height: 2px; background: var(--red); width: 0; }
 
 /* ---- left: the live plate ---- */
+/* The plate fills the column; the copy is laid over it. Everything in
+   here is absolutely positioned against this box except the stage
+   itself, which simply takes all of it. */
 .plate-login .stagepane {
   position: relative;
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
-  gap: 12px;
-  /* The plate is the thing worth looking at on this page, so it gets
-     the room. The padding was written for a stage that shared its
-     column with a lot more copy than it does now. */
-  padding: 58px clamp(14px, 2vw, 34px) 16px;
+  display: block;
+  padding: 0;
   border-right: var(--bw) solid var(--line);
   background-color: transparent;
   min-height: 0;
+  overflow: hidden;
 }
 .plate-login .stagepane .plate-stage {
-  position: relative;
-  inset: auto;
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   min-height: 0;
 }
-.plate-login .brandrow { display: flex; align-items: center; gap: 11px; }
+/* The copy block, floated over the top-left of the drawing. `max-width`
+   in ch rather than px so the measure stays readable while the column
+   itself is free to be as wide as the screen allows. */
+.plate-login .stagepane > div:first-child {
+  position: absolute;
+  z-index: 3;
+  top: clamp(58px, 8vh, 88px);
+  left: clamp(20px, 3.4vw, 52px);
+  max-width: 40ch;
+  pointer-events: auto;
+}
+/* A soft scrim under the copy only — enough to hold contrast if a dark
+   part of the plate drifts under the headline, invisible otherwise. */
+.plate-login .stagepane > div:first-child::before {
+  content: '';
+  position: absolute;
+  inset: -24px -40px -28px -32px;
+  z-index: -1;
+  border-radius: 28px;
+  background: radial-gradient(
+    120% 100% at 20% 30%,
+    color-mix(in srgb, var(--paper) 88%, transparent) 0%,
+    color-mix(in srgb, var(--paper) 62%, transparent) 45%,
+    transparent 78%);
+}
+.plate-login .brandrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  /* A chip, matching the homepage eyebrow. */
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  padding: 5px 13px 5px 6px;
+  background: color-mix(in srgb, var(--surface) 72%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
 .plate-login .mark {
-  width: 26px;
-  height: 26px;
+  width: 20px;
+  height: 20px;
   flex: none;
-  border: var(--bw) solid var(--line);
+  border: 1.5px solid var(--line);
+  border-radius: 5px;
   background: var(--yellow);
   display: grid;
   place-content: center;
   font-family: var(--font-archivo), 'Arial Black', sans-serif;
   font-weight: 900;
-  font-size: 13px;
+  font-size: 10px;
   color: #0a0a0a;
 }
+/* The headline can be big now that it is not sharing a grid row with
+   anything — it sits on the drawing, which is the point. */
 .plate-login .pitch {
-  font-size: clamp(27px, 2.8vw, 44px);
-  letter-spacing: -0.035em;
-  line-height: 0.98;
-  margin-top: 14px;
+  font-size: clamp(30px, 3.5vw, 58px);
+  letter-spacing: -0.04em;
+  line-height: 0.94;
+  margin-top: 18px;
 }
 .plate-login .pitch em { font-style: normal; color: var(--red); }
 .plate-login .pitchsub {
-  margin: 10px 0 0;
-  font-size: 14px;
+  margin: 14px 0 0;
+  font-size: 14.5px;
+  line-height: 1.55;
   color: var(--ink-2);
-  max-width: 46ch;
+  max-width: 44ch;
 }
+/* Pinned to the foot of the plate column, on its own scrim. */
 .plate-login .statusrow {
+  position: absolute;
+  z-index: 3;
+  left: clamp(20px, 3.4vw, 52px);
+  right: clamp(20px, 3.4vw, 52px);
+  bottom: clamp(16px, 2.4vh, 26px);
   display: flex;
   flex-wrap: wrap;
   gap: 8px 22px;
   align-items: center;
-  border-top: var(--bw) solid var(--line);
-  padding-top: 13px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  padding: 9px 18px;
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 .plate-login .statusrow .live {
   width: 8px;
@@ -724,35 +816,38 @@
 }
 .plate-login .statusrow .spectrum { width: 108px; margin-left: auto; border: var(--bw-s) solid var(--line); }
 
-/* ---- right: the card ---- */
+/* ---- right: the panel ----
+   A sheet running the full height of the screen, not a stage for a
+   floating card. It carries the surface, so the card inside it can drop
+   its own heavy border and shadow and simply be the form. */
 .plate-login .formpane {
   position: relative;
+  z-index: 4;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   justify-content: center;
-  gap: 14px;
-  padding: 68px clamp(20px, 3vw, 56px) 24px;
+  gap: 16px;
+  padding: 68px clamp(22px, 2.4vw, 44px) 26px;
   min-height: 0;
+  border-left: var(--bw-l) solid var(--line);
+  background: color-mix(in srgb, var(--surface) 78%, transparent);
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  overflow-y: auto;
 }
-/* The card is the page's one object, so it is allowed to be the size
-   of an object. At 400px with 20px of padding it read as a widget
-   dropped on a wall; the extra 72px of width and the roomier interior
-   are what make it read as a form you sit down at. */
 .plate-login .cardmeta {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  width: min(540px, 100%);
-  margin: 6px 0 0;
-  border: var(--bw) solid var(--line);
+  width: 100%;
+  margin: 2px 0 0;
+  border: 1.5px solid var(--line);
   border-radius: 12px;
   overflow: hidden;
-  background: color-mix(in srgb, var(--surface) 55%, transparent);
-  backdrop-filter: blur(12px) saturate(140%);
-  -webkit-backdrop-filter: blur(12px) saturate(140%);
+  background: color-mix(in srgb, var(--paper) 42%, transparent);
 }
-.plate-login .cardmeta > div { padding: 12px 12px; text-align: center; }
-.plate-login .cardmeta > div + div { border-left: var(--bw) solid var(--line); }
+.plate-login .cardmeta > div { padding: 11px 10px; text-align: center; }
+.plate-login .cardmeta > div + div { border-left: 1.5px solid var(--line); }
 .plate-login .cardmeta dt {
   font-family: var(--font-archivo), 'Arial Black', sans-serif;
   font-weight: 900;
@@ -772,7 +867,7 @@
   text-transform: uppercase;
   color: var(--ink-2);
 }
-.plate-login .cardslot { width: min(540px, 100%); perspective: 1500px; }
+.plate-login .cardslot { width: 100%; perspective: 1500px; }
 .plate-login .card3d {
   position: relative;
   /* Both faces stack in one cell, so the card is as tall as its taller
@@ -784,27 +879,24 @@
 }
 .plate-login .card3d > .face { grid-area: 1 / 1; }
 .plate-login .card3d.flipped { transform: rotateY(180deg); }
+/* The card no longer carries the surface — the panel behind it does —
+   so it drops to a hairline rule and no shadow at all. A heavy bordered,
+   hard-shadowed card sitting inside an equally heavy bordered panel was
+   two frames around one form. */
 .plate-login .face {
-  /* Glass: translucent fill, blurred backdrop, and a border that stays
-     hard ink at full weight so the panel never loses its own edge. */
-  background: color-mix(in srgb, var(--surface) 74%, transparent);
-  backdrop-filter: blur(18px) saturate(150%);
-  -webkit-backdrop-filter: blur(18px) saturate(150%);
-  border: var(--bw-l) solid var(--line);
-  border-radius: 20px;
+  background: color-mix(in srgb, var(--paper) 34%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--line) 45%, transparent);
+  border-radius: 18px;
   /* The spectrum strip is a filled bar sitting on the card's top
      edge. Without the clip it squares off the two corners the
      radius just rounded. */
   overflow: hidden;
-  /* 14px of solid black under a card this size stopped reading as a
-     printed offset and started reading as a second black card behind
-     the first one. */
-  box-shadow: 6px 6px 0 var(--line);
+  box-shadow: none;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
 }
 [data-theme='dark'] .plate-login .face {
-  box-shadow: 0 26px 60px -30px #000, 0 0 0 1px var(--line);
+  box-shadow: none;
 }
 .plate-login .face.back { transform: rotateY(180deg); }
 .plate-login .spectrum { display: flex; height: 12px; border-bottom: 3px solid var(--line); border-radius: 0; }
@@ -822,12 +914,12 @@
   justify-content: space-between;
   gap: 10px;
   padding: 9px 16px;
-  border-bottom: var(--bw) solid var(--line);
+  border-bottom: 1.5px solid color-mix(in srgb, var(--line) 30%, transparent);
 }
-.plate-login .facebody { padding: 30px 34px 28px; }
-.plate-login .facebody h1 { font-size: clamp(2.1rem, 2.6vw, 2.7rem); }
-.plate-login .facebody .sub { margin: 8px 0 20px; font-size: 14px; color: var(--ink-2); }
-.plate-login label.f { display: block; margin-bottom: 15px; }
+.plate-login .facebody { padding: 26px 28px 24px; }
+.plate-login .facebody h1 { font-size: clamp(2rem, 2.4vw, 2.5rem); }
+.plate-login .facebody .sub { margin: 8px 0 22px; font-size: 14px; color: var(--ink-2); }
+.plate-login label.f { display: block; margin-bottom: 14px; }
 .plate-login label.f .lbl { display: flex; justify-content: space-between; margin-bottom: 7px; }
 .plate-login .field {
   width: 100%;
@@ -1022,4 +1114,28 @@
   .plate-login .beatrail,
   .plate-login .caps,
   .plate-scrub { display: none !important; }
+}
+
+/* ==================================================================
+   THE WORDMARK KEEPS ITS OWN CASING.
+
+   Almost everything on these two pages is set in the mono label style,
+   which uppercases — correct for a label, wrong for the name. Two
+   capitals inside one word are the whole shape of "DiagramMind";
+   flatten them and it renders as DIAGRAMMIND, one unbroken run of
+   eleven letters that nobody parses at a glance. This opts the name
+   back out wherever it appears inside an uppercased context.
+   ================================================================== */
+.plate-login .wordmark,
+.plate-home .wordmark {
+  text-transform: none !important;
+  letter-spacing: 0.01em;
+  font-weight: 700;
+}
+.plate-login .facehead .wordmark,
+.plate-login .chrome a.wordmark {
+  font-family: var(--font-archivo), 'Arial Black', sans-serif;
+  font-weight: 900;
+  font-size: 13px;
+  color: var(--ink);
 }

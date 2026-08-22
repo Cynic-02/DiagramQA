@@ -87,8 +87,11 @@ function StatusStrip() {
   ]
 
   return (
-    <footer className="flex h-8 shrink-0 items-center gap-4 border-t-[3px] border-[var(--line)] bg-[var(--card)] px-4 md:px-6">
-      <span className="dat shrink-0 text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--ink)]">
+    <footer className="flex h-8 shrink-0 items-center gap-4 border-t-2 border-[var(--line)] bg-[var(--card)] px-4 md:px-6">
+      {/* The wordmark keeps its own casing. `uppercase` flattened the
+          two capitals that give the name its shape, so it rendered as
+          DIAGRAMMIND — one unbroken run of letters. */}
+      <span className="dat shrink-0 text-[11px] font-bold tracking-[0.02em] text-[var(--ink)]">
         DiagramMind
       </span>
       <span className="hidden truncate font-mono text-[10px] text-[var(--ink-2)] md:inline">
