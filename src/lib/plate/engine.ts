@@ -62,6 +62,12 @@ export type PlateOptions = {
   /** Play exactly these plate keys, in this order. Omit for the
       homepage sequence. The sign-in page passes its own three. */
   only?: string[]
+  /** Render the plate mount furniture — outer rect, corner brackets,
+      plate number, scale bar, maker mark. Default true. The sign-in
+      page turns it off: a bounding box around a diagram that is
+      already sitting inside its own bordered column was a frame
+      inside a frame. */
+  frame?: boolean
   /** Fired when the settled plate changes. */
   onScene?: (index: number, name: string, progress: number) => void
 }
@@ -77,6 +83,7 @@ export function mountPlateStage(host: HTMLElement, opts: PlateOptions = {}): Pla
   var CRUMB_PREFIX = opts.crumbPrefix != null ? opts.crumbPrefix : 'DIAGRAMMIND // '
   var CHOREOGRAPH = !!opts.choreograph
   var PREMIUM = opts.flight === 'premium'
+  var FRAME = opts.frame !== false
   var onScene = opts.onScene || null
   var lastSettled = -1
   var uiP = 1
@@ -869,7 +876,7 @@ export function mountPlateStage(host: HTMLElement, opts: PlateOptions = {}): Pla
      card and nothing is ever drawn outside its own frame. The furniture
      — corner marks, title block, scale bar — is repositioned with it
      rather than baked in at one size. */
-  var gFrame=E('g',{},svg);
+  var gFrame=E('g',FRAME?{}:{display:'none'},svg);
   var fRect=E('rect',{fill:'none',stroke:'currentColor','stroke-width':2.2,'stroke-opacity':.34},gFrame);
   var fCorner=[[-1,-1],[1,-1],[1,1],[-1,1]].map(function(c){
     return {c:c,el:E('path',{fill:'none',stroke:'currentColor','stroke-width':3,'stroke-opacity':.75},gFrame)};

@@ -1129,8 +1129,8 @@
 .aurora-field::after {
   content: '';
   position: absolute;
-  width: 78vmax;
-  height: 78vmax;
+  width: 50vmax;
+  height: 50vmax;
   border-radius: 50%;
   /* A radial-gradient with a soft alpha ramp, not a hard disc that has
      been blurred — `filter: blur()` on something this large is a
@@ -1138,48 +1138,57 @@
   will-change: transform;
 }
 .aurora-field::before {
-  top: -6vmax;
-  left: -10vmax;
-  /* TEAL, NOT BLUE.
-     `--blue` is #2b4fe8 — a hard electric primary. It is the right ink
-     for a Remember tag on white, and the wrong light for a warm cream
-     page: on this paper it read as a cold cast sitting on top of the
-     ground rather than as part of it. `--bloom-2` teal is already in the
-     spectrum, sits in the same cool half of it, and is the natural
-     partner to the warm wash opposite — teal and orange split the wheel,
-     so the two ends of the page read as one deliberate pair instead of
-     two unrelated colours. */
+  top: -4vmax;
+  left: -6vmax;
+  /* EARTH BLUE, NOT TEAL.
+     Swapped the cool wash from `--bloom-2` teal to `--f-ocean` — the
+     same light sea-blue the globe plate fills its own sphere with, so
+     the ambient field reads as the same ink as the diagram rather than
+     a separate Bloom tag colour. The ramp now moves lightness as well
+     as alpha — a deeper edge of the blue at the core, `--f-ocean` at
+     full strength through the middle, `--f-sea` (paler) toward the
+     rim — so the wash is a genuine dark-to-light gradient and not just
+     one flat hue fading to transparent. */
   background: radial-gradient(circle at 50% 50%,
-    color-mix(in srgb, var(--bloom-2) 66%, transparent) 0%,
-    color-mix(in srgb, var(--bloom-2) 36%, transparent) 32%,
-    color-mix(in srgb, var(--bloom-1) 13%, transparent) 52%,
-    transparent 72%);
-  animation: aurora-drift-a 26s ease-in-out infinite alternate;
+    color-mix(in srgb, var(--f-ocean) 62%, black 14%) 0%,
+    color-mix(in srgb, var(--f-ocean) 46%, transparent) 30%,
+    color-mix(in srgb, var(--f-sea) 26%, transparent) 55%,
+    transparent 76%);
+  animation: aurora-drift-a 78s linear infinite;
 }
 .aurora-field::after {
-  right: -14vmax;
-  bottom: -10vmax;
+  right: -6vmax;
+  bottom: -4vmax;
+  /* Same treatment on the warm end: a darker edge of `--bloom-5` at the
+     core lightening through the wash before it fades, instead of one
+     flat orange at falling alpha. */
   background: radial-gradient(circle at 50% 50%,
-    color-mix(in srgb, var(--bloom-5) 58%, transparent) 0%,
-    color-mix(in srgb, var(--red) 30%, transparent) 34%,
-    color-mix(in srgb, var(--red) 11%, transparent) 54%,
-    transparent 72%);
-  animation: aurora-drift-b 31s ease-in-out infinite alternate;
+    color-mix(in srgb, var(--bloom-5) 58%, black 14%) 0%,
+    color-mix(in srgb, var(--bloom-5) 42%, transparent) 30%,
+    color-mix(in srgb, var(--red) 20%, transparent) 55%,
+    transparent 76%);
+  animation: aurora-drift-b 84s linear infinite;
 }
-/* Moderately slow, not imperceptible. At 44s and 52s over a 7vmax throw
-   the washes technically moved and nobody ever saw it; the page just
-   looked static. Halving the cycle and widening the travel puts the
-   motion just above the threshold where you notice the ground is alive
-   without it ever becoming something that competes for attention. The
-   two run on coprime-ish periods so the pair never settles into a
-   visible loop. */
+/* Slow and wide, not a corner wobble. Each wash now walks a loop across
+   a real fraction of the page — tens of vmax of travel over 78s/84s —
+   instead of jittering a few vmax inside its own corner. Four stops
+   instead of a two-point alternate so the path reads as drifting
+   rather than bouncing, and the loop closes on itself so the animation
+   can run infinite without a visible seam. Coprime-ish durations keep
+   the pair from ever settling into a repeating pattern together. */
 @keyframes aurora-drift-a {
-  from { transform: translate3d(-3vmax, -2vmax, 0) scale(1); }
-  to   { transform: translate3d(11vmax, 8vmax, 0) scale(1.2); }
+  0%   { transform: translate3d(-4vmax, -2vmax, 0) scale(1); }
+  25%  { transform: translate3d(24vmax, 12vmax, 0) scale(1.12); }
+  50%  { transform: translate3d(38vmax, 32vmax, 0) scale(1.22); }
+  75%  { transform: translate3d(12vmax, 28vmax, 0) scale(1.05); }
+  100% { transform: translate3d(-4vmax, -2vmax, 0) scale(1); }
 }
 @keyframes aurora-drift-b {
-  from { transform: translate3d(3vmax, 2vmax, 0) scale(1.14); }
-  to   { transform: translate3d(-12vmax, -7vmax, 0) scale(1); }
+  0%   { transform: translate3d(4vmax, 2vmax, 0) scale(1.1); }
+  25%  { transform: translate3d(-22vmax, -10vmax, 0) scale(0.96); }
+  50%  { transform: translate3d(-36vmax, -30vmax, 0) scale(1.08); }
+  75%  { transform: translate3d(-10vmax, -24vmax, 0) scale(1.16); }
+  100% { transform: translate3d(4vmax, 2vmax, 0) scale(1.1); }
 }
 /* It is the first element in the body and carries z-index 0, so every
    later sibling paints over it without needing a z-index of its own.

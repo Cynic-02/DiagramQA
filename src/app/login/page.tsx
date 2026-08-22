@@ -41,6 +41,9 @@ export default function LoginPage() {
 
   const stageRef = React.useRef<HTMLDivElement | null>(null)
   const plateRef = React.useRef<PlateHandle | null>(null)
+  const signinPasswordRef = React.useRef<HTMLInputElement | null>(null)
+  const signupEmailRef = React.useRef<HTMLInputElement | null>(null)
+  const signupPasswordRef = React.useRef<HTMLInputElement | null>(null)
 
   const [plate, setPlate] = React.useState('THE LENS')
   const [mode, setMode] = React.useState<Mode>('signin')
@@ -87,6 +90,11 @@ export default function LoginPage() {
              Optics, structures, anatomy: same drafting rules,
              nothing in common with the marketing sequence. */
           only: ['LENS', 'TRUSS', 'HEART'],
+          // The stage already sits inside its own bordered column on
+          // this page — the plate's own corner-bracket mount around
+          // the drawing was a box inside a box. Off here; still on
+          // for the homepage's full-bleed backdrop.
+          frame: false,
           onScene: (_i, sceneName) => setPlate(sceneName),
         })
         plateRef.current = handle
@@ -108,6 +116,19 @@ export default function LoginPage() {
   const focusProps = {
     onFocus: () => plateRef.current?.setPresence(0.25),
     onBlur: () => plateRef.current?.setPresence(1),
+  }
+
+  /* Enter on an earlier field should walk to the next field, not
+     submit the form early — submitting from the email field with no
+     password typed yet was showing REJECTED before anyone had a
+     chance to type a password. Only the last field in each form is
+     left to submit naturally on Enter. */
+  function stepOnEnter(next: React.RefObject<HTMLInputElement | null>) {
+    return (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key !== 'Enter') return
+      e.preventDefault()
+      next.current?.focus()
+    }
   }
 
   /* ---- form ---- */
@@ -279,6 +300,7 @@ export default function LoginPage() {
                       placeholder="you@school.edu"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
+                      onKeyDown={stepOnEnter(signinPasswordRef)}
                       {...focusProps}
                     />
                   </label>
@@ -293,6 +315,7 @@ export default function LoginPage() {
                       </Link>
                     </span>
                     <input
+                      ref={signinPasswordRef}
                       className="field"
                       type="password"
                       autoComplete="current-password"
@@ -352,24 +375,28 @@ export default function LoginPage() {
                       placeholder="Your name"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
+                      onKeyDown={stepOnEnter(signupEmailRef)}
                       {...focusProps}
                     />
                   </label>
                   <label className="f">
                     <span className="lbl">Email</span>
                     <input
+                      ref={signupEmailRef}
                       className="field"
                       type="email"
                       autoComplete="email"
                       placeholder="you@school.edu"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
+                      onKeyDown={stepOnEnter(signupPasswordRef)}
                       {...focusProps}
                     />
                   </label>
                   <label className="f">
                     <span className="lbl">Password</span>
                     <input
+                      ref={signupPasswordRef}
                       className="field"
                       type="password"
                       autoComplete="new-password"

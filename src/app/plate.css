@@ -840,6 +840,11 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   width: 100%;
+  /* Capped and centred, like .cardslot below — the strip of stats
+     reads as part of the same floating column as the card, not as a
+     second element stretched flush to the panel's own edges. */
+  max-width: 400px;
+  align-self: center;
   margin: 2px 0 0;
   border: 1.5px solid var(--line);
   border-radius: 12px;
@@ -849,14 +854,19 @@
 .plate-login .cardmeta > div { padding: 11px 10px; text-align: center; }
 .plate-login .cardmeta > div + div { border-left: 1.5px solid var(--line); }
 .plate-login .cardmeta dt {
-  font-family: var(--font-archivo), 'Arial Black', sans-serif;
-  font-weight: 900;
-  font-size: 25px;
+  /* Was Archivo, hollow-stroked — the display headline face doing a
+     stat's job. JetBrains Mono is already in the system for exactly
+     this ("agent ids, labels, stats, code" — see layout.tsx), tabular
+     figures read as a real readout rather than a headline, and a
+     solid weight is legible at this size where a thin outline on a
+     mono face was not. */
+  font-family: var(--font-jetbrains), ui-monospace, monospace;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  font-size: 22px;
   line-height: 1;
-  letter-spacing: -0.03em;
-  color: transparent;
-  -webkit-text-stroke: 1.5px var(--ink);
-  paint-order: stroke fill;
+  letter-spacing: -0.01em;
+  color: var(--ink);
 }
 .plate-login .cardmeta dd {
   margin: 5px 0 0;
@@ -867,7 +877,18 @@
   text-transform: uppercase;
   color: var(--ink-2);
 }
-.plate-login .cardslot { width: 100%; perspective: 1500px; }
+.plate-login .cardslot {
+  width: 100%;
+  /* The panel is a full-height strip pinned to the screen's right
+     edge, and the card was stretching to fill it — which is what read
+     as "shoved into the corner". Capping the card's own width and
+     centring it inside the panel gives it even air on both sides
+     instead of running edge to edge, so it reads as a floating card
+     inside the panel rather than the panel itself. */
+  max-width: 400px;
+  align-self: center;
+  perspective: 1500px;
+}
 .plate-login .card3d {
   position: relative;
   /* Both faces stack in one cell, so the card is as tall as its taller
@@ -884,19 +905,36 @@
    hard-shadowed card sitting inside an equally heavy bordered panel was
    two frames around one form. */
 .plate-login .face {
-  background: color-mix(in srgb, var(--paper) 34%, transparent);
-  border: 1.5px solid color-mix(in srgb, var(--line) 45%, transparent);
-  border-radius: 18px;
+  /* FULL GLASSMORPHISM. The card used to just borrow the panel's own
+     blur and sit on a fairly opaque paper tint — a translucent card,
+     not a glass one. It now carries its own frosted layer: high
+     transparency, its own backdrop-filter so the plate and the
+     ambient field behind it genuinely refract through the card
+     rather than through the panel alone, a hairline border instead
+     of the old ink-weight one, and an inset highlight + soft dropped
+     shadow to sell the pane of glass sitting slightly proud of the
+     surface behind it. */
+  background: color-mix(in srgb, var(--surface) 20%, transparent);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border: 1px solid color-mix(in srgb, var(--line) 20%, transparent);
+  border-radius: 22px;
   /* The spectrum strip is a filled bar sitting on the card's top
      edge. Without the clip it squares off the two corners the
      radius just rounded. */
   overflow: hidden;
-  box-shadow: none;
+  box-shadow:
+    0 24px 60px -24px color-mix(in srgb, var(--ink) 45%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 30%, transparent);
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
 }
 [data-theme='dark'] .plate-login .face {
-  box-shadow: none;
+  background: color-mix(in srgb, var(--surface) 26%, transparent);
+  border-color: color-mix(in srgb, var(--ink) 55%, transparent);
+  box-shadow:
+    0 24px 60px -20px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 color-mix(in srgb, white 8%, transparent);
 }
 .plate-login .face.back { transform: rotateY(180deg); }
 .plate-login .spectrum { display: flex; height: 12px; border-bottom: 3px solid var(--line); border-radius: 0; }
@@ -926,8 +964,14 @@
   font-family: var(--font-jetbrains), ui-monospace, monospace;
   font-size: 14px;
   padding: 15px 16px;
-  border: var(--bw) solid var(--line);
-  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  border: var(--bw) solid color-mix(in srgb, var(--line) 60%, transparent);
+  /* Glass, not paper — the inputs used to sit at 88% opaque, which
+     read as ordinary form fields dropped onto a glass card. Down to a
+     genuinely translucent fill with their own blur, so the card's
+     glass carries all the way to the edges of every control on it. */
+  background: color-mix(in srgb, var(--surface) 34%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   color: var(--ink);
   outline: none;
   border-radius: 9px;
@@ -991,6 +1035,7 @@
 }
 .plate-login .terms {
   max-width: 42ch;
+  align-self: center;
   text-align: center;
   font-size: 12px;
   line-height: 1.5;
