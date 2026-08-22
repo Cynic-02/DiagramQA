@@ -10,7 +10,7 @@ export async function POST(
 ) {
   const { id } = await ctx.params
   const session = await getSession()
-  if (!session?.user) {
+  if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -53,7 +53,7 @@ Return ONLY valid JSON in this exact format (do not wrap in markdown code blocks
       { role: 'user', content: prompt }
     ], {
       provider: question.run.provider || undefined,
-      userId: session.user.id
+      userId: session.id
     })
 
     const parsed = extractJson<{

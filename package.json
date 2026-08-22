@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev -p 3000",
     "postinstall": "prisma generate",
-    "build": "prisma generate && next build && npx -y shx cp -r .next/static .next/standalone/.next/ && npx -y shx cp -r public .next/standalone/",
+    "build": "node scripts/prepare-prod-db.js && prisma generate && next build && npx -y shx cp -r .next/static .next/standalone/.next/ && npx -y shx cp -r public .next/standalone/",
     "start": "NODE_ENV=production bun .next/standalone/server.js",
     "lint": "eslint .",
     "db:push": "prisma db push",

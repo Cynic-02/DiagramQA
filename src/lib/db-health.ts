@@ -30,9 +30,13 @@ export async function initializeDatabaseConnection() {
   await withRetry(async () => {
     await db.$connect()
     if (!isPostgres()) {
-      await db.$executeRawUnsafe('PRAGMA foreign_keys = ON')
-      await db.$executeRawUnsafe('PRAGMA busy_timeout = 5000')
-      await db.$executeRawUnsafe('PRAGMA journal_mode = WAL')
+      // $queryRawUnsafe, not $executeRawUnsafe: `PRAGMA journal_mode = WAL`
+      // returns a row ("wal"), and $executeRawUnsafe rejects any statement
+      // that produces results — which made /api/health report 503 locally
+      // and left `initialized` permanently false.
+      await db.$queryRawUnsafe('PRAGMA foreign_keys = ON')
+      await db.$queryRawUnsafe('PRAGMA busy_timeout = 5000')
+      await db.$queryRawUnsafe('PRAGMA journal_mode = WAL')
     }
   })
   initialized = true

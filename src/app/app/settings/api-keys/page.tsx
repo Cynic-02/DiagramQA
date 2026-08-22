@@ -24,6 +24,8 @@ interface ProviderRow {
   hasPlatformKey: boolean
   hasOwnKey: boolean
   usable: boolean
+  /** Returned by /api/providers; drives the "vision ready" count. */
+  supportsVision: boolean
   ownModel?: string | null
 }
 
@@ -723,7 +725,7 @@ function CustomProviderCard({
           <p className="truncate text-[12px] font-bold uppercase leading-tight tracking-[0.02em]">
             {provider.label}
           </p>
-          <p className="mt-0.5 truncate font-mono text-[9px] text-[var(--ink-2)]" title={provider.baseURL}>
+          <p className="mt-0.5 truncate font-mono text-[9px] text-[var(--ink-2)]" title={provider.baseURL ?? undefined}>
             {provider.baseURL}
           </p>
         </div>

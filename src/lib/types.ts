@@ -158,11 +158,18 @@ export interface FinalQAItem {
   answer: string
   bloomLevel: BloomLevel
   cognitiveSkill: string
-  verification: 'pass' | 'flagged'
+  /**
+   * Mirrors `VerificationVerdict.status`. `reject` is emitted by the
+   * question routes whenever `isApproved` is false — it must stay in this
+   * union or downstream `=== 'reject'` checks silently become dead code.
+   */
+  verification: 'pass' | 'flagged' | 'reject'
   score: number
   questionType?: QuestionType
   options?: string[]
   correctOptionIndex?: number
+  /** Persisted on Question.explanation; surfaced in the teacher workspace. */
+  explanation?: string
 }
 
 // ---- Live socket events ----

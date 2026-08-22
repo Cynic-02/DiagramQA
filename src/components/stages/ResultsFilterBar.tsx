@@ -38,7 +38,7 @@ export const DEFAULT_FILTERS: FilterState = {
  */
 export function applyFilters<T extends {
   bloomLevel: BloomLevel
-  verification: 'pass' | 'flagged'
+  verification: 'pass' | 'flagged' | 'reject'
   score: number
 }>(items: T[], f: FilterState): T[] {
   let out = items

@@ -10,7 +10,7 @@ export async function POST(
 ) {
   const { id: runId } = await ctx.params
   const session = await getSession()
-  if (!session?.user) {
+  if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -62,7 +62,7 @@ Return ONLY valid JSON (do not wrap in markdown code blocks):
       { role: 'system', content: 'Output only valid raw JSON.' },
       { role: 'user', content: prompt }
     ], {
-      userId: session.user.id
+      userId: session.id
     })
 
     const parsed = extractJson<{

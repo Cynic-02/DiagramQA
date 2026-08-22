@@ -8,7 +8,7 @@ export async function POST(
 ) {
   const { id } = await ctx.params
   const session = await getSession()
-  if (!session?.user) {
+  if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
