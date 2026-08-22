@@ -650,12 +650,31 @@
         content inside a designed sheet rather than an object adrift in
         a field. Fixed width, so it stops stretching on wide monitors.
    ================================================================== */
+/* ==================================================================
+   REDESIGNED LAYOUT — THE FLOATING CARD.
+
+   The old layout gave the right 34vw of the screen its own solid,
+   full-height panel pinned flush against the browser's right edge —
+   a hard vertical wall with the card centred inside it. On any screen
+   wider than a laptop that wall sat a long way from the middle of the
+   page, and having its own edge-to-edge background made it read as a
+   second page bolted onto the first rather than one composed screen.
+
+   Now there is one stacking context, not two panes:
+
+     · the plate is TRUE full-bleed, filling the entire viewport
+       behind everything (same viewBox the homepage uses, so it is
+       drawn at its natural scale instead of a column-cropped zoom);
+     · the card is a single floating island — its own rounded glass
+       shelf, generous margin from the edge on every side, vertically
+       centred — instead of a panel's full-height wall.
+
+   The result still reads left-to-right (pitch copy anchored to the
+   left, the card near the right) because that asymmetry is part of
+   the page's composition, but "near the right" is now a comfortable
+   margin, not a hard architectural boundary. */
 .plate-login {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(400px, 34vw, 520px);
-  /* One screen, no scroll: the login is a plate you look at, not a page
-     you read. Both panes are built to fit (their paddings and type scale
-     down on short screens), and the clip is the guarantee. */
+  position: relative;
   height: 100dvh;
   overflow: hidden;
 }
@@ -700,13 +719,17 @@
    here is absolutely positioned against this box except the stage
    itself, which simply takes all of it. */
 .plate-login .stagepane {
-  position: relative;
+  /* Full-bleed now: the plate fills the entire screen, not a column,
+     so there is no dividing rule left to draw. */
+  position: absolute;
+  inset: 0;
   display: block;
   padding: 0;
-  border-right: var(--bw) solid var(--line);
+  border-right: 0;
   background-color: transparent;
   min-height: 0;
   overflow: hidden;
+  z-index: 1;
 }
 .plate-login .stagepane .plate-stage {
   position: absolute;
@@ -787,7 +810,12 @@
   position: absolute;
   z-index: 3;
   left: clamp(20px, 3.4vw, 52px);
-  right: clamp(20px, 3.4vw, 52px);
+  /* Was pinned edge-to-edge (`right` matching `left`) which made sense
+     when this pane was only the left column — stretched across the
+     full viewport it read as an oddly wide pill. Capped and left-
+     anchored now, so it sits with the copy above it instead of
+     spanning the whole screen. */
+  width: min(560px, calc(100vw - clamp(40px, 6.8vw, 104px)));
   bottom: clamp(16px, 2.4vh, 26px);
   display: flex;
   flex-wrap: wrap;
@@ -820,21 +848,44 @@
    A sheet running the full height of the screen, not a stage for a
    floating card. It carries the surface, so the card inside it can drop
    its own heavy border and shadow and simply be the form. */
+/* THE FLOATING CARD ISLAND.
+   No longer a panel wall running the full height of the screen — a
+   single shrink-wrapped shelf, vertically centred, held off the right
+   edge by a real margin on every screen size instead of sitting flush
+   against it. It carries its own glass surface (the old panel's job)
+   sized to its own content, so the sign-in form now reads as one
+   object floating over the plate rather than a second page bolted to
+   the first. */
 .plate-login .formpane {
-  position: relative;
+  position: absolute;
   z-index: 4;
+  top: 50%;
+  right: clamp(28px, 5.4vw, 88px);
+  transform: translateY(-50%);
   display: flex;
   flex-direction: column;
-  align-items: stretch;
+  align-items: center;
   justify-content: center;
-  gap: 16px;
-  padding: 68px clamp(22px, 2.4vw, 44px) 26px;
-  min-height: 0;
-  border-left: var(--bw-l) solid var(--line);
-  background: color-mix(in srgb, var(--surface) 78%, transparent);
-  backdrop-filter: blur(22px) saturate(150%);
-  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  gap: 14px;
+  width: min(400px, calc(100vw - 56px));
+  max-height: calc(100dvh - 96px);
+  padding: clamp(20px, 3.2vh, 30px) clamp(18px, 2.2vw, 26px) 20px;
+  border-radius: 26px;
+  border: 1.5px solid color-mix(in srgb, var(--line) 22%, transparent);
+  background: color-mix(in srgb, var(--surface) 46%, transparent);
+  backdrop-filter: blur(30px) saturate(170%);
+  -webkit-backdrop-filter: blur(30px) saturate(170%);
+  box-shadow:
+    0 32px 70px -28px color-mix(in srgb, var(--ink) 42%, transparent),
+    inset 0 1px 0 color-mix(in srgb, white 26%, transparent);
   overflow-y: auto;
+}
+[data-theme='dark'] .plate-login .formpane {
+  background: color-mix(in srgb, var(--surface) 56%, transparent);
+  border-color: color-mix(in srgb, var(--ink) 50%, transparent);
+  box-shadow:
+    0 32px 70px -24px rgba(0, 0, 0, 0.65),
+    inset 0 1px 0 color-mix(in srgb, white 8%, transparent);
 }
 .plate-login .cardmeta {
   display: grid;
@@ -905,36 +956,24 @@
    hard-shadowed card sitting inside an equally heavy bordered panel was
    two frames around one form. */
 .plate-login .face {
-  /* FULL GLASSMORPHISM. The card used to just borrow the panel's own
-     blur and sit on a fairly opaque paper tint — a translucent card,
-     not a glass one. It now carries its own frosted layer: high
-     transparency, its own backdrop-filter so the plate and the
-     ambient field behind it genuinely refract through the card
-     rather than through the panel alone, a hairline border instead
-     of the old ink-weight one, and an inset highlight + soft dropped
-     shadow to sell the pane of glass sitting slightly proud of the
-     surface behind it. */
-  background: color-mix(in srgb, var(--surface) 20%, transparent);
-  backdrop-filter: blur(28px) saturate(180%);
-  -webkit-backdrop-filter: blur(28px) saturate(180%);
-  border: 1px solid color-mix(in srgb, var(--line) 20%, transparent);
-  border-radius: 22px;
+  /* The glass job now belongs to `.formpane` — the card island — so
+     this inner face just needs to be legible against that shelf: a
+     touch more opaque than the shelf itself (so text has real
+     contrast) with a hairline border to keep its own edge, but no
+     second independent blur layer stacked on the first. */
+  background: color-mix(in srgb, var(--card) 88%, transparent);
+  border: 1px solid color-mix(in srgb, var(--line) 30%, transparent);
+  border-radius: 18px;
   /* The spectrum strip is a filled bar sitting on the card's top
      edge. Without the clip it squares off the two corners the
      radius just rounded. */
   overflow: hidden;
-  box-shadow:
-    0 24px 60px -24px color-mix(in srgb, var(--ink) 45%, transparent),
-    inset 0 1px 0 color-mix(in srgb, white 30%, transparent);
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
 }
 [data-theme='dark'] .plate-login .face {
-  background: color-mix(in srgb, var(--surface) 26%, transparent);
-  border-color: color-mix(in srgb, var(--ink) 55%, transparent);
-  box-shadow:
-    0 24px 60px -20px rgba(0, 0, 0, 0.6),
-    inset 0 1px 0 color-mix(in srgb, white 8%, transparent);
+  background: color-mix(in srgb, var(--card) 90%, transparent);
+  border-color: color-mix(in srgb, var(--ink) 40%, transparent);
 }
 .plate-login .face.back { transform: rotateY(180deg); }
 .plate-login .spectrum { display: flex; height: 12px; border-bottom: 3px solid var(--line); border-radius: 0; }
@@ -1095,23 +1134,42 @@
 .plate-login .authwipe .lbl { color: var(--paper); opacity: 0.7; }
 
 @media (max-width: 1023px) {
-  /* One column. The plate is the first thing to go: on a phone the card
-     is the entire job of this page. Height returns to auto here — a form
-     pinned behind an on-screen keyboard must be allowed to scroll. */
-  .plate-login { grid-template-columns: 1fr; height: auto; min-height: 100dvh; overflow: visible; }
+  /* The plate is the first thing to go: on a phone the card is the
+     entire job of this page. Height returns to auto — a form pinned
+     behind an on-screen keyboard must be allowed to scroll. The card
+     island stops floating and becomes the page itself: static flow,
+     full width, no glass shelf (there is no busy backdrop left to
+     float over). */
+  .plate-login { height: auto; min-height: 100dvh; overflow: visible; }
   .plate-login .stagepane { display: none; }
-  .plate-login .formpane { min-height: 100dvh; }
+  .plate-login .formpane {
+    position: static;
+    top: auto;
+    right: auto;
+    transform: none;
+    width: 100%;
+    max-width: 440px;
+    max-height: none;
+    margin: 0 auto;
+    min-height: 100dvh;
+    border: 0;
+    border-radius: 0;
+    background: var(--surface);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    box-shadow: none;
+    padding: 64px 20px 24px;
+  }
 }
 
 /* Short viewports (laptops at ~1366×768, browser chrome included) still
-   get the whole two-pane plate — everything simply steps down a notch
+   get the whole plate backdrop — everything simply steps down a notch
    instead of the page learning to scroll. */
 @media (min-width: 1024px) and (max-height: 790px) {
-  .plate-login .stagepane { padding-top: 56px; padding-bottom: 16px; gap: 10px; }
+  .plate-login .stagepane > div:first-child { top: clamp(48px, 7vh, 72px); }
   .plate-login .pitch { font-size: clamp(24px, 2.4vw, 34px); margin-top: 10px; }
   .plate-login .pitchsub { font-size: 13px; margin-top: 8px; }
-  .plate-login .statusrow { padding-top: 10px; }
-  .plate-login .formpane { padding-top: 56px; padding-bottom: 16px; gap: 10px; }
+  .plate-login .formpane { max-height: calc(100dvh - 64px); padding-top: 16px; gap: 10px; }
   .plate-login .facebody { padding: 16px 20px 14px; }
   .plate-login .facebody h1 { font-size: 1.55rem; }
   .plate-login .facebody .sub { margin-bottom: 12px; }

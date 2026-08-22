@@ -259,8 +259,54 @@ export function mountPlateStage(host: HTMLElement, opts: PlateOptions = {}): Pla
     ['circle',{cx:-49,cy:-120,r:3.5},1.4],
     ['circle',{cx:216,cy:-78,r:3.5},1.4],
     /* a dwarf on the innermost orbit */
-    ['circle',{cx:-117,cy:-18,r:6},2]
+    ['circle',{cx:-117,cy:-18,r:6},2],
+
+    /* ---- MORE DETAIL: everything below is appended, never inserted,
+       so none of the existing shape indices above shift — the colour
+       map, the LIVE animation table and the callouts elsewhere all
+       still point at the right shape. A real orrery has more going on
+       than one ring of planets: a farther orbit, a moon riding beside
+       its planet, a comet on its own long pass through the system,
+       a scattered field of stars behind all of it, and a sun with a
+       second, fainter corona instead of one clean ring of spikes. ---- */
+
+    /* 29 — a fifth, outermost orbital path, farther out than the belt */
+    ['ellipse',{cx:0,cy:0,rx:382,ry:164},1.6],
+    /* 30 — the ice giant riding it, out past everything else */
+    ['circle',{cx:-331,cy:82,r:13},2.4],
+    /* 31 — its own ring, thin and sharply tilted — edge-on, unlike
+       the amber planet's near-face-on one, so the two ringed bodies
+       don't read as the same drawing repeated */
+    ['ellipse',{cx:-331,cy:82,rx:26,ry:6,transform:'rotate(18 -331 82)'},1.6],
+    /* 32 — a moon riding close beside the ringed planet at 19/20 */
+    ['circle',{cx:246,cy:30,r:5},2],
+    /* 33 — a comet's head, well outside every planetary orbit */
+    ['circle',{cx:-424,cy:-182,r:6},2.2],
+    /* 34 — its tail, swept back and away from the sun */
+    ['path',{d:'M-424 -182 C -462 -212, -498 -226, -540 -246'},1.6],
+    /* 35–36 — two fainter flecks trailing off the tail's end */
+    ['circle',{cx:-486,cy:-232,r:2.2},1.2],
+    ['circle',{cx:-518,cy:-244,r:1.8},1.2],
+    /* 37–48 — a scattered field of background stars, well outside the
+       outermost orbit so they read as sky, not as one more body */
+    ['circle',{cx:-40,cy:-330,r:1.6},0.8],
+    ['circle',{cx:120,cy:-360,r:1.3},0.8],
+    ['circle',{cx:300,cy:-300,r:1.8},0.8],
+    ['circle',{cx:400,cy:-160,r:1.4},0.8],
+    ['circle',{cx:420,cy:60,r:1.7},0.8],
+    ['circle',{cx:360,cy:260,r:1.3},0.8],
+    ['circle',{cx:160,cy:340,r:1.6},0.8],
+    ['circle',{cx:-140,cy:330,r:1.4},0.8],
+    ['circle',{cx:-340,cy:250,r:1.8},0.8],
+    ['circle',{cx:-420,cy:0,r:1.3},0.8],
+    ['circle',{cx:-380,cy:-220,r:1.6},0.8],
+    ['circle',{cx:60,cy:-390,r:1.4},0.8]
   ]);
+  /* 49–58 — a second, fainter corona: ten shorter spikes at a
+     spacing that doesn't line up with the twelve primary rays, so
+     the two rings overlap the way a real corona's streamers do
+     rather than reading as one ring drawn twice. */
+  ray(0,0,54,70,10,S_ORBIT);
 
   var S_CYCLE=[
     ['path',{d:'M-336 192 q 42 -16 84 0 t 84 0 t 84 0 t 84 0 t 84 0'},2.4],
@@ -698,6 +744,15 @@ export function mountPlateStage(host: HTMLElement, opts: PlateOptions = {}): Pla
       m[21]=[W('violet'),.92,null];
       R(m,22,27,[W('amber'),.85,W('amber')]); /* the belt     */
       m[28]=[W('teal'),.9,W('teal')]; /* the dwarf            */
+      m[29]=[null,0,W('grey')];       /* fifth, outermost orbit path */
+      m[30]=[W('blue'),.92,null];     /* the ice giant                */
+      m[31]=[null,0,W('blue')];       /* its tilted ring               */
+      m[32]=[W('sky'),.85,W('sky')];  /* the moon                      */
+      m[33]=[W('teal'),.9,W('teal')]; /* the comet's head               */
+      m[34]=[null,0,W('teal')];       /* its tail                       */
+      R(m,35,36,[W('teal'),.5,W('teal')]);   /* fainter trailing flecks */
+      R(m,37,48,[W('cream'),.8,W('cream')]); /* background stars        */
+      R(m,49,58,[null,0,W('amber')]); /* the second, fainter corona    */
       return m;})(),
 
     CYCLE:(function(){var m={};
@@ -1597,7 +1652,20 @@ export function mountPlateStage(host: HTMLElement, opts: PlateOptions = {}): Pla
       {sh:[18],     t:'ell', rx:186, ry:80,  rot:0, sp:0.52},
       {sh:[19,20],  t:'ell', rx:250, ry:108, rot:0, sp:0.34},
       {sh:[21],     t:'ell', rx:318, ry:136, rot:0, sp:0.22},
-      {sh:[0],      t:'bre', px:0, py:0, amp:0.035, sp:1.05}
+      {sh:[0],      t:'bre', px:0, py:0, amp:0.035, sp:1.05},
+      /* the ice giant and its ring, slowest of everything — it has
+         the farthest orbit, so it should read as the farthest */
+      {sh:[30,31],  t:'ell', rx:382, ry:164, rot:0, sp:0.16},
+      /* the moon rides the ringed planet's own orbit at the same
+         angular speed, holding a fixed lead/lag ahead of it rather
+         than drifting off on its own */
+      {sh:[32],     t:'ell', rx:250, ry:108, rot:0, sp:0.34},
+      /* the comet drifts and shimmers on its pass rather than tracing
+         a clean ellipse — it is not one of the bound orbiting bodies */
+      {sh:[33,34,35,36], t:'wave', amp:1.4, sp:0.6},
+      /* the second corona turns opposite the primary rays, slowly,
+         so the two rings read as independent layers of the same sun */
+      {sh:RG(49,58), t:'rot', px:0, py:0, sp:-0.09}
     ],
     CYCLE:[
       {sh:[0,1,2],   t:'wave', amp:3.4, sp:1.05},

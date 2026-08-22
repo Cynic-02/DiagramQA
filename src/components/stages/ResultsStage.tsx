@@ -498,7 +498,15 @@ export function ResultsStage() {
                  with a question floating at the top. Even and hollow is
                  worse than uneven. Rows are content-sized again; the
                  cards inside a row still match each other. */
-              <div className="grid w-full gap-6 md:grid-cols-2 min-[1500px]:grid-cols-3 min-[2100px]:grid-cols-4">
+              /* Was fixed 2/3/4-column breakpoints, and at most widths
+                 that made each card roughly twice as wide as it was
+                 tall — a row of long bars, not a grid of cards. Auto-fill
+                 with a ~300px basis means the column count adapts to
+                 whatever width is actually available (never stretching
+                 a lone card to fill a whole wide row) and, paired with
+                 the taller min-height on the card itself below, each
+                 cell now lands close to 1:1 instead of a wide rectangle. */
+              <div className="grid w-full gap-6 grid-cols-[repeat(auto-fill,minmax(292px,1fr))]">
                 <AnimatePresence mode="popLayout">
                   {filteredQA.map((qa, i) => (
                     <FinalQACard key={qa.id} qa={qa} index={i} revealAll={revealAll} />
@@ -844,7 +852,10 @@ function FinalQACard({
          field and the graph paper carry on underneath the card; the
          border stays hard ink at full strength, which is what keeps a
          see-through panel from losing its own edges. */
-      className="lift glass-surface group flex h-full min-h-[236px] overflow-hidden rounded-[var(--r-l)] border-2 border-[var(--line)] shadow-[2px_2px_0_var(--line)]"
+      /* min-height raised from 236px toward the card's own column width
+         (~292px) so a card lands close to a 1:1 square instead of a
+         wide short rectangle — matches the auto-fill grid above. */
+      className="lift glass-surface group flex h-full min-h-[300px] overflow-hidden rounded-[var(--r-l)] border-2 border-[var(--line)] shadow-[2px_2px_0_var(--line)]"
       style={{ '--sh': '2px' } as React.CSSProperties}
     >
       {/* the Bloom spine */}

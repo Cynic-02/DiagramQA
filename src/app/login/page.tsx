@@ -76,12 +76,13 @@ export default function LoginPage() {
           autoplay: 6,
           anchorX: 800,
           chips: false,
-          /* Tighter than the homepage's. The sign-in stage is a
-             half-width column, so the same viewBox that reads as
-             full-bleed there rendered the plate at about two thirds
-             the size it should be here. */
-          viewBox: '390 76 830 748',
-          preserveAspectRatio: 'xMidYMid meet',
+          /* The sign-in stage is now full-bleed behind the floating
+             card, same as the homepage, so it uses the same default
+             1600×900 viewBox instead of the tighter column-cropped
+             one — no more zoomed-in crop tuned for a half-width pane
+             that no longer exists. anchorX:800 is already dead centre
+             of that viewBox. */
+          preserveAspectRatio: 'xMidYMid slice',
           flight: 'premium',
           /* Sign-in gets its own three plates. Replaying the
              homepage's globe here made the two pages read as one

@@ -26,8 +26,14 @@
  *     the margin, so who is speaking is legible in peripheral vision
  *     without reading a word;
  *   · bubbles with a tail pointing back at their speaker, capped short
- *     of full width so the thread has a ragged right edge like a real
+ *     of full width so the thread has a ragged edge like a real
  *     conversation instead of a column of blocks;
+ *   · alternating sides — the first agent's bubble pops in from the
+ *     left, the next from the right, and so on down the thread. Five
+ *     identical panels stacked in a single left-hand column still read
+ *     as one long report even with avatars and tails added; a thread
+ *     that visibly zig-zags reads as five distinct participants taking
+ *     turns, the way a real two-party chat does;
  *   · consecutive turns by the same agent group under one avatar;
  *   · a day-divider style rule between agents, carrying the handoff
  *     ("Vision → Generator"), because in this thread the handoff IS the
@@ -162,57 +168,81 @@ export function PipelineThinkingFeed() {
                   </div>
                 )}
 
-                <motion.div
-                  initial={reduce ? false : { opacity: 0, y: 14 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
-                  className="flex items-start gap-3"
-                >
-                  {/* ---- avatar gutter ---- */}
-                  <div className="flex w-9 shrink-0 flex-col items-center gap-1.5 pt-1">
-                    <span
-                      className={cn(
-                        'flex size-9 items-center justify-center rounded-full border-2 border-[var(--line)]',
-                        'font-[family-name:var(--font-archivo)] text-[13px] font-black leading-none',
-                        live && 'animate-pulse',
-                      )}
-                      style={{ background: hue, color: fg }}
-                      title={name}
-                      aria-hidden
+                {/* ---- side alternation ----
+                    Agent 1 (even index) speaks from the left, agent 2
+                    (odd index) from the right, and so on — the whole
+                    row flips with `flex-row-reverse`, which for free
+                    also flips the tail, the header alignment and the
+                    slide-in direction, so a right-side bubble genuinely
+                    pops in from the right rather than just being a
+                    mirrored copy sitting in the same spot. */}
+                {(() => {
+                  const rightSide = i % 2 === 1
+                  return (
+                    <motion.div
+                      initial={reduce ? false : { opacity: 0, y: 14, x: rightSide ? 18 : -18 }}
+                      animate={{ opacity: 1, y: 0, x: 0 }}
+                      transition={{ duration: 0.34, ease: [0.22, 1, 0.36, 1] }}
+                      className={cn('flex items-start gap-3', rightSide && 'flex-row-reverse')}
                     >
-                      {name.charAt(0).toUpperCase()}
-                    </span>
-                    {/* the thread line, joining this speaker to the next */}
-                    {i < visible.length - 1 && (
-                      <span
-                        className="w-[2px] flex-1 rounded-none bg-[var(--line)]/15"
-                        aria-hidden
-                      />
-                    )}
-                  </div>
+                      {/* ---- avatar gutter ---- */}
+                      <div className="flex w-9 shrink-0 flex-col items-center gap-1.5 pt-1">
+                        <span
+                          className={cn(
+                            'flex size-9 items-center justify-center rounded-full border-2 border-[var(--line)]',
+                            'font-[family-name:var(--font-archivo)] text-[13px] font-black leading-none',
+                            live && 'animate-pulse',
+                          )}
+                          style={{ background: hue, color: fg }}
+                          title={name}
+                          aria-hidden
+                        >
+                          {name.charAt(0).toUpperCase()}
+                        </span>
+                        {/* the thread line, joining this speaker to the next */}
+                        {i < visible.length - 1 && (
+                          <span
+                            className="w-[2px] flex-1 rounded-none bg-[var(--line)]/15"
+                            aria-hidden
+                          />
+                        )}
+                      </div>
 
-                  {/* ---- the bubble ---- */}
-                  <div className="relative min-w-0 flex-1">
-                    {/* the tail, pointing back at the avatar */}
-                    <span
-                      aria-hidden
-                      className="absolute left-[-7px] top-[15px] size-3 rotate-45 rounded-[2px] border-b-2 border-l-2 border-[var(--line)] bg-[var(--card)]"
-                    />
-                    <div className="mb-1.5 flex items-baseline gap-2">
-                      <span className="font-[family-name:var(--font-archivo)] text-[12px] font-black uppercase tracking-[0.02em]">
-                        {name}
-                      </span>
-                      <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[var(--ink-2)]">
-                        {live ? 'typing…' : status === 'error' ? 'failed' : 'sent'}
-                      </span>
-                    </div>
-                    <AgentThinkingConsole
-                      stageId={id}
-                      label={STAGE_LABEL[id]}
-                      className="!max-w-[min(100%,760px)]"
-                    />
-                  </div>
-                </motion.div>
+                      {/* ---- the bubble ---- */}
+                      <div className="relative min-w-0 flex-1">
+                        {/* the tail, pointing back at the avatar on
+                            whichever side this bubble sits */}
+                        <span
+                          aria-hidden
+                          className={cn(
+                            'absolute top-[15px] size-3 rotate-45 rounded-[2px] bg-[var(--card)]',
+                            rightSide
+                              ? 'right-[-7px] border-r-2 border-t-2 border-[var(--line)]'
+                              : 'left-[-7px] border-b-2 border-l-2 border-[var(--line)]',
+                          )}
+                        />
+                        <div
+                          className={cn(
+                            'mb-1.5 flex items-baseline gap-2',
+                            rightSide && 'flex-row-reverse',
+                          )}
+                        >
+                          <span className="font-[family-name:var(--font-archivo)] text-[12px] font-black uppercase tracking-[0.02em]">
+                            {name}
+                          </span>
+                          <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[var(--ink-2)]">
+                            {live ? 'typing…' : status === 'error' ? 'failed' : 'sent'}
+                          </span>
+                        </div>
+                        <AgentThinkingConsole
+                          stageId={id}
+                          label={STAGE_LABEL[id]}
+                          className="!max-w-[min(100%,760px)]"
+                        />
+                      </div>
+                    </motion.div>
+                  )
+                })()}
               </React.Fragment>
             )
           })}
