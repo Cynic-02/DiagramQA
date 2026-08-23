@@ -2,7 +2,7 @@
  * AI Provider Abstraction Layer
  *
  * A unified interface that supports multiple AI providers (DeepSeek, OpenAI,
- * Anthropic Claude, Google Gemini, Grok, Groq, Qwen, Kimi, GLM) with:
+ * Anthropic Claude, Google Gemini, Grok, Groq, Qwen, Kimi, GLM, CraftX) with:
  *  - Streaming responses (for live "stream of thought" display)
  *  - Chain-of-thought / reasoning extraction (provider-agnostic)
  *  - Vision support (for diagram understanding)
@@ -30,6 +30,7 @@ export type ProviderId =
   | 'qwen'
   | 'kimi'
   | 'openrouter'
+  | 'craftx'
 
 /** Prefix used to address a user's custom provider, e.g. "custom:ck123". */
 export const CUSTOM_PROVIDER_PREFIX = 'custom:'
@@ -171,6 +172,26 @@ export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
     defaultModel: 'google/gemini-2.5-flash',
     supportsVision: true,
     supportsReasoning: true,
+  },
+  craftx: {
+    id: 'craftx',
+    label: 'CraftX (CoreCraft Solutions)',
+    apiKeyEnv: 'CRAFTX_API_KEY',
+    baseURL: 'https://api.craftx.corecraftsolutions.com/api/v1',
+    // Verified live against a real key: the base URL in CraftX's own curl
+    // snippet (api.craftx.io) does not resolve at all (DNS failure), and
+    // the model id in that same snippet ("cc-text-1") 404s as "not found
+    // or inactive" on this host. The host + model below are the ones that
+    // actually authenticate and return a valid chat completion — the model
+    // id is CraftX's literal display name, spaces included, not a slug.
+    defaultModel: 'Qwen3 VL 30B',
+    // Vision confirmed working with base64 data: URLs (exactly what this
+    // app already sends for diagram images). Remote image_url links
+    // returned a 502 from CraftX's backend during testing, but that path
+    // isn't used here — every image this app sends is a data: URL.
+    supportsVision: true,
+    // No reasoning_content/thinking field observed in responses.
+    supportsReasoning: false,
   },
 }
 
@@ -539,7 +560,7 @@ export async function chat(
   if (!preferred) {
     if (hasImage && available.length > 0) {
       throw new Error(
-        'This step needs a vision-capable provider to read the diagram. Add a key for OpenAI, Anthropic Claude, Gemini, GLM, Qwen, or OpenRouter in Settings → API Keys.'
+        'This step needs a vision-capable provider to read the diagram. Add a key for OpenAI, Anthropic Claude, Gemini, GLM, Qwen, CraftX, or OpenRouter in Settings → API Keys.'
       )
     }
     throw new Error(
@@ -613,7 +634,7 @@ export async function* streamChat(
   if (!preferred) {
     if (hasImage && available.length > 0) {
       throw new Error(
-        'This step needs a vision-capable provider to read the diagram. Add a key for OpenAI, Anthropic Claude, Gemini, GLM, Qwen, or OpenRouter in Settings → API Keys.'
+        'This step needs a vision-capable provider to read the diagram. Add a key for OpenAI, Anthropic Claude, Gemini, GLM, Qwen, CraftX, or OpenRouter in Settings → API Keys.'
       )
     }
     throw new Error(
